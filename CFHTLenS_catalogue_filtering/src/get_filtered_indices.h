@@ -31,22 +31,16 @@
 
 #include <vector>
 
-#include "brg/boost_deep_includes/hold_any.hpp"
 #include "brg/file_access/table_typedefs.hpp"
 
-void move_y_column_to_i(brgastro::table_map_t<boost::hold_any> & map);
+void move_y_column_to_i(brgastro::table_map_t<std::string> & map);
 
-std::vector<size_t> get_filtered_objects(const brgastro::table_map_t<boost::hold_any> & map);
+std::vector<size_t> get_filtered_lenses(const brgastro::table_map_t<std::string> & map);
+std::vector<size_t> get_filtered_sources(const brgastro::table_map_t<std::string> & map);
 
-bool column_passes_lens_filter(const std::string & col_name,boost::hold_any value);
-bool column_passes_source_filter(const std::string & col_name,boost::hold_any value);
-bool column_passes_global_filter(const std::string & col_name,boost::hold_any value);
-
-inline bool column_passes_filter(const std::string & col_name,boost::hold_any value)
-{
-	if(!column_passes_global_filter(col_name,value)) return false;
-	return (column_passes_lens_filter(col_name,value)&&column_passes_source_filter(col_name,value));
-}
+bool column_passes_lens_filter(const std::string & col_name,const std::string & value);
+bool column_passes_source_filter(const std::string & col_name,const std::string & value);
+bool column_passes_global_filter(const std::string & col_name,const std::string & value);
 
 
 

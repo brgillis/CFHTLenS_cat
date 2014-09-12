@@ -24,18 +24,20 @@
 \**********************************************************************/
 
 
-
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
 
-#include "brg/boost_deep_includes/hold_any.hpp"
+#include <boost/lexical_cast.hpp>
+
 #include "brg/file_access/table_typedefs.hpp"
 
 #include "make_output_map.h"
 
-brgastro::table_map_t<std::string> make_output_map(const brgastro::table_map_t<boost::hold_any> & map,
-		const std::vector<size_t> & filtered_indices, const brgastro::header_t & header_columns)
+brgastro::table_map_t<std::string> make_output_map(const brgastro::table_map_t<std::string> & map,
+		const std::vector<size_t> & filtered_indices, const brgastro::header_t & header_columns,
+		const std::map<std::string,std::function<double(double)>> & conversions)
 {
 	brgastro::table_map_t<std::string> result_map;
 
@@ -44,6 +46,10 @@ brgastro::table_map_t<std::string> make_output_map(const brgastro::table_map_t<b
 	{
 		// Initialize column
 		result_map[*col_it] = std::vector<std::string>();
+
+		// Check if we'll apply a conversion to this column
+		auto conv_it = conversions.find(*col_it);
+		const bool apply_conversion = !(conv_it==conversions.end());
 
 		auto ele_to_skip_next = filtered_indices.begin();
 
@@ -58,7 +64,16 @@ brgastro::table_map_t<std::string> make_output_map(const brgastro::table_map_t<b
 			}
 			else
 			{
-				result_map[*col_it].push_back(boost::any_cast<std::string>(map.at(*col_it)[i]));
+				if(!apply_conversion)
+				{
+					result_map[*col_it].push_back(map.at(*col_it)[i]);
+				}
+				else
+				{
+					double val = boost::lexical_cast<double>(map.at(*col_it)[i]);
+					double new_val = conv_it->second(val);
+					result_map[*col_it].push_back(boost::lexical_cast<std::string>(new_val));
+				}
 			}
 		}
 	}

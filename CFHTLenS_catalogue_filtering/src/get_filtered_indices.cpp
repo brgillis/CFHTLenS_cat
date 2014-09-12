@@ -30,12 +30,11 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "brg/boost_deep_includes/hold_any.hpp"
 #include "brg/file_access/table_typedefs.hpp"
 
 #include "get_filtered_indices.h"
 
-void move_y_column_to_i(brgastro::table_map_t<boost::hold_any> & map)
+void move_y_column_to_i(brgastro::table_map_t<std::string> & map)
 {
 	// Check if the i columns exist, and if not, move in y columns
 	if(map.find("MAG_i")==map.end())
@@ -55,7 +54,7 @@ void move_y_column_to_i(brgastro::table_map_t<boost::hold_any> & map)
 	}
 }
 
-std::vector<size_t> get_filtered_objects(const brgastro::table_map_t<boost::hold_any> & map)
+std::vector<size_t> get_filtered_lenses(const brgastro::table_map_t<std::string> & map)
 {
 	// Determine the number of rows
 	const size_t num_rows = map.begin()->second.size();
@@ -69,7 +68,7 @@ std::vector<size_t> get_filtered_objects(const brgastro::table_map_t<boost::hold
 		for(auto col_it = map.begin(); col_it != map.end(); ++col_it)
 		{
 			const std::string & key = col_it->first;
-			if(!column_passes_filter(key,col_it->second.at(i)))
+			if(!column_passes_lens_filter(key,col_it->second.at(i)))
 			{
 				filtered_objects.push_back(i);
 				break;
@@ -80,11 +79,37 @@ std::vector<size_t> get_filtered_objects(const brgastro::table_map_t<boost::hold
 	return filtered_objects;
 }
 
-bool column_passes_lens_filter(const std::string & col_name,boost::hold_any value)
+std::vector<size_t> get_filtered_sources(const brgastro::table_map_t<std::string> & map)
 {
+	// Determine the number of rows
+	const size_t num_rows = map.begin()->second.size();
+
+	std::vector<size_t> filtered_objects;
+	filtered_objects.reserve(num_rows);
+
+	for(size_t i=0; i<num_rows; ++i)
+	{
+		// Go over each column, and check if it passes the filter
+		for(auto col_it = map.begin(); col_it != map.end(); ++col_it)
+		{
+			const std::string & key = col_it->first;
+			if(!column_passes_lens_filter(key,col_it->second.at(i)))
+			{
+				filtered_objects.push_back(i);
+				break;
+			}
+		}
+	}
+
+	return filtered_objects;
+}
+
+bool column_passes_lens_filter(const std::string & col_name,const std::string & value)
+{
+	if(!column_passes_global_filter(col_name,value)) return false;
 	if(col_name=="Z_B")
 	{
-		double dval = brgastro::any_cast<double>(value);
+		double dval = boost::lexical_cast<double>(value);
 		return (dval <= 0.8);
 	}
 	else
@@ -92,28 +117,28 @@ bool column_passes_lens_filter(const std::string & col_name,boost::hold_any valu
 		return true;
 	}
 }
-bool column_passes_source_filter(const std::string & col_name,boost::hold_any value)
+bool column_passes_source_filter(const std::string & col_name,const std::string & value)
 {
-
+	if(!column_passes_global_filter(col_name,value)) return false;
 	if(col_name=="MAG_i")
 	{
-		return brgastro::any_cast<double>(value) <= 24.7;
+		return boost::lexical_cast<double>(value) <= 24.7;
 	}
 	else
 	{
 		return true;
 	}
 }
-bool column_passes_global_filter(const std::string & col_name,boost::hold_any value)
+bool column_passes_global_filter(const std::string & col_name,const std::string & value)
 {
 	if(col_name=="Z_B")
 	{
-		double dval = brgastro::any_cast<double>(value);
+		double dval = boost::lexical_cast<double>(value);
 		return ((0.2 <= dval) && (dval <= 1.3));
 	}
 	else if(col_name=="ODSS")
 	{
-		double dval = brgastro::any_cast<double>(value);
+		double dval = boost::lexical_cast<double>(value);
 		return (0.8 <= dval);
 	}
 	else

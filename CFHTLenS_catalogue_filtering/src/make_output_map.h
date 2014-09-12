@@ -30,15 +30,16 @@
 #ifndef _BRG_MAKE_OUTPUT_MAP_H_INCLUDED_
 #define _BRG_MAKE_OUTPUT_MAP_H_INCLUDED_
 
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
 
-#include "brg/boost_deep_includes/hold_any.hpp"
 #include "brg/file_access/table_typedefs.hpp"
 
-brgastro::table_map_t<std::string> make_output_map(const brgastro::table_map_t<boost::hold_any> & map,
-		const std::vector<size_t> & filtered_indices, const brgastro::header_t & header_columns);
+brgastro::table_map_t<std::string> make_output_map(const brgastro::table_map_t<std::string> & map,
+		const std::vector<size_t> & filtered_indices, const brgastro::header_t & header_columns,
+		const std::map<std::string,std::function<double(double)>> & conversions);
 
 
 #endif // _BRG_MAKE_OUTPUT_MAP_H_INCLUDED_
