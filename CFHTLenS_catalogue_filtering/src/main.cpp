@@ -38,7 +38,7 @@
 #include "make_output_map.h"
 
 // Magic values
-std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/Data/";
+std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/";
 std::string fields_list = fields_directory + "bad_fields_list.txt";
 
 int main( const int argc, const char *argv[] )
