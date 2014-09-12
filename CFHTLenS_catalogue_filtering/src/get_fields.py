@@ -28,8 +28,8 @@ import subprocess as sbp
 
 # Magic values
 
-base_good_fields_filename = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/Data/good_fields_list.txt"
-base_bad_fields_filename = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/Data/bad_fields_list.txt"
+base_good_fields_filename = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/good_fields_list.txt"
+base_bad_fields_filename = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/bad_fields_list.txt"
 
 base_query_filename = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/src/base_query.txt"
 base_command_filename = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/src/wget_cmd.txt"
@@ -39,7 +39,7 @@ query_i_or_y_replace_tag = "REPLACEME_I_OR_Y"
 command_output_replace_tag = "REPLACEME_OUTPUT_NAME"
 command_query_replace_tag = "REPLACEME_QUERY"
 
-data_table_path = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/Data/full_tables/"
+data_table_path = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/full_tables/"
 
 def main(argv):
     """ TODO Docstring for main.
