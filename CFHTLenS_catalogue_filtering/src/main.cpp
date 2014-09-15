@@ -38,8 +38,8 @@
 #include "make_output_map.h"
 
 // Magic values
-std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/";
-std::string fields_list = fields_directory + "bad_fields_list.txt";
+std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
+std::string fields_list = fields_directory + "fields_list.txt";
 
 int main( const int argc, const char *argv[] )
 {
@@ -160,7 +160,7 @@ int main( const int argc, const char *argv[] )
 		source_conversions["LP_log10_SM_INF"] = l10_Msun_to_kg;
 		source_conversions["LP_log10_SM_SUP"] = l10_Msun_to_kg;
 
-		output_map = make_output_map(table_map,filtered_indices,lens_header_columns,source_conversions);
+		output_map = make_output_map(table_map,filtered_indices,source_header_columns,source_conversions);
 
 		brgastro::print_table_map(source_output_name,output_map);
 
