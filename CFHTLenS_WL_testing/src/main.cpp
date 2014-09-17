@@ -39,7 +39,7 @@
 #include "pass_configs_to_binner.h"
 
 // Magic values
-std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/";
+std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
 std::string fields_list = fields_directory + "fields_list.txt";
 
 int main( const int argc, const char *argv[] )
@@ -105,10 +105,20 @@ int main( const int argc, const char *argv[] )
 		// Find lens-source pairs and add them to the binner
 		for(size_t lens_i=0; lens_i<num_lenses; ++lens_i)
 		{
+			brgastro::galaxy & lens = lens_galaxies[lens_i];
+			BRG_ANGLE max_angle_sep = brgastro::afd(config.R_max,lens.z());
+
 			for(size_t source_i=0; source_i<num_sources; ++source_i)
 			{
-				brgastro::galaxy lens = lens_galaxies[lens_i];
-				brgastro::source_galaxy source = source_galaxies[source_i];
+				brgastro::source_galaxy & source = source_galaxies[source_i];
+
+				// Check against maximum angular separation in ra and dec simply first for speed
+				if(std::fabs(lens.dec()-source.dec())>max_angle_sep) continue;
+				if(std::fabs(lens.ra()-source.ra())*std::cos(lens.dec())>max_angle_sep) continue;
+
+				// Check that the lens is sufficiently in front of the source
+				if(lens.z() >= source.z() - config.z_buffer) continue;
+
 				BRG_DISTANCE R = brgastro::dfa(brgastro::skydist2d(&lens,&source),lens.z());
 
 				if(R <= config.R_max)
@@ -116,7 +126,13 @@ int main( const int argc, const char *argv[] )
 					binner.add_pair(brgastro::lens_source_pair(&lens,&source));
 				}
 			}
+
+			//break; // Debug line
 		}
+
+		binner.sort();
+
+		break; // Debug line
 
 	}
 

@@ -49,6 +49,8 @@ struct gg_lensing_config {
 	bool R_log, m_log, z_log, mag_log;
 	size_t R_bins, m_bins, z_bins, mag_bins;
 
+	double z_buffer;
+
 	gg_lensing_config( const int argc=0, const char *argv[]=nullptr );
 	virtual ~gg_lensing_config()
 	{

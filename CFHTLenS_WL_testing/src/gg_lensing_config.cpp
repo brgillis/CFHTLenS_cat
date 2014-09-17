@@ -23,16 +23,18 @@
 
  \**********************************************************************/
 
+#include <limits>
+
 #include "gg_lensing_config.h"
 
 gg_lensing_config::gg_lensing_config( const int argc, const char *argv[] )
 {
 	using namespace brgastro::unitconv;
 
-	if(argc==0)
+	if(argc==1)
 	{
 		R_min = 10*kpctom;
-		R_max = 10*kpctom;
+		R_max = 2000*kpctom;
 		R_step = 10*kpctom;
 		R_log = true;
 		R_bins = 20;
@@ -49,11 +51,13 @@ gg_lensing_config::gg_lensing_config( const int argc, const char *argv[] )
 		z_log = true;
 		z_bins = 1;
 
-		mag_min = 0;
+		mag_min = -std::numeric_limits<double>::infinity();
 		mag_max = 25;
-		mag_step = 25;
-		mag_log = true;
+		mag_step = std::numeric_limits<double>::infinity();
+		mag_log = false;
 		mag_bins = 1;
+
+		z_buffer = 0.1;
 
 		return;
 	}
