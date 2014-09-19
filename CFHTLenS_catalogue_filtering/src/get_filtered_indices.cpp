@@ -109,8 +109,7 @@ bool column_passes_lens_filter(const std::string & col_name,const std::string & 
 	if(!column_passes_global_filter(col_name,value)) return false;
 	if(col_name=="Z_B")
 	{
-		double dval = boost::lexical_cast<double>(value);
-		return (dval <= 0.8);
+		return boost::lexical_cast<double>(value) <= 0.8;
 	}
 	else
 	{
@@ -120,9 +119,9 @@ bool column_passes_lens_filter(const std::string & col_name,const std::string & 
 bool column_passes_source_filter(const std::string & col_name,const std::string & value)
 {
 	if(!column_passes_global_filter(col_name,value)) return false;
-	if(col_name=="MAG_i")
+	if(col_name=="Z_B")
 	{
-		return boost::lexical_cast<double>(value) <= 24.7;
+		return boost::lexical_cast<double>(value) <= 4;
 	}
 	else
 	{
@@ -134,9 +133,9 @@ bool column_passes_global_filter(const std::string & col_name,const std::string 
 	if(col_name=="Z_B")
 	{
 		double dval = boost::lexical_cast<double>(value);
-		return ((0.2 <= dval) && (dval <= 1.3));
+		return ((0.2 <= dval) && (dval <= 4));
 	}
-	else if(col_name=="ODSS")
+	else if(col_name=="ODDS")
 	{
 		double dval = boost::lexical_cast<double>(value);
 		return (0.8 <= dval);
