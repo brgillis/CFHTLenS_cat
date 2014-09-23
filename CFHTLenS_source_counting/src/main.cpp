@@ -60,7 +60,7 @@ int main( const int argc, const char *argv[] )
 	brgastro::open_file_input(fi,fields_list);
 
 	// Set up the redshift bins
-	std::vector<double> z_bin_limits = brgastro::make_limit_vector<double>(0,2.0,0.1);
+	std::vector<double> z_bin_limits = brgastro::make_limit_vector<double>(0.2,4.0,0.1);
 	typedef boost::accumulators::accumulator_set<double,
 			boost::accumulators::stats<
 				boost::accumulators::tag::density >> hist_accum;

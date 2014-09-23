@@ -36,6 +36,9 @@
  *
  */
 class Schechter_like_functor: public brgastro::functor<double,std::vector<BRG_UNITS>> {
+private:
+	const size_t _num_params_ = 7;
+
 public:
 	Schechter_like_functor()
 	{
@@ -53,18 +56,38 @@ public:
 
 	CONST_BRG_UNITS_REF N_scale() const
 	{
-		assert(params().size()==3);
+		assert(params().size()==_num_params_);
 		return params()[0];
 	}
 	CONST_BRG_UNITS_REF m_star() const
 	{
-		assert(params().size()==3);
+		assert(params().size()==_num_params_);
 		return params()[1];
 	}
 	CONST_BRG_UNITS_REF alpha() const
 	{
-		assert(params().size()==3);
+		assert(params().size()==_num_params_);
 		return params()[2];
+	}
+	CONST_BRG_UNITS_REF mag_lower_lim_sharpness() const
+	{
+		assert(params().size()==_num_params_);
+		return params()[3];
+	}
+	CONST_BRG_UNITS_REF mag23_jump() const
+	{
+		assert(params().size()==_num_params_);
+		return params()[4];
+	}
+	CONST_BRG_UNITS_REF mag_upper_lim() const
+	{
+		assert(params().size()==_num_params_);
+		return params()[5];
+	}
+	CONST_BRG_UNITS_REF mag_upper_lim_sharpness() const
+	{
+		assert(params().size()==_num_params_);
+		return params()[6];
 	}
 
 #endif

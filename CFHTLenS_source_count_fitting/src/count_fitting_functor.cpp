@@ -25,6 +25,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <stdexcept>
 
 #include "brg/global.h"
 
@@ -68,10 +69,13 @@ std::vector<BRG_UNITS> count_fitting_functor::operator()( const std::vector<BRG_
 	double chi_sq = 0;
 	for(size_t i=0; i<_mag_bin_counts_.size(); ++i)
 	{
+		if(_mag_bin_counts_[i]<=0) continue;
 		double mid = (_mag_bin_limits_[i]+_mag_bin_limits_[i+1])/2;
 		BRG_UNITS size = field_size()*(_mag_bin_limits_[i+1]-_mag_bin_limits_[i]);
 		double error = _mag_bin_counts_[i]/std::sqrt(_mag_bin_counts_[i]-1);
-		chi_sq += brgastro::square( ((*_f_)(mid,silent)*size-_mag_bin_counts_[i]) / error);
+		double estimate = (*_f_)(mid,silent)*size;
+		chi_sq += brgastro::square( (estimate-_mag_bin_counts_[i]) / error);
 	}
+	if(chi_sq<=0) throw std::runtime_error("No observed galaxies in this redshift bin.");
 	return std::vector<BRG_UNITS>(1,chi_sq);
 }

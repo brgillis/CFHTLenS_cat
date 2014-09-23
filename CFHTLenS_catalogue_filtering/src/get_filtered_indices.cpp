@@ -93,7 +93,7 @@ std::vector<size_t> get_filtered_sources(const brgastro::table_map_t<std::string
 		for(auto col_it = map.begin(); col_it != map.end(); ++col_it)
 		{
 			const std::string & key = col_it->first;
-			if(!column_passes_lens_filter(key,col_it->second.at(i)))
+			if(!column_passes_source_filter(key,col_it->second.at(i)))
 			{
 				filtered_objects.push_back(i);
 				break;
@@ -135,6 +135,11 @@ bool column_passes_global_filter(const std::string & col_name,const std::string 
 	{
 		double dval = boost::lexical_cast<double>(value);
 		return (dval <= 4);
+	}
+	else if(col_name=="MAG_i")
+	{
+		double dval = boost::lexical_cast<double>(value);
+		return (dval <= 24.7);
 	}
 	else if(col_name=="ODDS")
 	{

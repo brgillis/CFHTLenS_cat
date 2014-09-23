@@ -50,19 +50,20 @@ private:
 
 public:
 	count_fitting_functor()
-	: _f_(NULL),
+	: functor(1),
+	  _f_(NULL),
 	  _filename_(""),
-	  _loaded_(false),
-	  functor(1)
+	  _loaded_(false)
+
 	{
 	}
 	count_fitting_functor(brgastro::functor<double,std::vector<BRG_UNITS>> *init_f,
 			std::string init_filename="",
 			BRG_UNITS init_field_size=1)
-	: _f_(init_f),
+	: functor(init_field_size),
+	  _f_(init_f),
 	  _filename_(init_filename),
-	  _loaded_(false),
-	  functor(init_field_size)
+	  _loaded_(false)
 	{
 	}
 	virtual ~count_fitting_functor()

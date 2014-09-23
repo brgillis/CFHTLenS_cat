@@ -30,8 +30,19 @@
 
 
 double Schechter_like_functor::operator()( const double in_param,
-			const bool silent = false ) const
+			const bool silent) const
 {
-	double x = std::pow(10,0.4*(m_star()-in_param));
-	return N_scale()*std::pow(x,alpha())*std::exp(-x);
+	const double mag_jump_limit = 23.;
+
+	const double x = std::pow(10,0.4*(m_star()-in_param));
+	double result = 0.4*std::log(10.)*N_scale()*std::pow(x,alpha()+1)*
+			std::exp(-std::pow(x,mag_lower_lim_sharpness()));
+
+	if(in_param>=mag_jump_limit) result += mag23_jump();
+
+	const double xh = std::pow(10,0.4*(in_param-mag_upper_lim()));
+
+	result *= std::exp(-std::pow(xh,mag_upper_lim_sharpness()));
+
+	return result;
 }
