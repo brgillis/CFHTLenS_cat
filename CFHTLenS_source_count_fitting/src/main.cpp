@@ -95,7 +95,7 @@ int main( const int argc, const char *argv[] )
 
 	// Bounds for mag_upper_lim_sharpness
 	mins.push_back(0);
-	maxes.push_back(4);
+	maxes.push_back(10);
 	steps.push_back(0.1);
 	inits.push_back(1);
 
@@ -127,7 +127,7 @@ int main( const int argc, const char *argv[] )
 			inits = result_in_params; // For next bin
 
 			// Add this to the result map
-			result_map["z_mid"].push_back(0.01*(zlo+zstep/2));
+			result_map["z_mid"].push_back(0.01*(z100+zstep/2));
 			result_map["N_scale"].push_back(result_in_params.at(0));
 			result_map["m_star_lower"].push_back(result_in_params.at(1));
 			result_map["alpha"].push_back(result_in_params.at(2));

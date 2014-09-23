@@ -147,6 +147,7 @@ int main( const int argc, const char *argv[] )
 						binner.add_pair(brgastro::lens_source_pair(&lens,&source));
 					}
 				}
+				break;
 			}
 
 			binner.sort();
