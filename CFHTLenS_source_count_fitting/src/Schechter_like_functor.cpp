@@ -28,8 +28,7 @@
 
 #include "Schechter_like_functor.h"
 
-
-double Schechter_like_functor::operator()( const double in_param,
+double Schechter_like_functor::operator()( const double & in_param,
 			const bool silent) const
 {
 	const double mag_jump_limit = 23.;

@@ -41,6 +41,7 @@ class count_fitting_functor: public brgastro::functor<std::vector<BRG_UNITS>,BRG
 private:
 	brgastro::functor<double,std::vector<BRG_UNITS>> *_f_;
 	std::string _filename_;
+	double _z_bin_size_;
 
 	mutable std::vector<double> _mag_bin_limits_;
 	mutable std::vector<double> _mag_bin_counts_;
@@ -53,16 +54,19 @@ public:
 	: functor(1),
 	  _f_(NULL),
 	  _filename_(""),
+	  _z_bin_size_(1),
 	  _loaded_(false)
 
 	{
 	}
 	count_fitting_functor(brgastro::functor<double,std::vector<BRG_UNITS>> *init_f,
 			std::string init_filename="",
-			BRG_UNITS init_field_size=1)
+			BRG_UNITS init_field_size=1,
+			double init_z_bin_size=1)
 	: functor(init_field_size),
 	  _f_(init_f),
 	  _filename_(init_filename),
+	  _z_bin_size_(init_z_bin_size),
 	  _loaded_(false)
 	{
 	}
@@ -85,6 +89,10 @@ public:
 	{
 		set_params(new_field_size);
 	}
+	void set_z_bin_size_size(double new_z_bin_size)
+	{
+		_z_bin_size_ = new_z_bin_size;
+	}
 
 #endif
 
@@ -101,6 +109,10 @@ public:
 	CONST_BRG_UNITS_REF field_size() const
 	{
 		return params();
+	}
+	double z_bin_size() const
+	{
+		return _z_bin_size_;
 	}
 #endif
 

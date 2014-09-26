@@ -35,6 +35,9 @@
 #include "brg/physics/lensing/source_galaxy.h"
 #include "brg/physics/sky_obj/galaxy.h"
 
+#include "brg/physics/lensing/magnification/expected_count_cache.h"
+#include "brg/physics/lensing/magnification/mag_signal_integral_cache.h"
+#include "brg/physics/lensing/magnification/mag_weight_integral_cache.h"
 
 #include "gg_lensing_config.h"
 #include "pass_configs_to_binner.h"
@@ -44,8 +47,19 @@ std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
 std::string fields_list = fields_directory + "fields_list.txt";
 std::string output_table = fields_directory + "gg_lensing_signal.dat";
 
+std::string expected_count_cache_output_file = fields_directory + "ex_count_cache.dat";
+std::string mag_signal_integral_cache_output_file = fields_directory + "mag_sig_integral_cache.dat";
+std::string mag_weight_integral_cache_output_file = fields_directory + "mag_W_integral_cache.dat";
+
 int main( const int argc, const char *argv[] )
 {
+	brgastro::expected_count_cache().print(expected_count_cache_output_file);
+	brgastro::mag_weight_integral_cache().print(mag_weight_integral_cache_output_file);
+	brgastro::mag_signal_integral_cache().print(mag_signal_integral_cache_output_file);
+
+	return 0;
+
+	const size_t batch_size = 1000;
 	const gg_lensing_config config(argc,argv);
 
 	// Set up the binner and summary
@@ -70,13 +84,13 @@ int main( const int argc, const char *argv[] )
 	size_t num_fields = field_names.size();
 	size_t num_processed = 0;
 
-	num_fields = 12; // Debug line
+	num_fields = 1; // Debug line
 
 	#pragma omp parallel for
 	for(size_t field_i=0;field_i<num_fields;++field_i)
 	{
-		brgastro::pair_binner binner(pass_configs_to_binner(config));
-
+		brgastro::pair_bins_summary field_bins_summary(pass_configs_to_binner(config));
+		brgastro::pair_binner lens_binner(pass_configs_to_binner(config));
 		std::string field_name_root = field_names[field_i].substr(0,6);
 
 		try
@@ -133,24 +147,32 @@ int main( const int argc, const char *argv[] )
 				{
 					brgastro::source_galaxy & source = source_galaxies[source_i];
 
-					// Check against maximum angular separation in ra and dec simply first for speed
-					if(std::fabs(lens.dec()-source.dec())>max_angle_sep) continue;
-					if(std::fabs(lens.ra()-source.ra())*std::cos(lens.dec())>max_angle_sep) continue;
-
 					// Check that the lens is sufficiently in front of the source
 					if(lens.z() >= source.z() - config.z_buffer) continue;
 
-					BRG_DISTANCE R = brgastro::dfa(brgastro::skydist2d(&lens,&source),lens.z());
+					// Check against maximum angular separation in ra and dec simply first for speed
+					auto ddec = std::fabs(lens.dec()-source.dec());
+					if(ddec>max_angle_sep) continue;
+					double cosdec = std::cos(lens.dec());
+					auto dra = std::fabs(lens.ra()-source.ra())*cosdec;
+					if(dra>max_angle_sep) continue;
+
+					BRG_DISTANCE R = brgastro::dfa(brgastro::dist2d(dra,ddec),lens.z());
 
 					if(R <= config.R_max)
 					{
-						binner.add_pair(brgastro::lens_source_pair(&lens,&source));
+						lens_binner.add_pair(brgastro::lens_source_pair(&lens,&source));
 					}
 				}
-				break;
-			}
 
-			binner.sort();
+				if(lens_i % batch_size == 0)
+				{
+					// Add this binner to the field summary and empty it
+					field_bins_summary += lens_binner;
+					lens_binner.empty();
+				}
+			}
+			field_bins_summary += lens_binner;
 		}
 		catch (const std::exception &e)
 		{
@@ -169,7 +191,7 @@ int main( const int argc, const char *argv[] )
 		{
 			try
 			{
-				bins_summary += binner;
+				bins_summary += field_bins_summary;
 				std::cout << "Field " << field_name_root << " (#" <<
 						++num_processed << "/" << num_fields << ") complete.\n";
 			}

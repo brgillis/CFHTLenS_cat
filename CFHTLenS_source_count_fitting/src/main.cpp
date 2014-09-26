@@ -40,13 +40,14 @@
 #include "Schechter_like_functor.h"
 
 // Magic values
-std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
-std::string count_table_root = fields_directory + "magnitude_hist_z";
-std::string count_table_tail = ".dat";
-std::string output_filename = fields_directory + "count_fitting_results.dat";
-unsigned int zlo = 20;
-unsigned int zstep = 10;
-unsigned int zhi = 390;
+const std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
+const std::string count_table_root = fields_directory + "magnitude_hist_z";
+const std::string count_table_tail = ".dat";
+const std::string output_filename = fields_directory + "count_fitting_results.dat";
+const unsigned int zlo = 20;
+const unsigned int zstep = 10;
+const unsigned int zhi = 390;
+const double z_bin_size = zstep*0.01;
 
 const BRG_UNITS field_size(130.98*brgastro::square(brgastro::unitconv::degtorad));
 
@@ -59,9 +60,9 @@ int main( const int argc, const char *argv[] )
 
 	// Bounds for N_scale
 	mins.push_back(0);
-	maxes.push_back(1e4/brgastro::square(brgastro::unitconv::degtorad));
-	steps.push_back(1e2/brgastro::square(brgastro::unitconv::degtorad));
-	inits.push_back(300/brgastro::square(brgastro::unitconv::degtorad));
+	maxes.push_back(1e5/brgastro::square(brgastro::unitconv::degtorad));
+	steps.push_back(1e3/brgastro::square(brgastro::unitconv::degtorad));
+	inits.push_back(3e3/brgastro::square(brgastro::unitconv::degtorad));
 
 	// Bounds for m_star
 	mins.push_back(15);
@@ -83,9 +84,9 @@ int main( const int argc, const char *argv[] )
 
 	// Bounds for mag23_jump
 	mins.push_back(0);
-	maxes.push_back(1e4/brgastro::square(brgastro::unitconv::degtorad));
-	steps.push_back(1e2/brgastro::square(brgastro::unitconv::degtorad));
-	inits.push_back(200/brgastro::square(brgastro::unitconv::degtorad));
+	maxes.push_back(1e5/brgastro::square(brgastro::unitconv::degtorad));
+	steps.push_back(1e3/brgastro::square(brgastro::unitconv::degtorad));
+	inits.push_back(2e3/brgastro::square(brgastro::unitconv::degtorad));
 
 	// Bounds for mag_upper_lim
 	mins.push_back(24);
@@ -108,7 +109,7 @@ int main( const int argc, const char *argv[] )
 		{
 			std::string filename = count_table_root + boost::lexical_cast<std::string>(z100)
 					+ count_table_tail;
-			count_fitting_functor fitter(&estimator,filename,field_size);
+			count_fitting_functor fitter(&estimator,filename,field_size,z_bin_size);
 
 			std::vector<BRG_UNITS> result_in_params = brgastro::solve_MCMC(&fitter,
 					inits, mins, maxes, steps, 1000000, 25000);

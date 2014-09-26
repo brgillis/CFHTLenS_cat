@@ -71,7 +71,7 @@ std::vector<BRG_UNITS> count_fitting_functor::operator()( const std::vector<BRG_
 	{
 		if(_mag_bin_counts_[i]<=0) continue;
 		double mid = (_mag_bin_limits_[i]+_mag_bin_limits_[i+1])/2;
-		BRG_UNITS size = field_size()*(_mag_bin_limits_[i+1]-_mag_bin_limits_[i]);
+		BRG_UNITS size = _z_bin_size_*field_size()*(_mag_bin_limits_[i+1]-_mag_bin_limits_[i]);
 		double error = _mag_bin_counts_[i]/std::sqrt(_mag_bin_counts_[i]-1);
 		double estimate = (*_f_)(mid,silent)*size;
 		chi_sq += brgastro::square( (estimate-_mag_bin_counts_[i]) / error);

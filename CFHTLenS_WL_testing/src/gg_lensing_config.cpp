@@ -40,10 +40,10 @@ gg_lensing_config::gg_lensing_config( const int argc, const char *argv[] )
 		R_bins = 20;
 
 		m_min = 1e9*Msuntokg;
-		m_max = 1e12*Msuntokg;
+		m_max = 1e10*Msuntokg;
 		m_step = 1e11*Msuntokg;
 		m_log = true;
-		m_bins = 3;
+		m_bins = 1;
 
 		z_min = 0.2;
 		z_max = 1.1;
