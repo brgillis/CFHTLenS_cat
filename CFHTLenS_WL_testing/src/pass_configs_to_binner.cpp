@@ -53,6 +53,9 @@ brgastro::pair_binner pass_configs_to_binner(gg_lensing_config config)
 	{
 		binner.set_log_mag_limits(config.mag_min,config.mag_max,config.mag_bins);
 	}
+
+	binner.set_z_buffer(config.z_buffer);
+
 	return binner;
 }
 

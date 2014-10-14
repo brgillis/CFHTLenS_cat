@@ -34,6 +34,7 @@
 #include <boost/accumulators/statistics/weighted_density.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include "brg/external/sgsmooth.h"
 #include "brg/file_access/ascii_table_map.hpp"
 #include "brg/file_access/open_file.hpp"
 #include "brg/file_access/table_typedefs.hpp"
@@ -43,14 +44,19 @@
 #include "brg/physics/lensing/pair_bins_summary.h"
 #include "brg/physics/lensing/source_galaxy.h"
 #include "brg/physics/sky_obj/galaxy.h"
+#include "brg/vector/elementwise_functions.hpp"
 #include "brg/vector/limit_vector.hpp"
 #include "brg/vector/manipulations.hpp"
 
 // Magic values
-std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
-std::string fields_list = fields_directory + "fields_list.txt";
-std::string output_table_root = fields_directory + "magnitude_hist_z";
-std::string output_table_tail = ".dat";
+const std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
+const std::string fields_list = fields_directory + "fields_list.txt";
+const std::string output_table_root = fields_directory + "magnitude_hist_z";
+const std::string g_output_table_root = fields_directory + "magnitude_hist_gz";
+const std::string output_table_tail = ".dat";
+
+const short unsigned sg_window = 9;
+const short unsigned sg_deg = 3;
 
 int main( const int argc, const char *argv[] )
 {
@@ -60,7 +66,7 @@ int main( const int argc, const char *argv[] )
 	brgastro::open_file_input(fi,fields_list);
 
 	// Set up the redshift bins
-	std::vector<double> z_bin_limits = brgastro::make_limit_vector<double>(0.2,4.0,0.1);
+	std::vector<double> z_bin_limits = brgastro::make_limit_vector<double>(0.2,4.0,0.02);
 	typedef boost::accumulators::accumulator_set<double,
 			boost::accumulators::stats<
 				boost::accumulators::tag::density >> hist_accum;
@@ -68,6 +74,8 @@ int main( const int argc, const char *argv[] )
 			boost::accumulators::stats<
 				boost::accumulators::tag::density >,
 					double > weighted_hist_accum;
+
+	// Hists for exactly in bin
 	std::vector<hist_accum> z_bin_hists(z_bin_limits.size()-1,
 			hist_accum(boost::accumulators::density_cache_size=10000,
 					boost::accumulators::density_num_bins=100));
@@ -75,6 +83,15 @@ int main( const int argc, const char *argv[] )
 			weighted_hist_accum(boost::accumulators::density_cache_size=10000,
 					boost::accumulators::density_num_bins=100));
 	std::vector<unsigned long> z_bin_counts(z_bin_limits.size()-1,0);
+
+	// Hists for in this bin or greater
+	std::vector<hist_accum> gz_bin_hists(z_bin_limits.size()-1,
+			hist_accum(boost::accumulators::density_cache_size=10000,
+					boost::accumulators::density_num_bins=100));
+	std::vector<weighted_hist_accum> weighted_gz_bin_hists(z_bin_limits.size()-1,
+			weighted_hist_accum(boost::accumulators::density_cache_size=10000,
+					boost::accumulators::density_num_bins=100));
+	std::vector<unsigned long> gz_bin_counts(z_bin_limits.size()-1,0);
 
 	std::vector<std::string> field_names;
 	std::string field_name;
@@ -103,18 +120,31 @@ int main( const int argc, const char *argv[] )
 			std::string source_input_name = ss.str();
 
 			// Load in sources
-			const brgastro::table_map_t<double> source_map(brgastro::load_table_map<double>(source_input_name));
+			//const brgastro::table_map_t<double> source_map(brgastro::load_table_map<double>(source_input_name));
+			brgastro::table_map_t<double> source_map;
+			source_map = (brgastro::load_table_map<double>(source_input_name));
 			size_t num_sources = source_map.begin()->second.size();
 			for(size_t i=0; i<num_sources; ++i)
 			{
 				size_t z_i = brgastro::get_bin_index(source_map.at("Z_B").at(i),
 						z_bin_limits);
-				double mag = source_map.at("MAG_i").at(i);
+				double mag = source_map.at("MAG_r").at(i);
 				double weight = source_map.at("weight").at(i);
+
+				// Add to the specific bin
 				z_bin_hists[z_i](mag);
 				weighted_z_bin_hists[z_i](mag, boost::accumulators::weight =
 						weight);
 				++z_bin_counts[z_i];
+
+				// Add to the cumulative bins
+				for(size_t j=0; j<=z_i; ++j)
+				{
+					gz_bin_hists[j](mag);
+					weighted_gz_bin_hists[j](mag, boost::accumulators::weight =
+							weight);
+					++gz_bin_counts[j];
+				}
 			}
 		}
 		catch (const std::exception &e)
@@ -126,20 +156,20 @@ int main( const int argc, const char *argv[] )
 		}
 		std::cout << "Field " << field_name_root << " (#" <<
 				++num_processed << "/" << num_fields << ") complete.\n";
+#ifndef NDEBUG
+		break; // debug line
+#endif
 
 	}
 
-	// Set up a histogram table for each redshift bin
+	// Set up and print histogram tables
 
-	// Common header for all tables
-	brgastro::header_t header;
-	header.push_back("mag_bin_lower");
-	header.push_back("weighted_count");
+	// Specific redshift tables
 
 	auto z_hist_it = z_bin_hists.begin();
 	auto z_w_hist_it = weighted_z_bin_hists.begin();
 	auto z_count_it = z_bin_counts.begin();
-	for(auto z_it=z_bin_limits.begin();z_it!=z_bin_limits.end(); ++z_it, ++z_hist_it, ++z_w_hist_it, ++z_count_it)
+	for(auto z_it=z_bin_limits.begin();z_hist_it!=z_bin_hists.end(); ++z_it, ++z_hist_it, ++z_w_hist_it, ++z_count_it)
 	{
 		// Get the name for the table we'll output to
 		std::string z_label = boost::lexical_cast<std::string>(brgastro::round_int(100 * *z_it));
@@ -155,12 +185,86 @@ int main( const int argc, const char *argv[] )
 		auto hist = boost::accumulators::density(*z_hist_it);
 		auto w_hist = boost::accumulators::weighted_density(*z_w_hist_it);
 		auto w_h_it = w_hist.begin();
-		for(auto h_it = hist.begin(); h_it!=hist.end(); ++h_it, ++w_h_it)
+		auto h_it = hist.begin();
+		// Increment all iterators so we skip the underflow bin at the beginning
+		++w_h_it; ++h_it;
+		for(; h_it!=hist.end(); ++h_it, ++w_h_it)
 		{
 			data["mag_bin_lower"].push_back(h_it->first);
 			data["count"].push_back(*z_count_it * h_it->second);
 			data["weighted_count"].push_back(*z_count_it * w_h_it->second);
 		}
+		// Remove overflow bin at the end from all vectors
+		data["mag_bin_lower"].pop_back();
+		data["count"].pop_back();
+		data["weighted_count"].pop_back();
+
+		double mag_step = data["mag_bin_lower"].at(1)-data["mag_bin_lower"].at(0);
+
+		// Replace any zeros with 0.1 so we can take the log safely
+		auto rep_func = [] (const double & v) {if(v>0) return v; else return 0.1;};
+
+		// Now calculate the smoothed count
+		auto log_count = brgastro::divide(brgastro::log(brgastro::apply(rep_func,data["count"])),
+				std::log(10.));
+		auto smoothed_log = brgastro::sg_smooth(log_count,sg_window,sg_deg);
+		data["smoothed_count"] = brgastro::pow(10.,smoothed_log);
+		data["smoothed_alpha"] = brgastro::add(brgastro::multiply(
+				brgastro::sg_derivative(smoothed_log,sg_window,sg_deg),
+				2.5/mag_step),0);
+
+		brgastro::print_table_map(output_file_name,data);
+
+	}
+
+	// Cumulative redshift tables
+
+	z_hist_it = gz_bin_hists.begin();
+	z_w_hist_it = weighted_gz_bin_hists.begin();
+	z_count_it = gz_bin_counts.begin();
+	for(auto z_it=z_bin_limits.begin();z_hist_it!=gz_bin_hists.end(); ++z_it, ++z_hist_it, ++z_w_hist_it, ++z_count_it)
+	{
+		// Get the name for the table we'll output to
+		std::string z_label = boost::lexical_cast<std::string>(brgastro::round_int(100 * *z_it));
+		std::string output_file_name = g_output_table_root + z_label + output_table_tail;
+
+		// Set up the data table, and make sure it has the needed columns
+		brgastro::table_map_t<double> data;
+		data["mag_bin_lower"];
+		data["count"];
+		data["weighted_count"];
+
+		// Add each bin to the table
+		auto hist = boost::accumulators::density(*z_hist_it);
+		auto w_hist = boost::accumulators::weighted_density(*z_w_hist_it);
+		auto w_h_it = w_hist.begin();
+		auto h_it = hist.begin();
+		// Increment all iterators so we skip the underflow bin at the beginning
+		++w_h_it; ++h_it;
+		for(; h_it!=hist.end(); ++h_it, ++w_h_it)
+		{
+			data["mag_bin_lower"].push_back(h_it->first);
+			data["count"].push_back(*z_count_it * h_it->second);
+			data["weighted_count"].push_back(*z_count_it * w_h_it->second);
+		}
+		// Remove overflow bin at the end from all vectors
+		data["mag_bin_lower"].pop_back();
+		data["count"].pop_back();
+		data["weighted_count"].pop_back();
+
+		double mag_step = data["mag_bin_lower"].at(1)-data["mag_bin_lower"].at(0);
+
+		// Replace any zeros with 0.1 so we can take the log safely
+		auto rep_func = [] (const double & v) {if(v>0) return v; else return 0.1;};
+
+		// Now calculate the smoothed count
+		auto log_count = brgastro::divide(brgastro::log(brgastro::apply(rep_func,data["count"])),
+				std::log(10.));
+		auto smoothed_log = brgastro::sg_smooth(log_count,sg_window,sg_deg);
+		data["smoothed_count"] = brgastro::pow(10.,smoothed_log);
+		data["smoothed_alpha"] = brgastro::add(brgastro::multiply(
+				brgastro::sg_derivative(smoothed_log,sg_window,sg_deg),
+				2.5/mag_step),0);
 
 		brgastro::print_table_map(output_file_name,data);
 

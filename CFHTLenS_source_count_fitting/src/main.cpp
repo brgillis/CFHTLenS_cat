@@ -45,8 +45,8 @@ const std::string count_table_root = fields_directory + "magnitude_hist_z";
 const std::string count_table_tail = ".dat";
 const std::string output_filename = fields_directory + "count_fitting_results.dat";
 const unsigned int zlo = 20;
-const unsigned int zstep = 10;
-const unsigned int zhi = 390;
+const unsigned int zstep = 4;
+const unsigned int zhi = 196;
 const double z_bin_size = zstep*0.01;
 
 const BRG_UNITS field_size(130.98*brgastro::square(brgastro::unitconv::degtorad));
@@ -84,9 +84,9 @@ int main( const int argc, const char *argv[] )
 
 	// Bounds for mag23_jump
 	mins.push_back(0);
-	maxes.push_back(1e5/brgastro::square(brgastro::unitconv::degtorad));
-	steps.push_back(1e3/brgastro::square(brgastro::unitconv::degtorad));
-	inits.push_back(2e3/brgastro::square(brgastro::unitconv::degtorad));
+	maxes.push_back(0);
+	steps.push_back(0);
+	inits.push_back(0);
 
 	// Bounds for mag_upper_lim
 	mins.push_back(24);
@@ -105,12 +105,12 @@ int main( const int argc, const char *argv[] )
 
 	for(unsigned int z100=zlo; z100<=zhi; z100+=zstep)
 	{
+		std::string filename = count_table_root + boost::lexical_cast<std::string>(z100)
+				+ count_table_tail;
+		count_fitting_functor fitter(&estimator,filename,field_size,z_bin_size);
+
 		try
 		{
-			std::string filename = count_table_root + boost::lexical_cast<std::string>(z100)
-					+ count_table_tail;
-			count_fitting_functor fitter(&estimator,filename,field_size,z_bin_size);
-
 			std::vector<BRG_UNITS> result_in_params = brgastro::solve_MCMC(&fitter,
 					inits, mins, maxes, steps, 1000000, 25000);
 
@@ -139,7 +139,17 @@ int main( const int argc, const char *argv[] )
 		}
 		catch(const std::exception &e)
 		{
-			std::cerr << e.what();
+			// Most likely no counts in this bin, so use the inits (to match last good bin), but
+			// with N_scale set to zero
+
+			result_map["z_mid"].push_back(0.01*(z100+zstep/2));
+			result_map["N_scale"].push_back(0);
+			result_map["m_star_lower"].push_back(inits.at(1));
+			result_map["alpha"].push_back(inits.at(2));
+			result_map["lower_cutoff_sharpness"].push_back(inits.at(3));
+			result_map["mag23_jump"].push_back(inits.at(4));
+			result_map["m_star_upper"].push_back(inits.at(5));
+			result_map["upper_cutoff_sharpness"].push_back(inits.at(6));
 		}
 	}
 

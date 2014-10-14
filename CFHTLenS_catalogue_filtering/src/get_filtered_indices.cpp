@@ -136,9 +136,9 @@ bool column_passes_global_filter(const std::string & col_name,const std::string 
 		double dval = boost::lexical_cast<double>(value);
 		return (dval <= 4);
 	}
-	else if(col_name=="MAG_i")
+	else if(col_name=="MAG_r")
 	{
-		double dval = boost::lexical_cast<double>(value);
+		double dval = std::fabs(boost::lexical_cast<double>(value));
 		return (dval <= 24.7);
 	}
 	else if(col_name=="ODDS")
