@@ -32,6 +32,7 @@
 
 #include "brg/file_access/open_file.hpp"
 
+#include "get_good_positions.hpp"
 #include "load_pixel_table.h"
 
 // Magic values
@@ -71,8 +72,10 @@ int main( const int argc, const char *argv[] )
 		ss << mask_directory << field_name_root << "_corr.dat";
 		std::string lens_output_name = ss.str();
 
-		std::vector<std::vector<bool>> pixel_table = load_pixel_table(input_file_name);
+		std::vector<std::vector<bool>> good_positions =
+				get_good_positions(load_pixel_table(input_file_name));
 
+		return 0;
 	}
 
 	return 0;

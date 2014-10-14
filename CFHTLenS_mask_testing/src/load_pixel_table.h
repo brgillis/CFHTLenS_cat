@@ -34,7 +34,7 @@
 #include <vector>
 
 std::string unpack_fits(const std::string & filename);
-std::string pack_fits(const std::string & filename);
+void delete_file(const std::string & filename);
 std::vector<std::vector<bool>> load_pixel_table(const std::string & filename);
 
 

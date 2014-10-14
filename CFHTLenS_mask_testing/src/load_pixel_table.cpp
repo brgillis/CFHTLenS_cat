@@ -29,8 +29,11 @@
 #include <stdexcept>
 #include <unistd.h>
 #include <vector>
+#include <wait.h>
 
 #include <CCfits/CCfits>
+
+#include "load_pixel_table.h"
 
 std::string unpack_fits(const std::string & filename)
 {
@@ -44,12 +47,14 @@ std::string unpack_fits(const std::string & filename)
 		std::string unpacked_name(filename);
 		unpacked_name.erase(pos,suffix_length);
 
-		const char *unpacker("/disk2/brg/bin/funpack");
-
 		pid_t pid;
 
+		delete_file(unpacked_name);
+
+		const char *unpacker("/disk2/brg/bin/funpack");
+
 		// Spawn a subprocess to unpack the file
-		switch (pid = vfork())
+		switch (pid = fork())
 		{
 		case -1:
 			throw std::runtime_error("Fork failed in unpack_fits");
@@ -60,6 +65,10 @@ std::string unpack_fits(const std::string & filename)
 			_exit(1);
 		default:
 			/* This is processed by the parent */
+			int status=0;
+			waitpid(0,&status,0);
+			if(status)
+				throw std::runtime_error("Error executing unpacker in unpack_fits.\n");
 			break;
 		}
 
@@ -72,60 +81,28 @@ std::string unpack_fits(const std::string & filename)
 	}
 }
 
-std::string pack_fits(const std::string & filename)
+void delete_file(const std::string & filename)
 {
-	constexpr size_t suffix_lengthp1=6;
-	constexpr const char suffix[suffix_lengthp1] = ".fits";
-	constexpr size_t suffix_length = suffix_lengthp1-1;
-	const size_t pos = filename.rfind(suffix);
+	pid_t pid;
+	const char *deleter("/bin/rm");
 
-	if(pos==filename.size()-suffix_length)
+	// Spawn a subprocess to delete the unpacked file
+	switch (pid = fork())
 	{
-		std::string packed_name(filename);
-		packed_name += ".fz";
-
-		const char *packer("/disk2/brg/bin/fpack");
-
-		pid_t pid;
-
-		// Spawn a subprocess to unpack the file
-		switch (pid = vfork())
-		{
-		case -1:
-			throw std::runtime_error("Fork failed in pack_fits");
-		case 0:
-			/* This is processed by the child */
-			execl(packer, packer, filename.c_str(), nullptr);
-			std::cerr << "Error executing packer in pack_fits.\n";
-			_exit(1);
-		default:
-			/* This is processed by the parent */
-			break;
-		}
-
-		const char *deleter("/bin/rm");
-
-		// Spawn a subprocess to unpack the file
-		switch (pid = vfork())
-		{
-		case -1:
-			throw std::runtime_error("Fork failed in pack_fits");
-		case 0:
-			/* This is processed by the child */
-			execl(deleter, deleter, filename.c_str(), nullptr);
-			std::cerr << "Error executing rm in pack_fits.\n";
-			_exit(1);
-		default:
-			/* This is processed by the parent */
-			break;
-		}
-
-		return packed_name;
-	}
-	else
-	{
-		// It has the wrong suffix
-		return filename;
+	case -1:
+		throw std::runtime_error("Fork failed in delete_file");
+	case 0:
+		/* This is processed by the child */
+		execl(deleter, deleter, "-f", filename.c_str(), nullptr);
+		std::cerr << "Error executing rm in delete_file.\n";
+		_exit(1);
+	default:
+		/* This is processed by the parent */
+		int status=0;
+		waitpid(0,&status,0);
+		if(status)
+			throw std::runtime_error("Error executing rm in delete_file.\n");
+		break;
 	}
 }
 
@@ -172,7 +149,7 @@ std::vector<std::vector<bool>> load_pixel_table(const std::string & filename)
 
 	pInfile.release();
 
-	pack_fits(unpacked_filename);
+	delete_file(unpacked_filename);
 
 	return result;
 }
