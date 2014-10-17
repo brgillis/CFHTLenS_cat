@@ -33,6 +33,8 @@
 
 #include <CCfits/CCfits>
 
+#include "brg/call_program.hpp"
+
 #include "load_pixel_table.h"
 
 std::string unpack_fits(const std::string & filename)
@@ -47,30 +49,11 @@ std::string unpack_fits(const std::string & filename)
 		std::string unpacked_name(filename);
 		unpacked_name.erase(pos,suffix_length);
 
-		pid_t pid;
-
 		delete_file(unpacked_name);
 
 		const char *unpacker("/disk2/brg/bin/funpack");
 
-		// Spawn a subprocess to unpack the file
-		switch (pid = fork())
-		{
-		case -1:
-			throw std::runtime_error("Fork failed in unpack_fits");
-		case 0:
-			/* This is processed by the child */
-			execl(unpacker, unpacker, filename.c_str(), nullptr);
-			std::cerr << "Error executing unpacker in unpack_fits.\n";
-			_exit(1);
-		default:
-			/* This is processed by the parent */
-			int status=0;
-			waitpid(0,&status,0);
-			if(status)
-				throw std::runtime_error("Error executing unpacker in unpack_fits.\n");
-			break;
-		}
+		brgastro::call_program(unpacker,200,filename.c_str());
 
 		return unpacked_name;
 	}
@@ -83,27 +66,9 @@ std::string unpack_fits(const std::string & filename)
 
 void delete_file(const std::string & filename)
 {
-	pid_t pid;
 	const char *deleter("/bin/rm");
 
-	// Spawn a subprocess to delete the unpacked file
-	switch (pid = fork())
-	{
-	case -1:
-		throw std::runtime_error("Fork failed in delete_file");
-	case 0:
-		/* This is processed by the child */
-		execl(deleter, deleter, "-f", filename.c_str(), nullptr);
-		std::cerr << "Error executing rm in delete_file.\n";
-		_exit(1);
-	default:
-		/* This is processed by the parent */
-		int status=0;
-		waitpid(0,&status,0);
-		if(status)
-			throw std::runtime_error("Error executing rm in delete_file.\n");
-		break;
-	}
+	brgastro::call_program_noexcept(deleter,200,"-f",filename.c_str());
 }
 
 std::vector<std::vector<bool>> load_pixel_table(const std::string & filename)
@@ -147,7 +112,7 @@ std::vector<std::vector<bool>> load_pixel_table(const std::string & filename)
 		}
 	}
 
-	pInfile.release();
+	pInfile.reset();
 
 	delete_file(unpacked_filename);
 
