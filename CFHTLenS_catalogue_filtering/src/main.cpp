@@ -94,6 +94,8 @@ int main( const int argc, const char *argv[] )
 		lens_header_columns.push_back("SeqNr");
 		lens_header_columns.push_back("ALPHA_J2000");
 		lens_header_columns.push_back("DELTA_J2000");
+		lens_header_columns.push_back("Xpos");
+		lens_header_columns.push_back("Ypos");
 		lens_header_columns.push_back("Z_B");
 		lens_header_columns.push_back("T_B");
 		lens_header_columns.push_back("ODDS");
@@ -120,6 +122,13 @@ int main( const int argc, const char *argv[] )
 
 		brgastro::table_map_t<std::string> output_map(make_output_map(table_map,filtered_indices,lens_header_columns,
 				lens_conversions));
+
+		// Rename columns we've applied unit convesions to
+		output_map.change_key("ALPHA_J2000","ra_radians");
+		output_map.change_key("DELTA_J2000","dec_radians");
+		output_map.change_key("LP_log10_SM_MED","Mstel_kg");
+		output_map.change_key("LP_log10_SM_INF","Mstel_lo_kg");
+		output_map.change_key("LP_log10_SM_SUP","Mstel_hi_kg");
 
 		brgastro::print_table_map(lens_output_name,output_map);
 
@@ -161,6 +170,13 @@ int main( const int argc, const char *argv[] )
 		source_conversions["LP_log10_SM_SUP"] = l10_Msun_to_kg;
 
 		output_map = make_output_map(table_map,filtered_indices,source_header_columns,source_conversions);
+
+		// Rename columns we've applied unit convesions to
+		output_map.change_key("ALPHA_J2000","ra_radians");
+		output_map.change_key("DELTA_J2000","dec_radians");
+		output_map.change_key("LP_log10_SM_MED","Mstel_kg");
+		output_map.change_key("LP_log10_SM_INF","Mstel_lo_kg");
+		output_map.change_key("LP_log10_SM_SUP","Mstel_hi_kg");
 
 		brgastro::print_table_map(source_output_name,output_map);
 

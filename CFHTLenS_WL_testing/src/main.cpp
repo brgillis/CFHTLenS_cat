@@ -27,6 +27,8 @@
 #include <iostream>
 #include <vector>
 
+#include <boost/lexical_cast.hpp>
+
 #include "brg/file_access/open_file.hpp"
 #include "brg/file_access/ascii_table_map.hpp"
 #include "brg/physics/astro.h"
@@ -40,6 +42,8 @@
 #include "brg/physics/lensing/source_galaxy.h"
 #include "brg/physics/sky_obj/galaxy.h"
 #include "brg/physics/units/unitconv_map.hpp"
+#include "brg/vector/elementwise_functions.hpp"
+#include "brg/vector/limit_vector.hpp"
 
 #include "gg_lensing_config.h"
 #include "pass_configs_to_binner.h"
@@ -96,6 +100,8 @@ int main( const int argc, const char *argv[] )
 		size_t num_fields = field_names.size();
 		size_t num_processed = 0;
 
+		num_fields = 1;
+
 		#pragma omp parallel for
 		for(size_t field_i=0;field_i<num_fields;++field_i)
 		{
@@ -109,6 +115,10 @@ int main( const int argc, const char *argv[] )
 				std::stringstream ss("");
 				ss << fields_directory << "filtered_tables/" << field_name_root << "_lens.dat";
 				std::string lens_input_name = ss.str();
+
+				ss.str("");
+				ss << fields_directory << "filtered_tables/" << field_name_root << "_lens_mask_frac.dat";
+				std::string lens_unmasked_name = ss.str();
 
 				ss.str("");
 				ss << fields_directory << "filtered_tables/" << field_name_root << "_source.dat";
@@ -125,14 +135,23 @@ int main( const int argc, const char *argv[] )
 				{
 					brgastro::galaxy lens;
 					lens.set_z(lens_map.at("Z_B").at(i));
-					lens.set_ra(lens_map.at("ALPHA_J2000").at(i));
-					lens.set_dec(lens_map.at("DELTA_J2000").at(i));
-					lens.stellar_mass = lens_map.at("LP_log10_SM_MED").at(i);
+					lens.set_ra(lens_map.at("ra_radians").at(i));
+					lens.set_dec(lens_map.at("dec_radians").at(i));
+					lens.stellar_mass = lens_map.at("Mstel_kg").at(i);
 					lens.imag = lens_map.at("MAG_i").at(i);
-					lens.set_index(i);
+					lens.set_index(lens_map.at("SeqNr").at(i));
 
 					lens_galaxies.push_back(lens);
 				}
+
+				// Load the masked fraction table
+				const brgastro::table_map_t<double> lens_unmasked_frac_map(
+						brgastro::load_table_map<double>(lens_unmasked_name));
+				const std::vector<double> unmasked_frac_bin_mids(
+						brgastro::multiply(lens_unmasked_frac_map.at("bin_mid_kpc"),
+								brgastro::unitconv::kpctom));
+				const std::vector<double> unmasked_frac_bin_limits(
+						brgastro::get_bin_limits_from_mids(unmasked_frac_bin_mids));
 
 				// Load in sources
 				const brgastro::table_map_t<double> source_map(brgastro::load_table_map<double>(source_input_name));
@@ -140,11 +159,11 @@ int main( const int argc, const char *argv[] )
 				for(size_t i=0; i<num_sources; ++i)
 				{
 					source_galaxies.push_back(
-							brgastro::source_galaxy(source_map.at("ALPHA_J2000").at(i),
-									source_map.at("DELTA_J2000").at(i),
+							brgastro::source_galaxy(source_map.at("ra_radians").at(i),
+									source_map.at("dec_radians").at(i),
 									source_map.at("Z_B").at(i),
 									source_map.at("e1").at(i), source_map.at("e2").at(i), 0,
-									source_map.at("LP_log10_SM_MED").at(i), source_map.at("MAG_i").at(i)));
+									source_map.at("Mstel_kg").at(i), source_map.at("MAG_i").at(i)));
 					source_galaxies.back().set_weight(source_map.at("weight").at(i));
 				}
 
@@ -155,6 +174,10 @@ int main( const int argc, const char *argv[] )
 
 					// Check if the lens fits somewhere within the binner's limits
 					if(!lens_binner.binnable(lens)) continue;
+
+					// Get the unmasked fraction for this lens and set it
+					lens_binner.set_unmasked_fractions( unmasked_frac_bin_limits,
+							lens_unmasked_frac_map.at(boost::lexical_cast<std::string>(lens.index())));
 
 					lens_binner.add_lens_id(lens.index(),lens.m(),lens.z(),lens.mag());
 

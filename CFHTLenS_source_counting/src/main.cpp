@@ -40,6 +40,7 @@
 #include "brg/file_access/table_typedefs.hpp"
 #include "brg/math/misc_math.hpp"
 #include "brg/physics/astro.h"
+#include "brg/physics/lensing/magnification/mag_global_values.h"
 #include "brg/physics/lensing/pair_binner.h"
 #include "brg/physics/lensing/pair_bins_summary.h"
 #include "brg/physics/lensing/source_galaxy.h"
@@ -54,9 +55,13 @@ const std::string fields_list = fields_directory + "fields_list.txt";
 const std::string output_table_root = fields_directory + "magnitude_hist_z";
 const std::string g_output_table_root = fields_directory + "magnitude_hist_gz";
 const std::string output_table_tail = ".dat";
+const std::string field_size_file_name = "/disk2/brg/git/CFHTLenS_cat/Data/masks/field_sizes.dat";
 
-const short unsigned sg_window = 9;
-const short unsigned sg_deg = 3;
+constexpr short unsigned sg_window = 3;
+constexpr short unsigned sg_deg = 3;
+
+constexpr short unsigned cache_size = 1000;
+constexpr short unsigned num_mag_bins = 10;
 
 int main( const int argc, const char *argv[] )
 {
@@ -66,7 +71,8 @@ int main( const int argc, const char *argv[] )
 	brgastro::open_file_input(fi,fields_list);
 
 	// Set up the redshift bins
-	std::vector<double> z_bin_limits = brgastro::make_limit_vector<double>(0.2,4.0,0.02);
+	std::vector<double> z_bin_limits = brgastro::make_limit_vector<double>(brgastro::mag_z_min,
+			brgastro::mag_z_max,brgastro::mag_z_step);
 	typedef boost::accumulators::accumulator_set<double,
 			boost::accumulators::stats<
 				boost::accumulators::tag::density >> hist_accum;
@@ -77,24 +83,27 @@ int main( const int argc, const char *argv[] )
 
 	// Hists for exactly in bin
 	std::vector<hist_accum> z_bin_hists(z_bin_limits.size()-1,
-			hist_accum(boost::accumulators::density_cache_size=10000,
-					boost::accumulators::density_num_bins=100));
+			hist_accum(boost::accumulators::density_cache_size=cache_size,
+					boost::accumulators::density_num_bins=num_mag_bins));
 	std::vector<weighted_hist_accum> weighted_z_bin_hists(z_bin_limits.size()-1,
-			weighted_hist_accum(boost::accumulators::density_cache_size=10000,
-					boost::accumulators::density_num_bins=100));
+			weighted_hist_accum(boost::accumulators::density_cache_size=cache_size,
+					boost::accumulators::density_num_bins=num_mag_bins));
 	std::vector<unsigned long> z_bin_counts(z_bin_limits.size()-1,0);
 
 	// Hists for in this bin or greater
 	std::vector<hist_accum> gz_bin_hists(z_bin_limits.size()-1,
-			hist_accum(boost::accumulators::density_cache_size=10000,
-					boost::accumulators::density_num_bins=100));
+			hist_accum(boost::accumulators::density_cache_size=cache_size,
+					boost::accumulators::density_num_bins=num_mag_bins));
 	std::vector<weighted_hist_accum> weighted_gz_bin_hists(z_bin_limits.size()-1,
-			weighted_hist_accum(boost::accumulators::density_cache_size=10000,
-					boost::accumulators::density_num_bins=100));
+			weighted_hist_accum(boost::accumulators::density_cache_size=cache_size,
+					boost::accumulators::density_num_bins=num_mag_bins));
 	std::vector<unsigned long> gz_bin_counts(z_bin_limits.size()-1,0);
 
 	std::vector<std::string> field_names;
 	std::string field_name;
+
+	std::vector<double> field_sizes;
+	const auto field_size_table = brgastro::load_table_map<double>(field_size_file_name);
 
 	while(fi>>field_name)
 	{
@@ -108,12 +117,19 @@ int main( const int argc, const char *argv[] )
 	size_t num_fields = field_names.size();
 	size_t num_processed = 0;
 
+	num_fields = 1;
+
 	for(size_t field_i=0;field_i<num_fields;++field_i)
 	{
 		std::string field_name_root = field_names[field_i].substr(0,6);
 
 		try
 		{
+			// Get the field size
+			const auto size_measurements = field_size_table.at(field_name_root);
+			const double field_size = brgastro::mean(size_measurements);
+			field_sizes.push_back(field_size);
+
 			// Get the source file names
 			std::stringstream ss("");
 			ss << fields_directory << "filtered_tables/" << field_name_root << "_source.dat";
@@ -126,7 +142,8 @@ int main( const int argc, const char *argv[] )
 			size_t num_sources = source_map.begin()->second.size();
 			for(size_t i=0; i<num_sources; ++i)
 			{
-				size_t z_i = brgastro::get_bin_index(source_map.at("Z_B").at(i),
+				const auto & source_z = source_map.at("Z_B").at(i);
+				size_t z_i = brgastro::get_bin_index(source_z,
 						z_bin_limits);
 				double mag = source_map.at("MAG_r").at(i);
 				double weight = source_map.at("weight").at(i);
@@ -162,6 +179,9 @@ int main( const int argc, const char *argv[] )
 
 	}
 
+	// Get the total survey size
+	const double survey_size = brgastro::sum(field_sizes);
+
 	// Set up and print histogram tables
 
 	// Specific redshift tables
@@ -191,8 +211,8 @@ int main( const int argc, const char *argv[] )
 		for(; h_it!=hist.end(); ++h_it, ++w_h_it)
 		{
 			data["mag_bin_lower"].push_back(h_it->first);
-			data["count"].push_back(*z_count_it * h_it->second);
-			data["weighted_count"].push_back(*z_count_it * w_h_it->second);
+			data["count"].push_back(*z_count_it * h_it->second / survey_size);
+			data["weighted_count"].push_back(*z_count_it * w_h_it->second / survey_size);
 		}
 		// Remove overflow bin at the end from all vectors
 		data["mag_bin_lower"].pop_back();
@@ -244,8 +264,8 @@ int main( const int argc, const char *argv[] )
 		for(; h_it!=hist.end(); ++h_it, ++w_h_it)
 		{
 			data["mag_bin_lower"].push_back(h_it->first);
-			data["count"].push_back(*z_count_it * h_it->second);
-			data["weighted_count"].push_back(*z_count_it * w_h_it->second);
+			data["count"].push_back(*z_count_it * h_it->second / survey_size);
+			data["weighted_count"].push_back(*z_count_it * w_h_it->second / survey_size);
 		}
 		// Remove overflow bin at the end from all vectors
 		data["mag_bin_lower"].pop_back();
@@ -269,6 +289,5 @@ int main( const int argc, const char *argv[] )
 		brgastro::print_table_map(output_file_name,data);
 
 	}
-
 	return 0;
 }

@@ -81,18 +81,27 @@ std::vector<std::vector<bool>> load_pixel_table(const std::string & filename)
 
 	std::string unpacked_filename = unpack_fits(filename);
 
-	std::unique_ptr<FITS> pInfile(new FITS(unpacked_filename,Read,true));
-
-	PHDU& image = pInfile->pHDU();
-
 	std::valarray<unsigned short> contents;
-	// read all user-specifed, coordinate, and checksum keys in the image
-	image.readAllKeys();
 
-	image.read(contents);
+	size_t ax1;
+	size_t ax2;
 
-	size_t ax1(image.axis(0));
-	size_t ax2(image.axis(1));
+#ifdef _OPENMP
+	#pragma omp critical(open_fits_image)
+#endif
+	{
+		std::unique_ptr<FITS> pInfile(new FITS(unpacked_filename,Read,true));
+
+		PHDU& image = pInfile->pHDU();
+
+		// read all user-specifed, coordinate, and checksum keys in the image
+		image.readAllKeys();
+
+		image.read(contents);
+
+		ax1 = image.axis(0);
+		ax2 = image.axis(1);
+	}
 
 	std::vector<std::vector<bool>> result(ax1,std::vector<bool>(ax2));
 
@@ -111,8 +120,6 @@ std::vector<std::vector<bool>> load_pixel_table(const std::string & filename)
 			}
 		}
 	}
-
-	pInfile.reset();
 
 	delete_file(unpacked_filename);
 
