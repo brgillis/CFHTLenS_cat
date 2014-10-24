@@ -36,10 +36,12 @@
 #endif
 
 #include <boost/lexical_cast.hpp>
+#include <boost/serialization/vector.hpp>
 
 #include <CCfits/CCfits>
 
 #include "brg/file_access/ascii_table_map.hpp"
+#include "brg/file_access/binary_archive.hpp"
 #include "brg/file_access/open_file.hpp"
 #include "brg/math/misc_math.hpp"
 #include "brg/math/random/random_functions.h"
@@ -57,10 +59,9 @@ const std::string mask_directory = data_directory + "masks/";
 const std::string field_directory = data_directory + "filtered_tables/";
 const std::string fields_list = data_directory + "fields_list.txt";
 const std::string lens_output_root = "_lens_mask_frac.dat";
+const std::string lens_pixel_map_root = "_lens_good_pixels.bin";
 
 /*
- * Pixel is valid galaxy position if surrounded by unmasked pixels
- *
  * Max physical separation is 2000 kpc.
  * At redshift 0.2 this is 601.5"
  * Pixel scale is 0.186"/px
@@ -121,8 +122,6 @@ int main( const int argc, const char *argv[] )
 
 	size_t num_fields = field_names.size();
 
-	num_fields = 1;
-
 #ifdef _OPENMP
 	#pragma omp parallel for
 #endif
@@ -178,6 +177,11 @@ int main( const int argc, const char *argv[] )
 		ss << field_directory << field_name_root << lens_output_root;
 		std::string lens_output_file_name = ss.str();
 
+		// Get the lens pixel map file name
+		ss.str("");
+		ss << field_directory << field_name_root << lens_pixel_map_root;
+		std::string lens_pixel_map_file_name = ss.str();
+
 		// Load the lens table
 		const auto lens_table_map = brgastro::load_table_map<double>(lens_file_name);
 
@@ -229,10 +233,10 @@ int main( const int argc, const char *argv[] )
 				const float d = i;
 				unsigned bin_i = brgastro::get_bin_index<float>(d/pxfd_fact,sep_limits);
 
-				increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp,good_positions));
-				increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp,good_positions));
-				increment_bin(bin_i,is_good_position(lens_xp,lens_yp+i,good_positions));
-				increment_bin(bin_i,is_good_position(lens_xp,lens_yp-i,good_positions));
+				increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp,good_pixels));
+				increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp,good_pixels));
+				increment_bin(bin_i,is_good_position(lens_xp,lens_yp+i,good_pixels));
+				increment_bin(bin_i,is_good_position(lens_xp,lens_yp-i,good_pixels));
 			}
 
 			// Now do diagonals
@@ -241,10 +245,10 @@ int main( const int argc, const char *argv[] )
 				const float d = i*std::sqrt(2.);
 				unsigned bin_i = brgastro::get_bin_index<float>(d/pxfd_fact,sep_limits);
 
-				increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp+i,good_positions));
-				increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp+i,good_positions));
-				increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp-i,good_positions));
-				increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp-i,good_positions));
+				increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp+i,good_pixels));
+				increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp+i,good_pixels));
+				increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp-i,good_pixels));
+				increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp-i,good_pixels));
 			}
 
 			// And now all other positions
@@ -257,15 +261,15 @@ int main( const int argc, const char *argv[] )
 					if(d>lens_max_px_sep) continue;
 					unsigned bin_i = brgastro::get_bin_index<float>(d/pxfd_fact,sep_limits);
 
-					increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp+j,good_positions));
-					increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp+j,good_positions));
-					increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp-j,good_positions));
-					increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp-j,good_positions));
+					increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp+j,good_pixels));
+					increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp+j,good_pixels));
+					increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp-j,good_pixels));
+					increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp-j,good_pixels));
 
-					increment_bin(bin_i,is_good_position(lens_xp+j,lens_yp+i,good_positions));
-					increment_bin(bin_i,is_good_position(lens_xp-j,lens_yp+i,good_positions));
-					increment_bin(bin_i,is_good_position(lens_xp+j,lens_yp-i,good_positions));
-					increment_bin(bin_i,is_good_position(lens_xp-j,lens_yp-i,good_positions));
+					increment_bin(bin_i,is_good_position(lens_xp+j,lens_yp+i,good_pixels));
+					increment_bin(bin_i,is_good_position(lens_xp-j,lens_yp+i,good_pixels));
+					increment_bin(bin_i,is_good_position(lens_xp+j,lens_yp-i,good_pixels));
+					increment_bin(bin_i,is_good_position(lens_xp-j,lens_yp-i,good_pixels));
 
 
 				}
@@ -314,7 +318,10 @@ int main( const int argc, const char *argv[] )
 			result[field_name_root] = field_res;
 			field_sizes[field_name_root] = size_measures;
 
-			brgastro::print_table_map(lens_output_file_name,field_result);
+			//brgastro::print_table_map(lens_output_file_name,field_result);
+
+			// Archive the good pixel map
+			brgastro::binary_save(lens_pixel_map_file_name,good_pixels);
 
 			std::cout << "Finished processing field " << field_name_root << "!\n";
 		}

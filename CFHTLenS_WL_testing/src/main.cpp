@@ -100,7 +100,7 @@ int main( const int argc, const char *argv[] )
 		size_t num_fields = field_names.size();
 		size_t num_processed = 0;
 
-		num_fields = 1;
+		//num_fields = 1;
 
 		#pragma omp parallel for
 		for(size_t field_i=0;field_i<num_fields;++field_i)
@@ -163,7 +163,7 @@ int main( const int argc, const char *argv[] )
 									source_map.at("dec_radians").at(i),
 									source_map.at("Z_B").at(i),
 									source_map.at("e1").at(i), source_map.at("e2").at(i), 0,
-									source_map.at("Mstel_kg").at(i), source_map.at("MAG_i").at(i)));
+									source_map.at("Mstel_kg").at(i), source_map.at("MAG_r").at(i)));
 					source_galaxies.back().set_weight(source_map.at("weight").at(i));
 				}
 

@@ -110,7 +110,7 @@ std::vector<std::vector<bool>> load_pixel_table(const std::string & filename)
 		for (size_t i=0; i < ax1; ++i)
 		{
 			auto & v = contents[ax1*j+i];
-			if(v==0)
+			if(v<=1)
 			{
 				result[i][j]=true;
 			}
