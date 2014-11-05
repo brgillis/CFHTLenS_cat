@@ -48,7 +48,7 @@ constexpr double source_z_min = 0.7;
 constexpr double source_z_max = 4.0;
 
 constexpr double r_min = 0.00001616; // About 10 kpc at redshift 0.2
-constexpr double r_max = 0.003232; // About 2000 kpc at redshift 0.2
+constexpr double r_max = 0.00291; // About 2000 kpc at redshift 0.2
 constexpr size_t r_steps = 100;
 
 int main( const int argc, const char *argv[] )
@@ -81,8 +81,6 @@ int main( const int argc, const char *argv[] )
 
 	size_t num_fields = field_names.size();
 	size_t num_processed = 0;
-
-	num_fields = 1;
 
 	#ifdef _OPENMP
 	#pragma omp parallel for
@@ -224,6 +222,8 @@ int main( const int argc, const char *argv[] )
 				quadrupole_2_corr_func_sum += quadrupole_2_corr_func;
 				octopole_1_corr_func_sum += octopole_1_corr_func;
 				octopole_2_corr_func_sum += octopole_2_corr_func;
+				std::cout << "Field " << field_name_root << " (#" <<
+						++num_processed << "/" << num_fields << ") complete!\n";
 			}
 			catch (const std::exception &e)
 			{
