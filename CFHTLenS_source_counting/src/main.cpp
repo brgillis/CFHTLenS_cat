@@ -31,9 +31,9 @@
 #include <boost/lexical_cast.hpp>
 
 #include "brg/external/sgsmooth.h"
+#include "brg/container/table_typedefs.hpp"
 #include "brg/file_access/ascii_table_map.hpp"
 #include "brg/file_access/open_file.hpp"
-#include "brg/file_access/table_typedefs.hpp"
 #include "brg/math/misc_math.hpp"
 #include "brg/physics/astro.h"
 #include "brg/physics/lensing/magnification/mag_global_values.h"
@@ -67,13 +67,13 @@ int main( const int argc, const char *argv[] )
 	brgastro::open_file_input(fi,fields_list);
 
 	// Set up the redshift bins
-	std::vector<double> z_bin_limits = brgastro::make_limit_vector<double>(brgastro::mag_z_min,
-			brgastro::mag_z_max,brgastro::mag_z_step);
+	brgastro::limit_vector<double> z_bin_limits(brgastro::mag_z_min,
+			brgastro::mag_z_max,(brgastro::mag_z_max-brgastro::mag_z_min)/brgastro::mag_z_step);
 
-	std::vector<double> mag_bin_limits = brgastro::make_limit_vector<double>(brgastro::mag_m_min,
-			brgastro::mag_m_max,brgastro::mag_m_step);
+	brgastro::limit_vector<double> mag_bin_limits(brgastro::mag_m_min,
+			brgastro::mag_m_max,(brgastro::mag_m_max-brgastro::mag_m_min)/brgastro::mag_m_step);
 
-	size_t num_z_bins = mag_bin_limits.size()-1;
+	size_t num_z_bins = z_bin_limits.size()-1;
 	size_t num_mag_bins = mag_bin_limits.size()-1;
 
 	typedef std::vector<unsigned long> int_hist;
@@ -139,15 +139,13 @@ int main( const int argc, const char *argv[] )
 			for(size_t i=0; i<num_sources; ++i)
 			{
 				const auto & source_z = source_map.at("Z_B").at(i);
-				size_t z_i = brgastro::get_bin_index(source_z,
-						z_bin_limits);
+				size_t z_i = z_bin_limits.get_bin_index(source_z);
 				const double & mag = source_map.at("MAG_r").at(i);
 				const double & weight = source_map.at("weight").at(i);
 
-				if(brgastro::outside_limits(mag,mag_bin_limits)) continue;
+				if(mag_bin_limits.outside_limits(mag)) continue;
 
-				size_t mag_i = brgastro::get_bin_index(mag,
-						mag_bin_limits);
+				size_t mag_i = mag_bin_limits.get_bin_index(mag);
 
 				// Add to the specific bin
 				++z_bin_hists[z_i][mag_i];
@@ -163,18 +161,20 @@ int main( const int argc, const char *argv[] )
 				}
 			}
 		}
-		catch (const std::exception &e)
+		catch (const std::runtime_error &e)
 		{
 			std::cerr << "Error processing field " << field_name_root << " (#" <<
 					++num_processed << "/" << num_fields << ")!\n"
 					<< e.what();
+#ifdef NDEBUG
 			continue;
+#else
+			throw;
+#endif
+
 		}
 		std::cout << "Field " << field_name_root << " (#" <<
 				++num_processed << "/" << num_fields << ") complete.\n";
-#ifndef NDEBUG
-		break; // debug line
-#endif
 
 	}
 
