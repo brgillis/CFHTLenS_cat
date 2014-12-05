@@ -35,6 +35,7 @@
 #include "brg/file_access/ascii_table_map.hpp"
 #include "brg/file_access/open_file.hpp"
 #include "brg/math/misc_math.hpp"
+#include "brg/math/calculus/integrate.hpp"
 #include "brg/physics/astro.h"
 #include "brg/physics/lensing/magnification/mag_global_values.h"
 #include "brg/physics/lensing/pair_binner.h"
@@ -139,6 +140,7 @@ int main( const int argc, const char *argv[] )
 			for(size_t i=0; i<num_sources; ++i)
 			{
 				const auto & source_z = source_map.at("Z_B").at(i);
+				if(z_bin_limits.outside_limits(source_z)) continue;
 				size_t z_i = z_bin_limits.get_bin_index(source_z);
 				const double & mag = source_map.at("MAG_r").at(i);
 				const double & weight = source_map.at("weight").at(i);
@@ -275,9 +277,15 @@ int main( const int argc, const char *argv[] )
 		auto smoothed_log = brgastro::sg_smooth(log_count,sg_window,sg_deg);
 		data["smoothed_count"] = brgastro::pow(10.,smoothed_log);
 
-		// Check for a systematic over or underestimation from smoothing
-		double smooth_correction_factor = brgastro::sum(data["count"])/
-				brgastro::sum(data["smoothed_count"]);
+		// Check for a systematic over or underestimation from smoothing and integration
+		auto smooth_count_func = [&] (const double & mag, const bool silent = true)
+		{
+			return mag_bin_limits.interpolate_bins(mag,data["smoothed_count"]);
+		};
+		double integrated_count = brgastro::integrate_Romberg(&smooth_count_func,brgastro::mag_m_min,
+				brgastro::mag_m_max,0.000001);
+		double smooth_correction_factor = brgastro::sum(data["count"])*brgastro::mag_m_step/
+				integrated_count;
 
 		data["smoothed_count"] = brgastro::multiply(data["smoothed_count"],smooth_correction_factor);
 
