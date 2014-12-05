@@ -46,27 +46,23 @@ gg_lensing_config::gg_lensing_config( const int argc, const char *argv[] )
 
 		R_min = 10*kpctom;
 		R_max = 2000*kpctom;
-		R_step = 10*kpctom;
-		R_log = true;
 		R_bins = 100;
+		R_log = true;
 
 		m_min = 1e8*Msuntokg;
 		m_max = 1e11*Msuntokg;
-		m_step = 1e11*Msuntokg;
-		m_log = true;
 		m_bins = 3;
+		m_log = true;
 
 		z_min = 0.2;
 		z_max = 1.1;
-		z_step = 0.9;
-		z_log = true;
 		z_bins = 1;
+		z_log = false;
 
 		mag_min = -std::numeric_limits<double>::infinity();
 		mag_max = 25;
-		mag_step = std::numeric_limits<double>::infinity();
-		mag_log = false;
 		mag_bins = 1;
+		mag_log = false;
 
 		z_buffer = 0.1;
 	}
@@ -89,6 +85,8 @@ gg_lensing_config::gg_lensing_config( const int argc, const char *argv[] )
 
 			do
 			{
+				if(!fi)
+					throw std::runtime_error("End of config file reached before all values read in.\n");
 				std::getline( fi, line_buffer );
 			} while(line_buffer.size()==0);
 			line_data_stream.str(line_buffer);
@@ -111,27 +109,23 @@ gg_lensing_config::gg_lensing_config( const int argc, const char *argv[] )
 
 		R_min = brgastro::min_cast<double>(config_value_strings.at(i++))*kpctom;
 		R_max = brgastro::max_cast<double>(config_value_strings.at(i++))*kpctom;
-		R_step = brgastro::max_cast<double>(config_value_strings.at(i++))*kpctom;
-		R_log = brgastro::bool_cast(config_value_strings.at(i++));
 		R_bins = boost::lexical_cast<size_t>(config_value_strings.at(i++));
+		R_log = brgastro::bool_cast(config_value_strings.at(i++));
 
 		m_min = brgastro::min_cast<double>(config_value_strings.at(i++))*Msuntokg;
 		m_max = brgastro::max_cast<double>(config_value_strings.at(i++))*Msuntokg;
-		m_step = brgastro::max_cast<double>(config_value_strings.at(i++))*Msuntokg;
-		m_log = brgastro::bool_cast(config_value_strings.at(i++));
 		m_bins = boost::lexical_cast<size_t>(config_value_strings.at(i++));
+		m_log = brgastro::bool_cast(config_value_strings.at(i++));
 
 		z_min = brgastro::min_cast<double>(config_value_strings.at(i++));
 		z_max = brgastro::max_cast<double>(config_value_strings.at(i++));
-		z_step = brgastro::max_cast<double>(config_value_strings.at(i++));
-		z_log = brgastro::bool_cast(config_value_strings.at(i++));
 		z_bins = boost::lexical_cast<size_t>(config_value_strings.at(i++));
+		z_log = brgastro::bool_cast(config_value_strings.at(i++));
 
 		mag_min = brgastro::min_cast<double>(config_value_strings.at(i++));
 		mag_max = brgastro::max_cast<double>(config_value_strings.at(i++));
-		mag_step = brgastro::max_cast<double>(config_value_strings.at(i++));
-		mag_log = brgastro::bool_cast(config_value_strings.at(i++));
 		mag_bins = boost::lexical_cast<size_t>(config_value_strings.at(i++));
+		mag_log = brgastro::bool_cast(config_value_strings.at(i++));
 
 		z_buffer = boost::lexical_cast<double>(config_value_strings.at(i++));
 

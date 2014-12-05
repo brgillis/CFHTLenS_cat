@@ -32,10 +32,10 @@
 
 brgastro::pair_binner pass_configs_to_binner(gg_lensing_config config)
 {
-	brgastro::pair_binner binner(config.R_min,config.R_max,config.R_step,
-			config.m_min, config.m_max, config.m_step,
-			config.z_min, config.z_max, config.z_step,
-			config.mag_min, config.mag_max, config.mag_step);
+	brgastro::pair_binner binner(config.R_min,config.R_max,config.R_bins,
+			config.m_min, config.m_max, config.m_bins,
+			config.z_min, config.z_max, config.z_bins,
+			config.mag_min, config.mag_max, config.mag_bins);
 
 	if(config.R_log)
 	{

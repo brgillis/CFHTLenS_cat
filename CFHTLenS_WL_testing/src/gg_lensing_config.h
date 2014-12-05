@@ -41,18 +41,18 @@
  */
 struct gg_lensing_config {
 
-	const size_t num_config_params = 23;
+	static constexpr size_t num_config_params = 19;
 
 	bool use_precalculated_data;
 	std::string precalculated_data_filename;
 
-	BRG_DISTANCE R_min, R_max, R_step;
-	BRG_MASS m_min, m_max, m_step;
-	double z_min, z_max, z_step;
-	double mag_min, mag_max, mag_step;
+	BRG_DISTANCE R_min, R_max;
+	BRG_MASS m_min, m_max;
+	double z_min, z_max;
+	double mag_min, mag_max;
 
-	bool R_log, m_log, z_log, mag_log;
 	size_t R_bins, m_bins, z_bins, mag_bins;
+	bool R_log, m_log, z_log, mag_log;
 
 	double z_buffer;
 
