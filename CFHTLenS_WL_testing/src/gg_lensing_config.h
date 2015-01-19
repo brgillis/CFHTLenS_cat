@@ -33,8 +33,8 @@
 
 #include "brg/global.h"
 
-#include "brg/physics/units/unit_conversions.hpp"
-#include "brg/physics/units/unit_obj.h"
+#include "brg_physics/units/unit_conversions.hpp"
+#include "brg_physics/units/unit_obj.h"
 
 /**
  *

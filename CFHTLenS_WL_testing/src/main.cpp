@@ -28,27 +28,30 @@
 #include <vector>
 
 #include <boost/lexical_cast.hpp>
+#include <brg/file_access/ascii_table_map.hpp>
+#include <brg/file_access/open_file.hpp>
 
-#include "brg/file_access/open_file.hpp"
-#include "brg/file_access/ascii_table_map.hpp"
-#include "brg/physics/astro.h"
-#include "brg/physics/lensing/magnification/expected_count_cache.h"
-#include "brg/physics/lensing/magnification/expected_count_derivative_cache.h"
-#include "brg/physics/lensing/magnification/mag_signal_integral_cache.h"
-#include "brg/physics/lensing/magnification/mag_weight_integral_cache.h"
-#include "brg/physics/lensing/magnification/mag_global_values.h"
-#include "brg/physics/lensing/pair_binner.h"
-#include "brg/physics/lensing/pair_bins_summary.h"
-#include "brg/physics/lensing/source_galaxy.h"
-#include "brg/physics/sky_obj/galaxy.h"
-#include "brg/physics/units/unitconv_map.hpp"
 #include "brg/vector/elementwise_functions.hpp"
-#include "brg/vector/limit_vector_operations.hpp"
+#include "brg/vector/limit_vector.hpp"
+
+#include "brg_lensing/magnification/expected_count_cache.h"
+#include "brg_lensing/magnification/expected_count_derivative_cache.h"
+#include "brg_lensing/magnification/mag_signal_integral_cache.h"
+#include "brg_lensing/magnification/mag_weight_integral_cache.h"
+#include "brg_lensing/magnification/mag_global_values.h"
+#include "brg_lensing/pair_binner.h"
+#include "brg_lensing/pair_bins_summary.h"
+#include "brg_lensing/source_galaxy.h"
+
+#include "brg_physics/astro.h"
+#include "brg_physics/sky_obj/galaxy.h"
+#include "brg_physics/units/unitconv_map.hpp"
 
 #include "gg_lensing_config.h"
 #include "pass_configs_to_binner.h"
 
 #undef USE_MOCK_LENSES
+#undef USE_MOCK_SOURCES
 
 // Magic values
 std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
@@ -68,7 +71,11 @@ std::string lens_root = "_lens.dat";
 std::string lens_unmasked_frac_root = "_lens_mask_frac.dat";
 #endif
 
+#ifdef USE_MOCK_SOURCES
+std::string source_root = "_small_mock_source.dat";
+#else
 std::string source_root = "_source.dat";
+#endif
 
 std::string expected_count_cache_output_file = fields_directory + "ex_count_cache.dat";
 std::string expected_count_derivative_cache_output_file = fields_directory + "alpha_cache.dat";
@@ -85,7 +92,7 @@ int main( const int argc, const char *argv[] )
 	brgastro::mag_weight_integral_cache().print(mag_weight_integral_cache_output_file);
 	brgastro::mag_signal_integral_cache().print(mag_signal_integral_cache_output_file);
 
-	constexpr size_t batch_size = 1;
+	constexpr size_t batch_size = 1000000;
 	const gg_lensing_config config(argc,argv);
 
 	// Set up the bins summary
@@ -118,7 +125,7 @@ int main( const int argc, const char *argv[] )
 		size_t num_fields = field_names.size();
 		size_t num_processed = 0;
 
-		//num_fields = 171;
+		//num_fields = 5;
 
 		#ifdef _OPENMP
 		#pragma omp parallel for schedule(dynamic)
@@ -171,11 +178,10 @@ int main( const int argc, const char *argv[] )
 				// Load the masked fraction table
 				const brgastro::table_map_t<double> lens_unmasked_frac_map(
 						brgastro::load_table_map<double>(lens_unmasked_name));
-				const std::vector<double> unmasked_frac_bin_mids(
-						brgastro::multiply(lens_unmasked_frac_map.at("bin_mid_kpc"),
-								brgastro::unitconv::kpctom));
-				const std::vector<double> unmasked_frac_bin_limits(
-						brgastro::get_bin_limits_from_mids(unmasked_frac_bin_mids));
+				brgastro::limit_vector<double> unmasked_frac_bin_limits;
+
+				unmasked_frac_bin_limits.reconstruct_from_bin_mids(brgastro::multiply(lens_unmasked_frac_map.at("bin_mid_kpc"),
+																						brgastro::unitconv::kpctom));
 
 				// Load in sources
 				const brgastro::table_map_t<double> source_map(brgastro::load_table_map<double>(source_input_name));

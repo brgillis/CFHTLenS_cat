@@ -30,7 +30,7 @@
 #ifndef _BRG_PASS_CONFIGURATIONS_TO_BINNER_H_INCLUDED_
 #define _BRG_PASS_CONFIGURATIONS_TO_BINNER_H_INCLUDED_
 
-#include "brg/physics/lensing/pair_binner.h"
+#include "brg_lensing/pair_binner.h"
 
 #include "gg_lensing_config.h"
 

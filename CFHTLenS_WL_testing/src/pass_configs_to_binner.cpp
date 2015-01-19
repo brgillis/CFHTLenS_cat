@@ -24,7 +24,7 @@
 \**********************************************************************/
 
 
-#include "brg/physics/lensing/pair_binner.h"
+#include "brg_lensing/pair_binner.h"
 
 #include "gg_lensing_config.h"
 #include "pass_configs_to_binner.h"
