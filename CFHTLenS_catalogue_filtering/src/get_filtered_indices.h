@@ -31,12 +31,12 @@
 
 #include <vector>
 
-#include "brg/file_access/table_typedefs.hpp"
+#include "brg/container/table_typedefs.hpp"
 
 void move_y_column_to_i(brgastro::table_map_t<std::string> & map);
 
-std::vector<size_t> get_filtered_lenses(const brgastro::table_map_t<std::string> & map);
-std::vector<size_t> get_filtered_sources(const brgastro::table_map_t<std::string> & map);
+std::vector<size_t> get_bad_lenses(const brgastro::table_map_t<std::string> & map, const std::vector<std::vector<bool>> good_pixels);
+std::vector<size_t> get_bad_sources(const brgastro::table_map_t<std::string> & map, const std::vector<std::vector<bool>> good_pixels);
 
 bool column_passes_lens_filter(const std::string & col_name,const std::string & value);
 bool column_passes_source_filter(const std::string & col_name,const std::string & value);

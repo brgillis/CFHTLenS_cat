@@ -30,9 +30,14 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "brg/file_access/table_typedefs.hpp"
+#include "brg/container/table_typedefs.hpp"
+#include "brg/math/misc_math.hpp"
+
+#include "is_good_position.hpp"
 
 #include "get_filtered_indices.h"
+
+#undef WARN_MASK_MISMATCH
 
 void move_y_column_to_i(brgastro::table_map_t<std::string> & map)
 {
@@ -54,63 +59,126 @@ void move_y_column_to_i(brgastro::table_map_t<std::string> & map)
 	}
 }
 
-std::vector<size_t> get_filtered_lenses(const brgastro::table_map_t<std::string> & map)
+std::vector<size_t> get_bad_lenses(const brgastro::table_map_t<std::string> & map, const std::vector<std::vector<bool>> good_pixels)
 {
 	// Determine the number of rows
 	const size_t num_rows = map.begin()->second.size();
 
-	std::vector<size_t> filtered_objects;
-	filtered_objects.reserve(num_rows);
+	std::vector<size_t> bad_indices;
+	bad_indices.reserve(num_rows);
 
 	for(size_t i=0; i<num_rows; ++i)
 	{
+		// Check if this object is within the mask
+		const unsigned xp = brgastro::round_int(boost::lexical_cast<double>(map.at("Xpos").at(i)));
+		const unsigned yp = brgastro::round_int(boost::lexical_cast<double>(map.at("Ypos").at(i)));
+
+		if(!is_good_position(xp,yp,good_pixels))
+		{
+			bad_indices.push_back(i);
+
+#ifdef WARN_MASK_MISMATCH
+			// Check that the mask value in the table agrees
+			if(boost::lexical_cast<unsigned>(map.at("MASK").at(i))<=1)
+			{
+				std::cerr << "WARNING: Mask value mismatch for lens index " << i << " at position (" << xp << ", " << yp << ")." << std::endl;
+				std::cerr << "Table's mask value is " << map.at("MASK").at(i) << ", but saved value is 'false'.\n";
+			}
+#endif
+
+			continue;
+		}
+		else
+		{
+#ifdef WARN_MASK_MISMATCH
+			// Check that the mask value in the table agrees
+			if(boost::lexical_cast<unsigned>(map.at("MASK").at(i))>1)
+			{
+				std::cerr << "WARNING: Mask value mismatch for lens index " << i << " at position (" << xp << ", " << yp << ")." << std::endl;
+				std::cerr << "Table's mask value is " << map.at("MASK").at(i) << ", but saved value is 'true'.\n";
+			}
+#endif
+		}
+
 		// Go over each column, and check if it passes the filter
 		for(auto col_it = map.begin(); col_it != map.end(); ++col_it)
 		{
 			const std::string & key = col_it->first;
 			if(!column_passes_lens_filter(key,col_it->second.at(i)))
 			{
-				filtered_objects.push_back(i);
+				bad_indices.push_back(i);
 				break;
 			}
 		}
 	}
 
-	return filtered_objects;
+	return bad_indices;
 }
 
-std::vector<size_t> get_filtered_sources(const brgastro::table_map_t<std::string> & map)
+std::vector<size_t> get_bad_sources(const brgastro::table_map_t<std::string> & map, const std::vector<std::vector<bool>> good_pixels)
 {
 	// Determine the number of rows
 	const size_t num_rows = map.begin()->second.size();
 
-	std::vector<size_t> filtered_objects;
-	filtered_objects.reserve(num_rows);
+	std::vector<size_t> bad_indices;
+	bad_indices.reserve(num_rows);
 
 	for(size_t i=0; i<num_rows; ++i)
 	{
+		// Check if this object is within the mask
+		const unsigned xp = brgastro::round_int(boost::lexical_cast<double>(map.at("Xpos").at(i)));
+		const unsigned yp = brgastro::round_int(boost::lexical_cast<double>(map.at("Ypos").at(i)));
+
+		if(!is_good_position(xp,yp,good_pixels))
+		{
+			bad_indices.push_back(i);
+
+#ifdef WARN_MASK_MISMATCH
+			// Check that the mask value in the table agrees
+			if(boost::lexical_cast<unsigned>(map.at("MASK").at(i))<=1)
+			{
+				std::cerr << "WARNING: Mask value mismatch for source index " << i << " at position (" << xp << ", " << yp << ")." << std::endl;
+				std::cerr << "Table's mask value is " << map.at("MASK").at(i) << ", but saved value is 'false'.\n";
+			}
+#endif
+
+			continue;
+		}
+		else
+		{
+#ifdef WARN_MASK_MISMATCH
+			// Check that the mask value in the table agrees
+			if(boost::lexical_cast<unsigned>(map.at("MASK").at(i))>1)
+			{
+				std::cerr << "WARNING: Mask value mismatch for source index " << i << " at position (" << xp << ", " << yp << ")." << std::endl;
+				std::cerr << "Table's mask value is " << map.at("MASK").at(i) << ", but saved value is 'true'.\n";
+			}
+#endif
+		}
+
 		// Go over each column, and check if it passes the filter
 		for(auto col_it = map.begin(); col_it != map.end(); ++col_it)
 		{
 			const std::string & key = col_it->first;
 			if(!column_passes_source_filter(key,col_it->second.at(i)))
 			{
-				filtered_objects.push_back(i);
+				bad_indices.push_back(i);
 				break;
 			}
 		}
 	}
 
-	return filtered_objects;
+	return bad_indices;
 }
 
 bool column_passes_lens_filter(const std::string & col_name,const std::string & value)
 {
 	if(!column_passes_global_filter(col_name,value)) return false;
+	return true;
 	if(col_name=="Z_B")
 	{
 		double dval = boost::lexical_cast<double>(value);
-		return (dval <= 0.8) && (dval >= 0.2);
+		return (dval <= 1.3) && (dval >= 0.2);
 	}
 	else
 	{
@@ -141,10 +209,10 @@ bool column_passes_global_filter(const std::string & col_name,const std::string 
 		double dval = std::fabs(boost::lexical_cast<double>(value));
 		return (dval <= 24.7);
 	}
-	else if(col_name=="ODDS")
+	else if(col_name=="CHI_SQUARED_BPZ")
 	{
 		double dval = boost::lexical_cast<double>(value);
-		return (0.8 <= dval);
+		return (dval <= 2);
 	}
 	else
 	{

@@ -1,5 +1,5 @@
 /**********************************************************************\
- @file make_output_map.h
+ @file is_good_position.hpp
  ------------------
 
  TODO <Insert file description here>
@@ -24,22 +24,23 @@
 \**********************************************************************/
 
 
-// body file: make_output_map.cpp
+// body file: is_good_position.cpp
 
 
-#ifndef _BRG_MAKE_OUTPUT_MAP_H_INCLUDED_
-#define _BRG_MAKE_OUTPUT_MAP_H_INCLUDED_
+#ifndef _BRG_SRC_IS_GOOD_POSITION_HPP_INCLUDED_
+#define _BRG_SRC_IS_GOOD_POSITION_HPP_INCLUDED_
 
-#include <functional>
-#include <map>
-#include <string>
 #include <vector>
 
-#include "brg/container/table_typedefs.hpp"
+inline bool is_good_position(int i, int j, const std::vector<std::vector<bool>> & vec)
+{
+	if((i<0)||(j<0)) return false;
+	if(static_cast<unsigned>(i)>=vec.size()) return false;
+	if(static_cast<unsigned>(j)>=vec[0].size()) return false;
 
-brgastro::table_map_t<std::string> make_output_map(const brgastro::table_map_t<std::string> & map,
-		const std::vector<size_t> & filtered_indices, const brgastro::header_t & header_columns,
-		const std::map<std::string,std::function<double(double)>> & conversions);
+	return vec[i][j];
+}
 
 
-#endif // _BRG_MAKE_OUTPUT_MAP_H_INCLUDED_
+
+#endif // _BRG_SRC_IS_GOOD_POSITION_HPP_INCLUDED_

@@ -30,8 +30,8 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "brg/call_program.hpp"
 #include "brg/file_access/ascii_table.h"
+#include "brg/call_program.hpp"
 
 #include "get_ra_dec.h"
 

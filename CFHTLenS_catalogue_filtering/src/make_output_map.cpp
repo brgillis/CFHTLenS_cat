@@ -31,12 +31,12 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "brg/file_access/table_typedefs.hpp"
+#include "brg/container/table_typedefs.hpp"
 
 #include "make_output_map.h"
 
 brgastro::table_map_t<std::string> make_output_map(const brgastro::table_map_t<std::string> & map,
-		const std::vector<size_t> & filtered_indices, const brgastro::header_t & header_columns,
+		const std::vector<size_t> & bad_indices, const brgastro::header_t & header_columns,
 		const std::map<std::string,std::function<double(double)>> & conversions)
 {
 	brgastro::table_map_t<std::string> result_map;
@@ -51,7 +51,7 @@ brgastro::table_map_t<std::string> make_output_map(const brgastro::table_map_t<s
 		auto conv_it = conversions.find(*col_it);
 		const bool apply_conversion = !(conv_it==conversions.end());
 
-		auto ele_to_skip_next = filtered_indices.begin();
+		auto ele_to_skip_next = bad_indices.begin();
 
 		// Add appropriate elements
 		for(size_t i=0; i<map.at(*col_it).size(); ++i)
@@ -59,8 +59,8 @@ brgastro::table_map_t<std::string> make_output_map(const brgastro::table_map_t<s
 			if(i==*ele_to_skip_next)
 			{
 				++ele_to_skip_next;
-				if(ele_to_skip_next==filtered_indices.end())
-					ele_to_skip_next = filtered_indices.begin();
+				if(ele_to_skip_next==bad_indices.end())
+					ele_to_skip_next = bad_indices.begin();
 			}
 			else
 			{

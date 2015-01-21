@@ -28,8 +28,12 @@ import subprocess as sbp
 
 # Magic values
 
+use_temp_fields = True
+
 base_good_fields_filename = "/disk2/brg/git/CFHTLenS_cat/Data/good_fields_list.txt"
 base_bad_fields_filename = "/disk2/brg/git/CFHTLenS_cat/Data/bad_fields_list.txt"
+
+temp_fields_filename = "/disk2/brg/git/CFHTLenS_cat/Data/temp_fields_list.txt"
 
 base_query_filename = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/src/base_query.txt"
 base_command_filename = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_catalogue_filtering/src/wget_cmd.txt"
@@ -61,25 +65,34 @@ def main(argv):
     # Initialize dictionary
     fields = {};
 
-    # Add in good fields
-    with open(good_fields_filename,'r') as fgood:
-        for line in fgood:
-            words = line.strip().split()
-            for word in words:
-                field = word[0:6]
-                i_or_y = word[-1:]
-                fields[field] = i_or_y                       
-
-    # Add in bad fields now
-    with open(bad_fields_filename,'r') as fbad:
-        for line in fbad:
-            words = line.strip().split()
-            for word in words:
-                field = word[0:6]
-                i_or_y = word[-1:]
-                if(not fields.has_key(field)):
-                    # If we don't have a good field by this name, add this
-                    fields[field] = i_or_y
+    if(use_temp_fields):
+        with open(temp_fields_filename,'r') as fgood:
+            for line in fgood:
+                words = line.strip().split()
+                for word in words:
+                    field = word[0:6]
+                    i_or_y = word[-1:]
+                    fields[field] = i_or_y   
+    else:
+        # Add in good fields
+        with open(good_fields_filename,'r') as fgood:
+            for line in fgood:
+                words = line.strip().split()
+                for word in words:
+                    field = word[0:6]
+                    i_or_y = word[-1:]
+                    fields[field] = i_or_y                       
+    
+        # Add in bad fields now
+        with open(bad_fields_filename,'r') as fbad:
+            for line in fbad:
+                words = line.strip().split()
+                for word in words:
+                    field = word[0:6]
+                    i_or_y = word[-1:]
+                    if(not fields.has_key(field)):
+                        # If we don't have a good field by this name, add this
+                        fields[field] = i_or_y
 
     # Set up the base query
     query_base = ""

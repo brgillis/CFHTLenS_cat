@@ -125,7 +125,7 @@ int main( const int argc, const char *argv[] )
 		size_t num_fields = field_names.size();
 		size_t num_processed = 0;
 
-		//num_fields = 5;
+		//num_fields = 1;
 
 		#ifdef _OPENMP
 		#pragma omp parallel for schedule(dynamic)
@@ -195,6 +195,7 @@ int main( const int argc, const char *argv[] )
 										source_map.at("Mstel_kg").at(i), source_map.at("MAG_r").at(i)+mag_fudge_shift);
 
 					source.set_weight(source_map.at("weight").at(i));
+					source.set_index(source_map.at("SeqNr").at(i));
 
 					// Check that this source is valid for either shear or magnification
 
@@ -203,8 +204,8 @@ int main( const int argc, const char *argv[] )
 					const auto & shear_weight = source.weight();
 
 					if( (shear_weight > 0) || // If it's valid for shear
-						((mag>=brgastro::mag_m_min) && (mag<=brgastro::mag_m_max) &&
-						 (z>=brgastro::mag_z_min) && (z<=brgastro::mag_z_max)) ) // or it's valid for magnification
+						((mag>=brgastro::mag_m_min) && (mag<brgastro::mag_m_max) &&
+						 (z>=brgastro::mag_z_min) && (z<brgastro::mag_z_max)) ) // or it's valid for magnification
 					{
 						source_galaxies.push_back( std::move(source) ); // Add it to the list of sources
 					}
@@ -243,6 +244,7 @@ int main( const int argc, const char *argv[] )
 						{
 							lens_binner.add_pair(brgastro::lens_source_pair(&lens,&source));
 						}
+
 					}
 
 					if((++lens_i) % batch_size == 0)

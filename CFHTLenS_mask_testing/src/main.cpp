@@ -24,6 +24,7 @@
 \**********************************************************************/
 
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <functional>
@@ -40,17 +41,18 @@
 
 #include <CCfits/CCfits>
 
+#include "brg/external/sgsmooth.h"
 #include "brg/file_access/ascii_table_map.hpp"
 #include "brg/file_access/binary_archive.hpp"
 #include "brg/file_access/open_file.hpp"
 #include "brg/math/misc_math.hpp"
 #include "brg/math/random/random_functions.h"
-#include "brg/physics/astro.h"
-#include "brg/physics/units/unit_conversions.hpp"
 #include "brg/vector/limit_vector.hpp"
 
+#include "brg_physics/astro.h"
+#include "brg_physics/units/unit_conversions.hpp"
+
 #include "get_good_positions.hpp"
-#include "is_good_position.hpp"
 #include "load_pixel_table.h"
 
 // Magic values
@@ -58,8 +60,19 @@ const std::string data_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
 const std::string mask_directory = data_directory + "masks/";
 const std::string field_directory = data_directory + "filtered_tables/";
 const std::string fields_list = data_directory + "fields_list.txt";
-const std::string lens_output_root = "_lens_mask_frac.dat";
 const std::string lens_pixel_map_root = "_lens_good_pixels.bin";
+
+#define USE_MOCKS
+
+#ifdef USE_MOCKS
+const std::string lens_root = "_small_mock_lens.dat";
+const std::string lens_output_root = "_small_mock_lens_mask_frac.dat";
+#else
+const std::string lens_root = "_lens.dat";
+const std::string lens_output_root = "_lens_mask_frac.dat";
+#endif
+
+#define USE_SAVED_MASK
 
 /*
  * Max physical separation is 2000 kpc.
@@ -70,15 +83,17 @@ const std::string lens_pixel_map_root = "_lens_good_pixels.bin";
 
 constexpr float min_kpc_sep=0;
 constexpr float max_kpc_sep=2000;
-constexpr float kpc_sep_step=10;
+constexpr float num_sep_steps = 200;
 
-constexpr double rad_per_px = 0.186*brgastro::unitconv::asectorad;
-
-constexpr unsigned max_px_sep=3240;
+constexpr double rad_per_px = 0.185965*brgastro::unitconv::asectorad;
 
 constexpr unsigned short sampling_factor=4;
 
 static_assert(sampling_factor>0,"Subsample must be positive.");
+
+constexpr short unsigned sg_window_small = 2;
+constexpr short unsigned sg_window_large = 5;
+constexpr short unsigned sg_deg = 3;
 
 int main( const int argc, const char *argv[] )
 {
@@ -89,10 +104,9 @@ int main( const int argc, const char *argv[] )
 #endif
 
 	// Set up separation limits vector
-	std::vector<float> sep_limits =
-			brgastro::make_limit_vector<float>(min_kpc_sep,max_kpc_sep,kpc_sep_step);
+	const brgastro::limit_vector<float> sep_limits(min_kpc_sep,max_kpc_sep,num_sep_steps);
 
-	const unsigned num_bins = sep_limits.size()-1;
+	const unsigned num_bins = sep_limits.num_bins();
 
 	// Open and read in the fields list
 	std::ifstream fi;
@@ -107,41 +121,51 @@ int main( const int argc, const char *argv[] )
 	}
 
 	// Set up map for each field's average separation hists
-	brgastro::table_map_t<float> result;
+	brgastro::table_map_t<double> mean_results;
 
 	// Add a column to the result table which gives pixel limits
-	std::vector<float> bin_mids(sep_limits.size()-1);
+	std::vector<double> bin_mids(num_bins);
 	for(unsigned i=0; i<num_bins; ++i)
 	{
-		bin_mids[i] = (sep_limits[i]+sep_limits[i+1])/2;
+		bin_mids[i] = (sep_limits.lower_limit(i)+sep_limits.upper_limit(i))/2;
 	}
-	result["bin_mid_kpc"] = bin_mids;
+	mean_results["bin_mid_kpc"] = bin_mids;
 
 	// Set up the field sizes table
 	brgastro::table_map_t<double> field_sizes;
 
 	size_t num_fields = field_names.size();
 
-#ifdef _OPENMP
-	#pragma omp parallel for
-#endif
-	for(unsigned i=0;i<num_fields;++i)
+	//num_fields = 1;
+
+	#ifdef _OPENMP
+	#pragma omp parallel for schedule(dynamic)
+	#endif
+	for(unsigned field_i=0;field_i<num_fields;++field_i)
 	{
-		std::string & field_name = field_names[i];
-		std::string field_name_root = field_name.substr(0,6);
+		const std::string & field_name = field_names[field_i];
+		const std::string field_name_root = field_name.substr(0,6);
 
 		// Get the input file name
 		std::stringstream ss("");
 		ss << mask_directory << field_name << ".fits.fz";
-		std::string input_file_name = ss.str();
+		const std::string input_file_name = ss.str();
+
+		// Get the lens pixel map file name
+		ss.str("");
+		ss << field_directory << field_name_root << lens_pixel_map_root;
+		const std::string lens_pixel_map_file_name = ss.str();
 
 		std::vector<std::vector<bool>> good_pixels;
-		std::vector<std::vector<bool>> good_positions;
 
 		try
 		{
+			#ifdef USE_SAVED_MASK
+			good_pixels = brgastro::binary_load_vector<std::vector<std::vector<bool>>>(
+					lens_pixel_map_file_name);
+			#else
 			good_pixels = load_pixel_table(input_file_name);
-			good_positions = get_good_positions(good_pixels);
+			#endif
 		}
 		catch(const CCfits::FitsError &e)
 		{
@@ -163,13 +187,22 @@ int main( const int argc, const char *argv[] )
 			std::cout << "Mask data loaded for " << field_name_root << ".\n";
 		}
 
+		auto is_good_position = [&] (int i, int j) -> bool
+		{
+			if((i<0)||(j<0)) return false;
+			if(static_cast<unsigned>(i)>=good_pixels.size()) return false;
+			if(static_cast<unsigned>(j)>=good_pixels[0].size()) return false;
+
+			return good_pixels[i][j];
+		};
+
 		// We'll use that table for possible source positions (since we care about where
 		// they could be, and not just where they are). For lenses, we can save time
 		// by using only the actual positions of galaxies.
 
 		// Get the lens table file name
 		ss.str("");
-		ss << field_directory << field_name_root << "_lens.dat";
+		ss << field_directory << field_name_root << lens_root;
 		std::string lens_file_name = ss.str();
 
 		// Get the lens output file name
@@ -177,78 +210,78 @@ int main( const int argc, const char *argv[] )
 		ss << field_directory << field_name_root << lens_output_root;
 		std::string lens_output_file_name = ss.str();
 
-		// Get the lens pixel map file name
-		ss.str("");
-		ss << field_directory << field_name_root << lens_pixel_map_root;
-		std::string lens_pixel_map_file_name = ss.str();
-
 		// Load the lens table
 		const auto lens_table_map = brgastro::load_table_map<double>(lens_file_name);
 
 		// Set up vectors to store result data
-		std::vector<unsigned> total_px_per_bin(num_bins,0);
-		std::vector<unsigned> good_px_per_bin(num_bins,0);
+		std::vector<unsigned> good_px_per_bin(num_bins+2,0); // Add 2 to allow potential over/underflow
+		std::vector<unsigned> total_px_per_bin(num_bins+2,0);
+
+		// Set up vectors for the lens's masked fraction
+		std::vector<unsigned> lens_good_px_per_bin(num_bins+2,0); // Add 2 to allow potential over/underflow
+		std::vector<unsigned> lens_total_px_per_bin(num_bins+2,0);
 
 		// Set up a map for each lens's info
-		brgastro::table_map_t<float> field_result;
+		brgastro::table_map_t<double> field_result;
 
 		// Add column to this table for bin middles
 		field_result["bin_mid_kpc"] = bin_mids;
 
 		// Loop through lens positions now to calculate data
 		unsigned num_lenses = lens_table_map.at("Xpos").size();
+
+		auto increment_bin = [&] (unsigned index, bool good)
+		{
+			++total_px_per_bin[index];
+			++lens_total_px_per_bin[index];
+			if(good)
+			{
+				++good_px_per_bin[index];
+				++lens_good_px_per_bin[index];
+			}
+		};
+
 		for(size_t lens_i = 0; lens_i<num_lenses; ++lens_i)
 		{
 			// Get the lens's position on the image
 			const unsigned lens_xp = brgastro::round_int(lens_table_map.at("Xpos")[lens_i]);
 			const unsigned lens_yp = brgastro::round_int(lens_table_map.at("Ypos")[lens_i]);
 
+			// Initialize per-lens vectors
+			for(auto & elem : lens_good_px_per_bin) elem = 0;
+			for(auto & elem : lens_total_px_per_bin) elem = 0;
+
 			// Get the lens's redshift and calculate related information
 			const float lens_z = lens_table_map.at("Z_B")[lens_i];
 
 			const double pxfd_fact = brgastro::afd(brgastro::unitconv::kpctom,lens_z)/rad_per_px;
 
-			const int lens_max_px_sep = pxfd_fact*max_kpc_sep;
-
-			// Initialize vectors for the lens's masked fraction
-			std::vector<unsigned> lens_good_px_per_bin(num_bins,0);
-			std::vector<unsigned> lens_total_px_per_bin(num_bins,0);
-
-			auto increment_bin = [&] (unsigned bin_i, bool good)
-			{
-				++total_px_per_bin[bin_i];
-				++lens_total_px_per_bin[bin_i];
-				if(good)
-				{
-					++good_px_per_bin[bin_i];
-					++lens_good_px_per_bin[bin_i];
-				}
-			};
+			const int lens_max_px_sep = pxfd_fact*max_kpc_sep+1;
 
 			// Loop over possible source positions
 
 			// Start with those along horizontal and vertical directions
-			for(int i=0; i<lens_max_px_sep; i+=sampling_factor)
+			for(int i=1; i<lens_max_px_sep; i+=sampling_factor)
 			{
 				const float d = i;
-				unsigned bin_i = brgastro::get_bin_index<float>(d/pxfd_fact,sep_limits);
+				unsigned bin_i = sep_limits.get_bin_index(d/pxfd_fact);
 
-				increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp,good_pixels));
-				increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp,good_pixels));
-				increment_bin(bin_i,is_good_position(lens_xp,lens_yp+i,good_pixels));
-				increment_bin(bin_i,is_good_position(lens_xp,lens_yp-i,good_pixels));
+				increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp));
+				increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp));
+				increment_bin(bin_i,is_good_position(lens_xp,lens_yp+i));
+				increment_bin(bin_i,is_good_position(lens_xp,lens_yp-i));
 			}
 
 			// Now do diagonals
-			for(int i=0; i<lens_max_px_sep/std::sqrt(2.); i+=sampling_factor)
+			for(int i=1; i<lens_max_px_sep/std::sqrt(2.); i+=sampling_factor)
 			{
 				const float d = i*std::sqrt(2.);
-				unsigned bin_i = brgastro::get_bin_index<float>(d/pxfd_fact,sep_limits);
+				unsigned bin_i = sep_limits.get_bin_index(d/pxfd_fact);
 
-				increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp+i,good_pixels));
-				increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp+i,good_pixels));
-				increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp-i,good_pixels));
-				increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp-i,good_pixels));
+				increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp+i));
+				increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp+i));
+				increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp-i));
+				increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp-i));
 			}
 
 			// And now all other positions
@@ -257,26 +290,27 @@ int main( const int argc, const char *argv[] )
 				// Loop over possible source positions
 				for(int j=1; j<i; j+=sampling_factor)
 				{
-					const float d = brgastro::dist2d(i,j);
+					const float d = brgastro::dist2d<float,float>(i,j);
 					if(d>lens_max_px_sep) continue;
-					unsigned bin_i = brgastro::get_bin_index<float>(d/pxfd_fact,sep_limits);
+					unsigned bin_i = sep_limits.get_bin_index(d/pxfd_fact);
 
-					increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp+j,good_pixels));
-					increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp+j,good_pixels));
-					increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp-j,good_pixels));
-					increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp-j,good_pixels));
+					increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp+j));
+					increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp+j));
+					increment_bin(bin_i,is_good_position(lens_xp+i,lens_yp-j));
+					increment_bin(bin_i,is_good_position(lens_xp-i,lens_yp-j));
 
-					increment_bin(bin_i,is_good_position(lens_xp+j,lens_yp+i,good_pixels));
-					increment_bin(bin_i,is_good_position(lens_xp-j,lens_yp+i,good_pixels));
-					increment_bin(bin_i,is_good_position(lens_xp+j,lens_yp-i,good_pixels));
-					increment_bin(bin_i,is_good_position(lens_xp-j,lens_yp-i,good_pixels));
-
+					increment_bin(bin_i,is_good_position(lens_xp+j,lens_yp+i));
+					increment_bin(bin_i,is_good_position(lens_xp-j,lens_yp+i));
+					increment_bin(bin_i,is_good_position(lens_xp+j,lens_yp-i));
+					increment_bin(bin_i,is_good_position(lens_xp-j,lens_yp-i));
 
 				}
 			}
 
+			//brgastro::print_pixels<decltype(tag_vector),unsigned short>("tagged_pixels.dat",tag_vector);
+
 			// Set up result vector for this lens
-			std::vector<float> lens_res(num_bins);
+			std::vector<double> lens_res(num_bins);
 			for(unsigned i=0; i<num_bins; ++i)
 			{
 				if(static_cast<float>(lens_total_px_per_bin[i])==0)
@@ -284,7 +318,23 @@ int main( const int argc, const char *argv[] )
 				else
 					lens_res[i] = static_cast<float>(lens_good_px_per_bin[i])/
 						static_cast<float>(lens_total_px_per_bin[i]);
+
+				// FIXME Debug section
+//				std::cout << "Annulus unmasked area: " << lens_res[i] * pi *
+//					(brgastro::square(sep_limits.upper_limit(i)*pxfd_fact*rad_per_px)-
+//						brgastro::square(sep_limits.lower_limit(i))*pxfd_fact*rad_per_px) << std::endl;
 			}
+
+/*			// Smooth it
+
+			if(sampling_factor>2)
+			{
+				lens_res = brgastro::sg_smooth(lens_res,sg_window_large,sg_deg);
+			}
+			else
+			{
+				lens_res = brgastro::sg_smooth(lens_res,sg_window_small,sg_deg);
+			}*/
 
 			// Add this to the field table map
 			field_result[boost::lexical_cast<std::string>(lens_table_map.at("SeqNr")[lens_i])] =
@@ -292,7 +342,7 @@ int main( const int argc, const char *argv[] )
 		}
 
 		// Set up result vector for this field
-		std::vector<float> field_res(num_bins);
+		std::vector<double> field_res(num_bins);
 		for(unsigned i=0; i<num_bins; ++i)
 		{
 			if(static_cast<float>(total_px_per_bin[i])==0)
@@ -303,8 +353,9 @@ int main( const int argc, const char *argv[] )
 		}
 
 		// Get the good size of this field now
-		const double good_size_upper = brgastro::square(rad_per_px)*num_good_pixels(good_pixels);
-		const double good_size_lower = brgastro::square(rad_per_px)*num_good_pixels(good_positions);
+		size_t num_good = num_good_pixels(good_pixels);
+		const double good_size_upper = brgastro::square(rad_per_px)*num_good;
+		const double good_size_lower = good_size_upper;
 		std::vector<double> size_measures;
 		size_measures.push_back(good_size_lower);
 		size_measures.push_back(good_size_upper);
@@ -315,13 +366,15 @@ int main( const int argc, const char *argv[] )
 		#pragma omp critical(add_mask_test_results_to_map)
 #endif
 		{
-			result[field_name_root] = field_res;
+			mean_results[field_name_root] = field_res;
 			field_sizes[field_name_root] = size_measures;
 
-			//brgastro::print_table_map(lens_output_file_name,field_result);
+			brgastro::print_table_map(lens_output_file_name,field_result);
 
-			// Archive the good pixel map
+			// Archive the good pixel map if we just calculated it
+			#ifndef USE_SAVED_MASK
 			brgastro::binary_save(lens_pixel_map_file_name,good_pixels);
+			#endif
 
 			std::cout << "Finished processing field " << field_name_root << "!\n";
 		}
@@ -332,7 +385,7 @@ int main( const int argc, const char *argv[] )
 	ss << mask_directory << "position_corr.dat";
 	std::string output_name = ss.str();
 
-	brgastro::print_table_map(output_name,result);
+	brgastro::print_table_map(output_name,mean_results);
 
 	ss.str("");
 	ss << mask_directory << "field_sizes.dat";

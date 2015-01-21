@@ -31,15 +31,17 @@
 #include <string>
 
 #include "brg/file_access/ascii_table_map.hpp"
+#include "brg/file_access/binary_archive.hpp"
 #include "brg/file_access/open_file.hpp"
-#include "brg/physics/units/unit_conversions.hpp"
+#include "brg_physics/units/unit_conversions.hpp"
 
 #include "get_filtered_indices.h"
 #include "make_output_map.h"
 
 // Magic values
-std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
-std::string fields_list = fields_directory + "fields_list.txt";
+const std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
+const std::string fields_list = fields_directory + "fields_list.txt";
+const std::string lens_pixel_map_root = "_lens_good_pixels.bin";
 
 int main( const int argc, const char *argv[] )
 {
@@ -48,10 +50,29 @@ int main( const int argc, const char *argv[] )
 	std::ifstream fi;
 	brgastro::open_file_input(fi,fields_list);
 
+	std::vector<std::string> field_names;
+
 	std::string field_name;
 
 	while(fi>>field_name)
 	{
+		field_names.push_back(field_name);
+	}
+
+	fi.close();
+
+	// Load each field in turn and process it
+
+	size_t num_fields = field_names.size();
+
+	//num_fields = 1;
+
+	#ifdef _OPENMP
+	#pragma omp parallel for schedule(dynamic)
+	#endif
+	for(size_t field_i=0;field_i<num_fields;++field_i)
+	{
+		field_name = field_names[field_i];
 		std::string field_name_root = field_name.substr(0,6);
 
 		// Get the input file name
@@ -59,14 +80,36 @@ int main( const int argc, const char *argv[] )
 		ss << fields_directory << "full_tables/" << field_name << ".dat";
 		std::string input_file_name = ss.str();
 
+		// Get the name of the mask file for this table and load it
+#if(1)
+		ss.str("");
+		ss << fields_directory << "filtered_tables/" << field_name_root << lens_pixel_map_root;
+		const std::string lens_pixel_map_file_name = ss.str();
+
+		std::vector<std::vector<bool>> good_pixels;
+
+		try
+		{
+			good_pixels = brgastro::binary_load_vector<std::vector<std::vector<bool>>>(
+				lens_pixel_map_file_name);
+		}
+		catch( const std::exception &e )
+		{
+			std::cerr << "Mask file " << lens_pixel_map_file_name << " cannot be loaded.\n";
+			throw;
+		}
+#endif
+
 		// Get the lens and source output file names
+#if(1)
 		ss.str("");
 		ss << fields_directory << "filtered_tables/" << field_name_root << "_lens.dat";
-		std::string lens_output_name = ss.str();
+		const std::string lens_output_name = ss.str();
 
 		ss.str("");
 		ss << fields_directory << "filtered_tables/" << field_name_root << "_source.dat";
-		std::string source_output_name = ss.str();
+		const std::string source_output_name = ss.str();
+#endif
 
 		// Load in the input file
 		brgastro::table_map_t<std::string> table_map;
@@ -84,7 +127,7 @@ int main( const int argc, const char *argv[] )
 		move_y_column_to_i(table_map);
 
 		// Lens file
-		std::vector<size_t> filtered_indices(get_filtered_lenses(table_map));
+		std::vector<size_t> bad_indices(get_bad_lenses(table_map,good_pixels));
 
 		std::cout << "Generating " << lens_output_name << "... ";
 		std::cout.flush();
@@ -99,6 +142,7 @@ int main( const int argc, const char *argv[] )
 		lens_header_columns.push_back("Z_B");
 		lens_header_columns.push_back("T_B");
 		lens_header_columns.push_back("ODDS");
+		lens_header_columns.push_back("CHI_SQUARED_BPZ");
 		lens_header_columns.push_back("LP_log10_SM_MED");
 		lens_header_columns.push_back("LP_log10_SM_INF");
 		lens_header_columns.push_back("LP_log10_SM_SUP");
@@ -120,7 +164,7 @@ int main( const int argc, const char *argv[] )
 		lens_conversions["LP_log10_SM_INF"] = l10_Msun_to_kg;
 		lens_conversions["LP_log10_SM_SUP"] = l10_Msun_to_kg;
 
-		brgastro::table_map_t<std::string> output_map(make_output_map(table_map,filtered_indices,lens_header_columns,
+		brgastro::table_map_t<std::string> output_map(make_output_map(table_map,bad_indices,lens_header_columns,
 				lens_conversions));
 
 		// Rename columns we've applied unit convesions to
@@ -137,15 +181,19 @@ int main( const int argc, const char *argv[] )
 
 		// Source file
 
-		filtered_indices = get_filtered_sources(table_map);
+		bad_indices = get_bad_sources(table_map, good_pixels);
 
 		// Set up the header columns vector for the ones we want to output
 		brgastro::header_t source_header_columns;
 		source_header_columns.push_back("SeqNr");
 		source_header_columns.push_back("ALPHA_J2000");
 		source_header_columns.push_back("DELTA_J2000");
+		source_header_columns.push_back("Xpos");
+		source_header_columns.push_back("Ypos");
 		source_header_columns.push_back("Z_B");
 		source_header_columns.push_back("T_B");
+		source_header_columns.push_back("ODDS");
+		source_header_columns.push_back("CHI_SQUARED_BPZ");
 		source_header_columns.push_back("e1");
 		source_header_columns.push_back("e2");
 		source_header_columns.push_back("weight");
@@ -169,7 +217,7 @@ int main( const int argc, const char *argv[] )
 		source_conversions["LP_log10_SM_INF"] = l10_Msun_to_kg;
 		source_conversions["LP_log10_SM_SUP"] = l10_Msun_to_kg;
 
-		output_map = make_output_map(table_map,filtered_indices,source_header_columns,source_conversions);
+		output_map = make_output_map(table_map,bad_indices,source_header_columns,source_conversions);
 
 		// Rename columns we've applied unit convesions to
 		output_map.change_key("ALPHA_J2000","ra_radians");
