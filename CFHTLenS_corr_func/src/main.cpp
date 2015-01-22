@@ -34,9 +34,10 @@
 #include "brg/container/coerce.hpp"
 #include "brg/file_access/open_file.hpp"
 #include "brg/file_access/ascii_table_map.hpp"
-#include "brg/physics/lensing_correlation_function_estimator.h"
-#include "brg/physics/lensing/magnification/mag_global_values.h"
 #include "brg/vector/limit_vector.hpp"
+#include "brg_physics/lensing_correlation_function_estimator.h"
+#include "brg_physics/units/unit_conversions.hpp"
+#include "brg_lensing/magnification/mag_global_values.h"
 
 #undef SMALL_MOCKS
 
@@ -57,8 +58,10 @@ const std::string lens_mock_root = "_mock_lens.dat";
 const std::string source_mock_root = "_mock_source.dat";
 #endif
 
-constexpr double lens_z_min = 0.2;
-constexpr double lens_z_max = 1.1;
+constexpr double lens_z_min = 0.5;
+constexpr double lens_z_max = 0.6;
+constexpr double lens_m_min = 1e10;
+constexpr double lens_m_max = 1e11;
 constexpr double source_z_min = brgastro::mag_z_min;
 constexpr double source_z_max = brgastro::mag_z_max;
 constexpr double z_buffer = 0.1;
@@ -148,6 +151,8 @@ int main( const int argc, const char *argv[] )
 				{
 					const double & z = lens_map.at("Z_B").at(i);
 					if((z<lens_z_min)||(z>lens_z_max)) continue;
+					const double & m = lens_map.at("Mstel_kg").at(i)*brgastro::unitconv::kgtoMsun;
+					if((m<lens_m_min)||(m>lens_m_max)) continue;
 
 //					const double & T = lens_map.at("T_B").at(i);
 //					if((T<brgastro::mag_lens_T_min)||(T>brgastro::mag_lens_T_max)) continue;
