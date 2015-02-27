@@ -39,7 +39,7 @@
 #include "brg/file_access/open_file.hpp"
 #include <brg/file_access/ascii_table_map.hpp>
 #include "brg/math/misc_math.hpp"
-#include "brg/math/random/random_functions.h"
+#include <brg/math/random/random_functions.hpp>
 
 #include "brg_physics/units/unit_conversions.hpp"
 #include "brg_lensing/magnification/mag_global_values.h"
@@ -47,7 +47,8 @@
 #include "get_ra_dec.h"
 #include "num_good_pixels.hpp"
 
-#define SMALL_MOCKS
+#define MAKE_CALIBRATION_LENSES
+#undef SMALL_MOCKS
 
 // Magic values
 const std::string data_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
@@ -55,20 +56,34 @@ const std::string mask_directory = data_directory + "masks/";
 const std::string field_directory = data_directory + "filtered_tables/";
 const std::string fields_list = data_directory + "fields_list.txt";
 const std::string pixel_map_root = "_lens_good_pixels.bin";
+
+#ifdef MAKE_CALIBRATION_LENSES
+
+const std::string lens_output_root = "_calibration_lens.dat";
+constexpr unsigned num_lenses_to_generate = 141;
+
+#else // #ifdef MAKE_CALIBRATION_MOCKS
+
 #ifdef SMALL_MOCKS
+
 const std::string lens_output_root = "_small_mock_lens.dat";
 const std::string source_output_root = "_small_mock_source.dat";
 constexpr unsigned num_lenses_to_generate = 40000;
 constexpr unsigned num_sources_to_generate = 60000;
-#else
+
+#else // #ifdef SMALL_MOCKS
+
 const std::string lens_output_root = "_mock_lens.dat";
 const std::string source_output_root = "_mock_source.dat";
 constexpr unsigned num_lenses_to_generate = 400000;
 constexpr unsigned num_sources_to_generate = 600000;
-#endif
+
+#endif // #ifdef SMALL_MOCKS // #else
+
+#endif // #ifdef MAKE_CALIBRATION_MOCKS // #else
 
 constexpr double min_lens_z = 0.2;
-constexpr double max_lens_z = 1.3;
+constexpr double max_lens_z = 1.6;
 constexpr double min_source_z = 0.2;
 constexpr double max_source_z = 4.0;
 
@@ -121,7 +136,6 @@ int main( const int argc, const char *argv[] )
 
 		std::string pixel_map_name = field_directory + field_name_root + pixel_map_root;
 		std::string lens_output_file_name = field_directory + field_name_root + lens_output_root;
-		std::string source_output_file_name = field_directory + field_name_root + source_output_root;
 
 		const std::vector<std::vector<bool>> good_pixels =
 				brgastro::binary_load_vector<std::vector<std::vector<bool>>>(pixel_map_name);
@@ -134,6 +148,35 @@ int main( const int argc, const char *argv[] )
 		assert(static_cast<double>(num_good_pixels(good_pixels))/(ncol*nrow)>min_good_frac);
 
 		std::vector<std::pair<double,double>> galaxy_positions;
+
+#ifdef MAKE_CALIBRATION_LENSES
+
+		// For the calibration lenses, we only need one good position, relatively near the centre
+
+		bool good_point_found = false;
+		unsigned counter = 0;
+
+		while((!good_point_found)&&(++counter<10000))
+		{
+			const double x = brgastro::drand(ncol/2-counter,ncol/2+counter);
+			const double y = brgastro::drand(nrow/2-counter,nrow/2+counter);
+
+			const unsigned xp = brgastro::round_int(x);
+			const unsigned yp = brgastro::round_int(y);
+
+			if(good_pixels[xp][yp])
+			{
+				good_point_found = true;
+				for(unsigned j = 0; j< num_lenses_to_generate; ++j)
+					galaxy_positions.push_back(std::make_pair(x,y));
+			}
+		}
+
+		if(!good_point_found) throw std::runtime_error("Could not find good point for calibration lens.");
+
+		unsigned num_lenses_generated = galaxy_positions.size();
+
+#else
 
 		unsigned num_lenses_generated = 0;
 
@@ -154,11 +197,23 @@ int main( const int argc, const char *argv[] )
 			}
 		}
 
+#endif
+
 		auto galaxy_sky_positions =
 				get_ra_dec(field_name,galaxy_positions);
 
 		// Create the output table, and then add each galaxy to it
 		brgastro::table_map_t<double> field_output_table;
+
+
+#ifdef MAKE_CALIBRATION_LENSES
+		unsigned z100step = 100*(max_lens_z-min_lens_z)/(num_lenses_generated-1);
+		if(z100step<1) z100step = 1;
+		unsigned z100 = 100*min_lens_z - z100step;
+#else
+		unsigned z100;
+#endif
+
 
 		for( size_t j=0; j<num_lenses_generated; ++j )
 		{
@@ -167,7 +222,11 @@ int main( const int argc, const char *argv[] )
 			field_output_table["dec_radians"].push_back(galaxy_sky_positions[j].first.second*brgastro::unitconv::degtorad);
 			field_output_table["Xpos"].push_back(galaxy_sky_positions[j].second.first);
 			field_output_table["Ypos"].push_back(galaxy_sky_positions[j].second.second);
-			unsigned z100 = 100*brgastro::drand(min_lens_z,max_lens_z);
+#ifdef MAKE_CALIBRATION_LENSES
+			z100 += z100step;
+#else
+			z100 = 100*brgastro::drand(min_lens_z,max_lens_z);
+#endif
 			field_output_table["Z_B"].push_back(z100/100.);
 			field_output_table["T_B"].push_back(brgastro::drand(min_T,max_T));
 			field_output_table["ODDS"].push_back(1);
@@ -195,7 +254,10 @@ int main( const int argc, const char *argv[] )
 			std::cout << "Finished generating " << lens_output_file_name << ".\n";
 		}
 
+#ifndef MAKE_CALIBRATION_LENSES
+
 		// Repeat for sources
+		std::string source_output_file_name = field_directory + field_name_root + source_output_root;
 
 		galaxy_positions.clear();
 
@@ -263,6 +325,8 @@ int main( const int argc, const char *argv[] )
 			brgastro::print_table_map(source_output_file_name,field_output_table);
 			std::cout << "Finished generating " << source_output_file_name << ".\n";
 		}
+
+#endif // #ifndef MAKE_CALIBRATION_LENSES
 	}
 
 	return 0;

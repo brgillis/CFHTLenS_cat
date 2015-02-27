@@ -180,7 +180,7 @@ int main( const int argc, const char *argv[] )
 				#pragma omp critical(increment_count_bins)
 				#endif
 				{
-					//if(source_z>0.641) ++counter; //!!
+					//if((mag>=brgastro::mag_m_min)&&(source_z>=1.14)) ++counter; //!!
 
 					// Add to the specific bin
 					++z_bin_hists[z_i][mag_i];
@@ -193,6 +193,8 @@ int main( const int argc, const char *argv[] )
 						++gz_bin_hists[j][mag_i];
 						weighted_gz_bin_hists[j][mag_i]+=weight;
 						++gz_bin_counts[j];
+
+						//if((mag>=brgastro::mag_m_min)&&(j==47)) ++counter; //!!
 					}
 				}
 			}

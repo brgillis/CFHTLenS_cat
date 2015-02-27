@@ -33,10 +33,9 @@
 
 #include <CCfits/CCfits>
 
-#include "brg/math/random/random_functions.h"
-
 #include "load_pixel_table.h"
 #include <brg/call_program.hpp>
+#include <brg/math/random/random_functions.hpp>
 
 std::string unpack_fits(const std::string & filename)
 {

@@ -46,7 +46,7 @@
 #include "brg/file_access/binary_archive.hpp"
 #include "brg/file_access/open_file.hpp"
 #include "brg/math/misc_math.hpp"
-#include "brg/math/random/random_functions.h"
+#include "brg/math/random/random_functions.hpp"
 #include "brg/vector/limit_vector.hpp"
 
 #include "brg_physics/astro.h"
@@ -62,7 +62,15 @@ const std::string field_directory = data_directory + "filtered_tables/";
 const std::string fields_list = data_directory + "fields_list.txt";
 const std::string lens_pixel_map_root = "_lens_good_pixels.bin";
 
-#define USE_MOCKS
+#undef USE_CALIBRATION
+#undef USE_MOCKS
+
+#ifdef USE_CALIBRATION
+
+const std::string lens_root = "_calibration_lens.dat";
+const std::string lens_output_root = "_calibration_lens_mask_frac.dat";
+
+#else // #ifdef USE_CALIBRATION
 
 #ifdef USE_MOCKS
 const std::string lens_root = "_small_mock_lens.dat";
@@ -71,6 +79,8 @@ const std::string lens_output_root = "_small_mock_lens_mask_frac.dat";
 const std::string lens_root = "_lens.dat";
 const std::string lens_output_root = "_lens_mask_frac.dat";
 #endif
+
+#endif // #ifdef USE_CALIBRATION // #else
 
 #define USE_SAVED_MASK
 
@@ -81,9 +91,21 @@ const std::string lens_output_root = "_lens_mask_frac.dat";
  * Maximum pixel separation we care about is thus 3235 px.
  */
 
+#ifdef USE_CALIBRATION
+
+constexpr float min_kpc_sep=0;
+constexpr float max_kpc_sep=25000;
+constexpr float num_sep_steps = 1;
+#define COUNTING_TYPE long unsigned
+
+#else
+
 constexpr float min_kpc_sep=0;
 constexpr float max_kpc_sep=2000;
-constexpr float num_sep_steps = 200;
+constexpr float num_sep_steps = 100;
+#define COUNTING_TYPE unsigned
+
+#endif
 
 constexpr double rad_per_px = 0.185965*brgastro::unitconv::asectorad;
 
@@ -94,6 +116,21 @@ static_assert(sampling_factor>0,"Subsample must be positive.");
 constexpr short unsigned sg_window_small = 2;
 constexpr short unsigned sg_window_large = 5;
 constexpr short unsigned sg_deg = 3;
+
+inline void _increment_bin(unsigned index, bool good,
+					std::vector<COUNTING_TYPE> & total_px_per_bin,
+					std::vector<COUNTING_TYPE> & lens_total_px_per_bin,
+					std::vector<COUNTING_TYPE> & good_px_per_bin,
+					std::vector<COUNTING_TYPE> & lens_good_px_per_bin)
+{
+	++total_px_per_bin[index];
+	++lens_total_px_per_bin[index];
+	if(good)
+	{
+		++good_px_per_bin[index];
+		++lens_good_px_per_bin[index];
+	}
+}
 
 int main( const int argc, const char *argv[] )
 {
@@ -136,7 +173,9 @@ int main( const int argc, const char *argv[] )
 
 	size_t num_fields = field_names.size();
 
-	//num_fields = 1;
+	//num_fields = 10;
+
+	unsigned num_finished_fields = 0;
 
 	#ifdef _OPENMP
 	#pragma omp parallel for schedule(dynamic)
@@ -180,12 +219,12 @@ int main( const int argc, const char *argv[] )
 			continue;
 		}
 
-#ifdef _OPENMP
-		#pragma omp critical(mask_status_update)
-#endif
-		{
-			std::cout << "Mask data loaded for " << field_name_root << ".\n";
-		}
+//#ifdef _OPENMP
+//		#pragma omp critical(mask_status_update)
+//#endif
+//		{
+//			std::cout << "Mask data loaded for " << field_name_root << ".\n";
+//		}
 
 		auto is_good_position = [&] (int i, int j) -> bool
 		{
@@ -214,12 +253,12 @@ int main( const int argc, const char *argv[] )
 		const auto lens_table_map = brgastro::load_table_map<double>(lens_file_name);
 
 		// Set up vectors to store result data
-		std::vector<unsigned> good_px_per_bin(num_bins+2,0); // Add 2 to allow potential over/underflow
-		std::vector<unsigned> total_px_per_bin(num_bins+2,0);
+		std::vector<COUNTING_TYPE> good_px_per_bin(num_bins+2,0); // Add 2 to allow potential over/underflow
+		std::vector<COUNTING_TYPE> total_px_per_bin(num_bins+2,0);
 
 		// Set up vectors for the lens's masked fraction
-		std::vector<unsigned> lens_good_px_per_bin(num_bins+2,0); // Add 2 to allow potential over/underflow
-		std::vector<unsigned> lens_total_px_per_bin(num_bins+2,0);
+		std::vector<COUNTING_TYPE> lens_good_px_per_bin(num_bins+2,0); // Add 2 to allow potential over/underflow
+		std::vector<COUNTING_TYPE> lens_total_px_per_bin(num_bins+2,0);
 
 		// Set up a map for each lens's info
 		brgastro::table_map_t<double> field_result;
@@ -232,13 +271,7 @@ int main( const int argc, const char *argv[] )
 
 		auto increment_bin = [&] (unsigned index, bool good)
 		{
-			++total_px_per_bin[index];
-			++lens_total_px_per_bin[index];
-			if(good)
-			{
-				++good_px_per_bin[index];
-				++lens_good_px_per_bin[index];
-			}
+			_increment_bin(index,good,total_px_per_bin,lens_total_px_per_bin,good_px_per_bin,lens_good_px_per_bin);
 		};
 
 		for(size_t lens_i = 0; lens_i<num_lenses; ++lens_i)
@@ -319,7 +352,6 @@ int main( const int argc, const char *argv[] )
 					lens_res[i] = static_cast<float>(lens_good_px_per_bin[i])/
 						static_cast<float>(lens_total_px_per_bin[i]);
 
-				// FIXME Debug section
 //				std::cout << "Annulus unmasked area: " << lens_res[i] * pi *
 //					(brgastro::square(sep_limits.upper_limit(i)*pxfd_fact*rad_per_px)-
 //						brgastro::square(sep_limits.lower_limit(i))*pxfd_fact*rad_per_px) << std::endl;
@@ -376,7 +408,8 @@ int main( const int argc, const char *argv[] )
 			brgastro::binary_save(lens_pixel_map_file_name,good_pixels);
 			#endif
 
-			std::cout << "Finished processing field " << field_name_root << "!\n";
+			std::cout << "Finished processing field " << field_name_root << " (#" << ++num_finished_fields << "/" <<
+				num_fields << ")!\n";
 		}
 	}
 

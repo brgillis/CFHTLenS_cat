@@ -36,6 +36,7 @@
 
 #include "brg_lensing/magnification/expected_count_cache.h"
 #include "brg_lensing/magnification/expected_count_derivative_cache.h"
+#include "brg_lensing/magnification/mag_calibration_cache.h"
 #include "brg_lensing/magnification/mag_signal_integral_cache.h"
 #include "brg_lensing/magnification/mag_weight_integral_cache.h"
 #include "brg_lensing/magnification/mag_global_values.h"
@@ -50,26 +51,44 @@
 #include "gg_lensing_config.h"
 #include "pass_configs_to_binner.h"
 
-#undef USE_MOCK_LENSES
+#undef USE_CALIBRATION_LENSES
+
+#define USE_MOCK_LENSES
 #undef USE_MOCK_SOURCES
 
 // Magic values
 std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
 std::string fields_list = fields_directory + "fields_list.txt";
 
+#ifdef USE_CALIBRATION_LENSES
+
+std::string output_table = fields_directory + "gg_calibration_lensing_signal.dat";
+std::string output_data = fields_directory + "gg_calibration_lensing_data.dat";
+
+std::string lens_root = "_calibration_lens.dat";
+std::string lens_unmasked_frac_root = "_calibration_lens_mask_frac.dat";
+
+#else // #ifdef USE_CALIBRATION_LENSES
+
 #ifdef USE_MOCK_LENSES
+
 std::string output_table = fields_directory + "gg_mock_lensing_signal.dat";
 std::string output_data = fields_directory + "gg_mock_lensing_data.dat";
 
 std::string lens_root = "_small_mock_lens.dat";
 std::string lens_unmasked_frac_root = "_small_mock_lens_mask_frac.dat";
-#else
+
+#else // #ifdef USE_MOCK_LENSES
+
 std::string output_table = fields_directory + "gg_lensing_signal.dat";
 std::string output_data = fields_directory + "gg_lensing_data.dat";
 
 std::string lens_root = "_lens.dat";
 std::string lens_unmasked_frac_root = "_lens_mask_frac.dat";
-#endif
+
+#endif // #ifdef USE_MOCK_LENSES // #else
+
+#endif // #ifdef USE_CALIBRATION_LENSES // #else
 
 #ifdef USE_MOCK_SOURCES
 std::string source_root = "_small_mock_source.dat";
@@ -81,6 +100,7 @@ std::string expected_count_cache_output_file = fields_directory + "ex_count_cach
 std::string expected_count_derivative_cache_output_file = fields_directory + "alpha_cache.dat";
 std::string mag_signal_integral_cache_output_file = fields_directory + "mag_sig_integral_cache.dat";
 std::string mag_weight_integral_cache_output_file = fields_directory + "mag_W_integral_cache.dat";
+std::string mag_calibration_cache_output_file = fields_directory + "mag_calibration_cache.dat";
 
 constexpr double mag_fudge_shift = 0;
 
@@ -91,6 +111,9 @@ int main( const int argc, const char *argv[] )
 	brgastro::expected_count_derivative_cache().print(expected_count_derivative_cache_output_file);
 	brgastro::mag_weight_integral_cache().print(mag_weight_integral_cache_output_file);
 	brgastro::mag_signal_integral_cache().print(mag_signal_integral_cache_output_file);
+#ifndef USE_CALIBRATION_LENSES
+	brgastro::mag_calibration_cache().print(mag_calibration_cache_output_file);
+#endif // #ifndef USE_CALIBRATION_LENSES
 
 	constexpr size_t batch_size = 1000000;
 	const gg_lensing_config config(argc,argv);
@@ -186,6 +209,7 @@ int main( const int argc, const char *argv[] )
 				// Load in sources
 				const brgastro::table_map_t<double> source_map(brgastro::load_table_map<double>(source_input_name));
 				size_t num_sources = source_map.begin()->second.size();
+
 				for(size_t i=0; i<num_sources; ++i)
 				{
 					brgastro::source_galaxy source(source_map.at("ra_radians").at(i),
@@ -225,11 +249,17 @@ int main( const int argc, const char *argv[] )
 					const BRG_ANGLE max_angle_sep = brgastro::afd(config.R_max,lens.z());
 
 					// And loop over all sources
+
+					//unsigned counter = 0; //!!
+
 					for(const auto & source : source_galaxies)
 					{
 
 						// Check that the lens is sufficiently in front of the source
-						if(lens.z() > source.z() - config.z_buffer) continue;
+						if(lens.z() > source.z() - config.z_buffer + std::numeric_limits<double>::epsilon()) continue;
+
+//						if(((source.mag()>=brgastro::mag_m_min) && (source.mag()<brgastro::mag_m_max) &&
+//						 (source.z()>=1.14) && (source.z()<brgastro::mag_z_max)) ) ++counter; //!!
 
 						// Check against maximum angular separation in ra and dec simply first for speed
 						auto ddec = std::fabs(lens.dec()-source.dec());
@@ -246,6 +276,7 @@ int main( const int argc, const char *argv[] )
 						}
 
 					}
+					//std::cout << counter << std::endl; //!!
 
 					if((++lens_i) % batch_size == 0)
 					{

@@ -26,20 +26,28 @@
 #include <fstream>
 #include <iostream>
 #include <tuple>
-#include <valarray>
 #include <vector>
 
 #include <boost/lexical_cast.hpp>
+
+#include <Eigen/Core>
 
 #include "brg/container/coerce.hpp"
 #include "brg/file_access/open_file.hpp"
 #include "brg/file_access/ascii_table_map.hpp"
 #include "brg/vector/limit_vector.hpp"
-#include "brg_physics/lensing_correlation_function_estimator.h"
 #include "brg_physics/units/unit_conversions.hpp"
 #include "brg_lensing/magnification/mag_global_values.h"
 
-#undef SMALL_MOCKS
+#define SMALL_MOCKS
+
+#define LENSING_STYLE
+
+#ifdef LENSING_STYLE
+#include "brg_physics/lensing_correlation_function_estimator.h"
+#else
+#include "brg_physics/correlation_function_estimator.h"
+#endif
 
 // Magic values
 std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
@@ -49,11 +57,19 @@ const std::string lens_root = "_lens.dat";
 const std::string source_root = "_source.dat";
 
 #ifdef SMALL_MOCKS
-std::string output_name = fields_directory + "corr_funcs_quick.dat";
+#ifdef LENSING_STYLE
+std::string output_name = fields_directory + "lensing_corr_funcs_quick.dat";
+#else
+std::string output_name = fields_directory + "auto_corr_funcs_quick.dat";
+#endif
 const std::string lens_mock_root = "_small_mock_lens.dat";
 const std::string source_mock_root = "_small_mock_source.dat";
 #else
-std::string output_name = fields_directory + "corr_funcs.dat";
+#ifdef LENSING_STYLE
+std::string output_name = fields_directory + "lensing_corr_funcs.dat";
+#else
+std::string output_name = fields_directory + "auto_corr_funcs.dat";
+#endif
 const std::string lens_mock_root = "_mock_lens.dat";
 const std::string source_mock_root = "_mock_source.dat";
 #endif
@@ -62,9 +78,15 @@ constexpr double lens_z_min = 0.5;
 constexpr double lens_z_max = 0.6;
 constexpr double lens_m_min = 1e10;
 constexpr double lens_m_max = 1e11;
+
+#ifdef LENSING_STYLE
 constexpr double source_z_min = brgastro::mag_z_min;
 constexpr double source_z_max = brgastro::mag_z_max;
-constexpr double z_buffer = 0.1;
+constexpr double z_buffer = 0.3;
+#else
+constexpr double source_z_min = lens_z_min;
+constexpr double source_z_max = lens_z_max;
+#endif
 
 constexpr double r_min = 0.00001616; // About 10 kpc at redshift 0.2
 constexpr double r_max = 0.00291; // About 2000 kpc at redshift 0.2
@@ -73,14 +95,14 @@ constexpr size_t r_steps = 200;
 int main( const int argc, const char *argv[] )
 {
 	// Set up global data
-	brgastro::limit_vector<double> r_limits(brgastro::limit_vector<double>::type::LOG,r_min,r_max,r_steps);
-	std::valarray<double> monopole_corr_func_sum(r_steps);
-	std::valarray<double> dipole_1_corr_func_sum(r_steps);
-	std::valarray<double> dipole_2_corr_func_sum(r_steps);
-	std::valarray<double> quadrupole_1_corr_func_sum(r_steps);
-	std::valarray<double> quadrupole_2_corr_func_sum(r_steps);
-	std::valarray<double> octopole_1_corr_func_sum(r_steps);
-	std::valarray<double> octopole_2_corr_func_sum(r_steps);
+	brgastro::limit_vector<double> r_limits(r_min,r_max,r_steps);
+	Eigen::ArrayXd monopole_corr_func_sum = Eigen::ArrayXd::Zero(r_steps);
+	Eigen::ArrayXd dipole_1_corr_func_sum = Eigen::ArrayXd::Zero(r_steps);
+	Eigen::ArrayXd dipole_2_corr_func_sum = Eigen::ArrayXd::Zero(r_steps);
+	Eigen::ArrayXd quadrupole_1_corr_func_sum = Eigen::ArrayXd::Zero(r_steps);
+	Eigen::ArrayXd quadrupole_2_corr_func_sum = Eigen::ArrayXd::Zero(r_steps);
+	Eigen::ArrayXd octopole_1_corr_func_sum = Eigen::ArrayXd::Zero(r_steps);
+	Eigen::ArrayXd octopole_2_corr_func_sum = Eigen::ArrayXd::Zero(r_steps);
 
 	// Open and read in the fields list
 	std::ifstream fi;
@@ -110,13 +132,13 @@ int main( const int argc, const char *argv[] )
 	{
 		std::string field_name_root = field_names[field_i].substr(0,6);
 
-		std::valarray<double> monopole_corr_func(r_steps);
-		std::valarray<double> dipole_1_corr_func(r_steps);
-		std::valarray<double> dipole_2_corr_func(r_steps);
-		std::valarray<double> quadrupole_1_corr_func(r_steps);
-		std::valarray<double> quadrupole_2_corr_func(r_steps);
-		std::valarray<double> octopole_1_corr_func(r_steps);
-		std::valarray<double> octopole_2_corr_func(r_steps);
+		Eigen::ArrayXd monopole_corr_func = Eigen::ArrayXd::Zero(r_steps);
+		Eigen::ArrayXd dipole_1_corr_func = Eigen::ArrayXd::Zero(r_steps);
+		Eigen::ArrayXd dipole_2_corr_func = Eigen::ArrayXd::Zero(r_steps);
+		Eigen::ArrayXd quadrupole_1_corr_func = Eigen::ArrayXd::Zero(r_steps);
+		Eigen::ArrayXd quadrupole_2_corr_func = Eigen::ArrayXd::Zero(r_steps);
+		Eigen::ArrayXd octopole_1_corr_func = Eigen::ArrayXd::Zero(r_steps);
+		Eigen::ArrayXd octopole_2_corr_func = Eigen::ArrayXd::Zero(r_steps);
 
 		try
 		{
@@ -138,10 +160,17 @@ int main( const int argc, const char *argv[] )
 			std::string mock_source_input_name = ss.str();
 
 			// Set up vectors
+			#ifdef LENSING_STYLE
 			std::vector<std::tuple<double,double,double>> lens_positions;
 			std::vector<std::tuple<double,double,double>> source_positions;
 			std::vector<std::tuple<double,double,double>> mock_lens_positions;
 			std::vector<std::tuple<double,double,double>> mock_source_positions;
+			#else
+			std::vector<std::pair<double,double>> lens_positions;
+			std::vector<std::pair<double,double>> source_positions;
+			std::vector<std::pair<double,double>> mock_lens_positions;
+			std::vector<std::pair<double,double>> mock_source_positions;
+			#endif
 
 			// Load in lenses
 			{
@@ -157,10 +186,16 @@ int main( const int argc, const char *argv[] )
 //					const double & T = lens_map.at("T_B").at(i);
 //					if((T<brgastro::mag_lens_T_min)||(T>brgastro::mag_lens_T_max)) continue;
 
+					#ifdef LENSING_STYLE
 					lens_positions.push_back(std::tie(
 							lens_map.at("ra_radians").at(i),
 							lens_map.at("dec_radians").at(i),
 							lens_map.at("Z_B").at(i)));
+					#else
+					lens_positions.push_back(std::make_pair(
+							lens_map.at("ra_radians").at(i),
+							lens_map.at("dec_radians").at(i)));
+					#endif
 				}
 			}
 
@@ -174,10 +209,17 @@ int main( const int argc, const char *argv[] )
 					if((z<source_z_min)||(z>source_z_max)) continue;
 					const double & mag = source_map.at("MAG_r").at(i);
 					if((mag<brgastro::mag_m_min)||(mag>brgastro::mag_m_max)) continue;
+
+					#ifdef LENSING_STYLE
 					source_positions.push_back(std::tie(
-							source_map.at("ra_radians").at(i),
-							source_map.at("dec_radians").at(i),
-							source_map.at("Z_B").at(i)));
+						source_map.at("ra_radians").at(i),
+						source_map.at("dec_radians").at(i),
+						source_map.at("Z_B").at(i)));
+					#else
+					source_positions.push_back(std::make_pair(
+						source_map.at("ra_radians").at(i),
+						source_map.at("dec_radians").at(i)));
+					#endif
 				}
 			}
 
@@ -193,10 +235,16 @@ int main( const int argc, const char *argv[] )
 //					const double & T = mock_lens_map.at("T_B").at(i);
 //					if((T<brgastro::mag_lens_T_min)||(T>brgastro::mag_lens_T_max)) continue;
 
+					#ifdef LENSING_STYLE
 					mock_lens_positions.push_back(std::tie(
-							mock_lens_map.at("ra_radians").at(i),
-							mock_lens_map.at("dec_radians").at(i),
-							mock_lens_map.at("Z_B").at(i)));
+						mock_lens_map.at("ra_radians").at(i),
+						mock_lens_map.at("dec_radians").at(i),
+						mock_lens_map.at("Z_B").at(i)));
+					#else
+					mock_lens_positions.push_back(std::make_pair(
+						mock_lens_map.at("ra_radians").at(i),
+						mock_lens_map.at("dec_radians").at(i)));
+					#endif
 				}
 			}
 
@@ -212,26 +260,37 @@ int main( const int argc, const char *argv[] )
 					const double & mag = mock_source_map.at("MAG_r").at(i);
 					if((mag<brgastro::mag_m_min)||(mag>brgastro::mag_m_max)) continue;
 
+					#ifdef LENSING_STYLE
 					mock_source_positions.push_back(std::tie(
-							mock_source_map.at("ra_radians").at(i),
-							mock_source_map.at("dec_radians").at(i),
-							mock_source_map.at("Z_B").at(i)));
+						mock_source_map.at("ra_radians").at(i),
+						mock_source_map.at("dec_radians").at(i),
+						mock_source_map.at("Z_B").at(i)));
+					#else
+					mock_source_positions.push_back(std::make_pair(
+						mock_source_map.at("ra_radians").at(i),
+						mock_source_map.at("dec_radians").at(i)));
+					#endif
 				}
 			}
 
 			// Set up the correlation function estimator
+			#ifdef LENSING_STYLE
 			brgastro::lensing_correlation_function_estimator estimator(r_limits,lens_positions,
 					source_positions,mock_lens_positions,mock_source_positions,z_buffer);
+			#else
+			brgastro::correlation_function_estimator estimator(r_limits,lens_positions,
+					source_positions,mock_lens_positions,mock_source_positions);
+			#endif
 
 			// Get the correlation functions
 
 			monopole_corr_func = estimator.calculate();
-//			dipole_1_corr_func = estimator.calculate_dipole(0);
-//			dipole_2_corr_func = estimator.calculate_dipole(0.5);
-//			quadrupole_1_corr_func = estimator.calculate_quadrupole(0);
-//			quadrupole_2_corr_func = estimator.calculate_quadrupole(0.5);
-//			octopole_1_corr_func = estimator.calculate_octopole(0);
-//			octopole_2_corr_func = estimator.calculate_octopole(0.5);
+			dipole_1_corr_func = estimator.calculate_dipole(0);
+			dipole_2_corr_func = estimator.calculate_dipole(0.5);
+			quadrupole_1_corr_func = estimator.calculate_quadrupole(0);
+			quadrupole_2_corr_func = estimator.calculate_quadrupole(0.5);
+			octopole_1_corr_func = estimator.calculate_octopole(0);
+			octopole_2_corr_func = estimator.calculate_octopole(0.5);
 		}
 		catch (const std::exception &e)
 		{
@@ -257,12 +316,12 @@ int main( const int argc, const char *argv[] )
 			try
 			{
 				monopole_corr_func_sum += monopole_corr_func;
-//				dipole_1_corr_func_sum += dipole_1_corr_func;
-//				dipole_2_corr_func_sum += dipole_2_corr_func;
-//				quadrupole_1_corr_func_sum += quadrupole_1_corr_func;
-//				quadrupole_2_corr_func_sum += quadrupole_2_corr_func;
-//				octopole_1_corr_func_sum += octopole_1_corr_func;
-//				octopole_2_corr_func_sum += octopole_2_corr_func;
+				dipole_1_corr_func_sum += dipole_1_corr_func;
+				dipole_2_corr_func_sum += dipole_2_corr_func;
+				quadrupole_1_corr_func_sum += quadrupole_1_corr_func;
+				quadrupole_2_corr_func_sum += quadrupole_2_corr_func;
+				octopole_1_corr_func_sum += octopole_1_corr_func;
+				octopole_2_corr_func_sum += octopole_2_corr_func;
 				std::cout << "Field " << field_name_root << " (#" <<
 						++num_processed << "/" << num_fields << ") complete!\n";
 			}
@@ -281,20 +340,20 @@ int main( const int argc, const char *argv[] )
 	output_table["r_bin_mid_radians"] = r_limits.get_bin_mids();
 
 	// Divide the sums by the number of fields to get the means
-	output_table["mp_eps"] = brgastro::coerce<std::vector<double>>(static_cast< std::valarray<double> >(
+	output_table["mp_eps"] = brgastro::coerce<std::vector<double>>(static_cast< Eigen::ArrayXd >(
 			monopole_corr_func_sum/static_cast<double>(num_fields)));
-//	output_table["dp_1_eps"] = brgastro::coerce<std::vector<double>>(static_cast< std::valarray<double> >(
-//			dipole_1_corr_func_sum/static_cast<double>(num_fields)));
-//	output_table["dp_2_eps"] = brgastro::coerce<std::vector<double>>(static_cast< std::valarray<double> >(
-//			dipole_2_corr_func_sum/static_cast<double>(num_fields)));
-//	output_table["qp_1_eps"] = brgastro::coerce<std::vector<double>>(static_cast< std::valarray<double> >(
-//			quadrupole_1_corr_func_sum/static_cast<double>(num_fields)));
-//	output_table["qp_2_eps"] = brgastro::coerce<std::vector<double>>(static_cast< std::valarray<double> >(
-//			quadrupole_2_corr_func_sum/static_cast<double>(num_fields)));
-//	output_table["op_1_eps"] = brgastro::coerce<std::vector<double>>(static_cast< std::valarray<double> >(
-//			octopole_1_corr_func_sum/static_cast<double>(num_fields)));
-//	output_table["op_2_eps"] = brgastro::coerce<std::vector<double>>(static_cast< std::valarray<double> >(
-//			octopole_2_corr_func_sum/static_cast<double>(num_fields)));
+	output_table["dp_1_eps"] = brgastro::coerce<std::vector<double>>(static_cast< Eigen::ArrayXd >(
+			dipole_1_corr_func_sum/static_cast<double>(num_fields)));
+	output_table["dp_2_eps"] = brgastro::coerce<std::vector<double>>(static_cast< Eigen::ArrayXd >(
+			dipole_2_corr_func_sum/static_cast<double>(num_fields)));
+	output_table["qp_1_eps"] = brgastro::coerce<std::vector<double>>(static_cast< Eigen::ArrayXd >(
+			quadrupole_1_corr_func_sum/static_cast<double>(num_fields)));
+	output_table["qp_2_eps"] = brgastro::coerce<std::vector<double>>(static_cast< Eigen::ArrayXd >(
+			quadrupole_2_corr_func_sum/static_cast<double>(num_fields)));
+	output_table["op_1_eps"] = brgastro::coerce<std::vector<double>>(static_cast< Eigen::ArrayXd >(
+			octopole_1_corr_func_sum/static_cast<double>(num_fields)));
+	output_table["op_2_eps"] = brgastro::coerce<std::vector<double>>(static_cast< Eigen::ArrayXd >(
+			octopole_2_corr_func_sum/static_cast<double>(num_fields)));
 
 	brgastro::print_table_map(output_name,output_table);
 

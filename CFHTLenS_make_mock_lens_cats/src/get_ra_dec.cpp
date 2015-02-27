@@ -30,10 +30,10 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "brg/file_access/ascii_table.h"
 #include "brg/call_program.hpp"
 
 #include "get_ra_dec.h"
+#include <brg/file_access/ascii_table.hpp>
 
 const std::string data_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
 const std::string mask_directory = data_directory + "masks/";

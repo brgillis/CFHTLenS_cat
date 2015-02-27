@@ -214,6 +214,11 @@ bool column_passes_global_filter(const std::string & col_name,const std::string 
 		double dval = boost::lexical_cast<double>(value);
 		return (dval <= 2);
 	}
+//	else if(col_name=="ODDS")
+//	{
+//		double dval = boost::lexical_cast<double>(value);
+//		return (dval >= 0.8);
+//	}
 	else
 	{
 		return true;

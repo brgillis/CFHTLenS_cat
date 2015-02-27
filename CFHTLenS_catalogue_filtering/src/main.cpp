@@ -35,6 +35,7 @@
 #include "brg/file_access/open_file.hpp"
 #include "brg_physics/units/unit_conversions.hpp"
 
+#include "correct_redshift_bias.h"
 #include "get_filtered_indices.h"
 #include "make_output_map.h"
 
@@ -72,7 +73,7 @@ int main( const int argc, const char *argv[] )
 	#endif
 	for(size_t field_i=0;field_i<num_fields;++field_i)
 	{
-		field_name = field_names[field_i];
+		std::string field_name = field_names[field_i];
 		std::string field_name_root = field_name.substr(0,6);
 
 		// Get the input file name
@@ -115,7 +116,7 @@ int main( const int argc, const char *argv[] )
 		brgastro::table_map_t<std::string> table_map;
 		try
 		{
-			table_map = brgastro::load_table_map<std::string>(input_file_name,false,std::string(""));
+			table_map = brgastro::load_table_map<std::string>(input_file_name);
 		}
 		catch(const std::runtime_error &e)
 		{
@@ -128,9 +129,6 @@ int main( const int argc, const char *argv[] )
 
 		// Lens file
 		std::vector<size_t> bad_indices(get_bad_lenses(table_map,good_pixels));
-
-		std::cout << "Generating " << lens_output_name << "... ";
-		std::cout.flush();
 
 		// Set up the header columns vector for the ones we want to output
 		brgastro::header_t lens_header_columns;
@@ -174,10 +172,7 @@ int main( const int argc, const char *argv[] )
 		output_map.change_key("LP_log10_SM_INF","Mstel_lo_kg");
 		output_map.change_key("LP_log10_SM_SUP","Mstel_hi_kg");
 
-		brgastro::print_table_map(lens_output_name,output_map);
-
-		std::cout << "Done!\nGenerating " << source_output_name << "... ";
-		std::cout.flush();
+		//correct_redshift_bias(output_map.at("Z_B"));
 
 		// Source file
 
@@ -226,9 +221,17 @@ int main( const int argc, const char *argv[] )
 		output_map.change_key("LP_log10_SM_INF","Mstel_lo_kg");
 		output_map.change_key("LP_log10_SM_SUP","Mstel_hi_kg");
 
+		//correct_redshift_bias(output_map.at("Z_B"));
+
+		brgastro::print_table_map(lens_output_name,output_map);
 		brgastro::print_table_map(source_output_name,output_map);
 
-		std::cout << "Done!\n";
+#ifdef _OPENMP
+#pragma omp critical(CFHTLenS_catalogue_filtering_print_tables)
+#endif
+		{
+			std::cout << "Finished filtering " << field_name_root << "!\n";
+		}
 
 	}
 
