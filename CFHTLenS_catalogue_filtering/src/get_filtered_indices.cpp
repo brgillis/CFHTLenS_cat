@@ -39,50 +39,48 @@
 
 #undef WARN_MASK_MISMATCH
 
-void move_y_column_to_i(brgastro::table_map_t<std::string> & map)
+void move_y_column_to_i(brgastro::labeled_array<double> & map)
 {
 	// Check if the i columns exist, and if not, move in y columns
-	if(map.find("MAG_i")==map.end())
+	if(map.count("MAG_i")==0)
 	{
-		map["MAG_i"] = std::move(map.at("MAG_y"));
-		map.erase("MAG_y");
+		map.change_label("MAG_y","MAG_i");
 	}
-	if(map.find("MAGERR_i")==map.end())
+	if(map.count("MAGERR_i")==0)
 	{
-		map["MAGERR_i"] = std::move(map.at("MAGERR_y"));
-		map.erase("MAGERR_y");
+		map.change_label("MAGERR_y","MAGERR_i");
 	}
-	if(map.find("EXTINCTION_i")==map.end())
+	if(map.count("EXTINCTION_i")==0)
 	{
-		map["EXTINCTION_i"] = std::move(map.at("EXTINCTION_y"));
-		map.erase("EXTINCTION_y");
+		map.change_label("EXTINCTION_y","EXTINCTION_i");
 	}
 }
 
-std::vector<size_t> get_bad_lenses(const brgastro::table_map_t<std::string> & map, const std::vector<std::vector<bool>> good_pixels)
+std::vector<size_t> get_good_lenses(const brgastro::labeled_array<double> & map, const std::vector<std::vector<bool>> good_pixels)
 {
 	// Determine the number of rows
-	const size_t num_rows = map.begin()->second.size();
+	const size_t num_rows = map.num_rows();
 
-	std::vector<size_t> bad_indices;
-	bad_indices.reserve(num_rows);
+	std::vector<size_t> good_indices;
+	good_indices.reserve(num_rows);
 
 	for(size_t i=0; i<num_rows; ++i)
 	{
+		const auto & galaxy = map.row(i);
+
 		// Check if this object is within the mask
-		const unsigned xp = brgastro::round_int(boost::lexical_cast<double>(map.at("Xpos").at(i)));
-		const unsigned yp = brgastro::round_int(boost::lexical_cast<double>(map.at("Ypos").at(i)));
+		const unsigned xp = galaxy.at_label("Xpos");
+		const unsigned yp = galaxy.at_label("Ypos");
 
 		if(!is_good_position(xp,yp,good_pixels))
 		{
-			bad_indices.push_back(i);
 
 #ifdef WARN_MASK_MISMATCH
 			// Check that the mask value in the table agrees
-			if(boost::lexical_cast<unsigned>(map.at("MASK").at(i))<=1)
+			if(galaxy.at_label("MASK"))<=1)
 			{
 				std::cerr << "WARNING: Mask value mismatch for lens index " << i << " at position (" << xp << ", " << yp << ")." << std::endl;
-				std::cerr << "Table's mask value is " << map.at("MASK").at(i) << ", but saved value is 'false'.\n";
+				std::cerr << "Table's mask value is " << galaxy.at_label("MASK") << ", but saved value is 'false'.\n";
 			}
 #endif
 
@@ -92,53 +90,48 @@ std::vector<size_t> get_bad_lenses(const brgastro::table_map_t<std::string> & ma
 		{
 #ifdef WARN_MASK_MISMATCH
 			// Check that the mask value in the table agrees
-			if(boost::lexical_cast<unsigned>(map.at("MASK").at(i))>1)
+			if(galaxy.at_label("MASK")>1)
 			{
 				std::cerr << "WARNING: Mask value mismatch for lens index " << i << " at position (" << xp << ", " << yp << ")." << std::endl;
-				std::cerr << "Table's mask value is " << map.at("MASK").at(i) << ", but saved value is 'true'.\n";
+				std::cerr << "Table's mask value is " << galaxy.at_label("MASK") << ", but saved value is 'true'.\n";
 			}
 #endif
 		}
 
-		// Go over each column, and check if it passes the filter
-		for(auto col_it = map.begin(); col_it != map.end(); ++col_it)
+		if(galaxy_passes_lens_filter(galaxy))
 		{
-			const std::string & key = col_it->first;
-			if(!column_passes_lens_filter(key,col_it->second.at(i)))
-			{
-				bad_indices.push_back(i);
-				break;
-			}
+			good_indices.push_back(i);
 		}
 	}
 
-	return bad_indices;
+	return good_indices;
 }
 
-std::vector<size_t> get_bad_sources(const brgastro::table_map_t<std::string> & map, const std::vector<std::vector<bool>> good_pixels)
+std::vector<size_t> get_good_sources(const brgastro::labeled_array<double> & map, const std::vector<std::vector<bool>> good_pixels)
 {
 	// Determine the number of rows
-	const size_t num_rows = map.begin()->second.size();
+	const size_t num_rows = map.num_rows();
 
-	std::vector<size_t> bad_indices;
-	bad_indices.reserve(num_rows);
+	std::vector<size_t> good_indices;
+	good_indices.reserve(num_rows);
 
 	for(size_t i=0; i<num_rows; ++i)
 	{
+		const auto & galaxy = map.row(i);
+
 		// Check if this object is within the mask
-		const unsigned xp = brgastro::round_int(boost::lexical_cast<double>(map.at("Xpos").at(i)));
-		const unsigned yp = brgastro::round_int(boost::lexical_cast<double>(map.at("Ypos").at(i)));
+		const unsigned xp = galaxy.at_label("Xpos");
+		const unsigned yp = galaxy.at_label("Ypos");
 
 		if(!is_good_position(xp,yp,good_pixels))
 		{
-			bad_indices.push_back(i);
 
 #ifdef WARN_MASK_MISMATCH
 			// Check that the mask value in the table agrees
-			if(boost::lexical_cast<unsigned>(map.at("MASK").at(i))<=1)
+			if(galaxy.at_label("MASK"))<=1)
 			{
-				std::cerr << "WARNING: Mask value mismatch for source index " << i << " at position (" << xp << ", " << yp << ")." << std::endl;
-				std::cerr << "Table's mask value is " << map.at("MASK").at(i) << ", but saved value is 'false'.\n";
+				std::cerr << "WARNING: Mask value mismatch for lens index " << i << " at position (" << xp << ", " << yp << ")." << std::endl;
+				std::cerr << "Table's mask value is " << galaxy.at_label("MASK") << ", but saved value is 'false'.\n";
 			}
 #endif
 
@@ -148,79 +141,39 @@ std::vector<size_t> get_bad_sources(const brgastro::table_map_t<std::string> & m
 		{
 #ifdef WARN_MASK_MISMATCH
 			// Check that the mask value in the table agrees
-			if(boost::lexical_cast<unsigned>(map.at("MASK").at(i))>1)
+			if(galaxy.at_label("MASK")>1)
 			{
-				std::cerr << "WARNING: Mask value mismatch for source index " << i << " at position (" << xp << ", " << yp << ")." << std::endl;
-				std::cerr << "Table's mask value is " << map.at("MASK").at(i) << ", but saved value is 'true'.\n";
+				std::cerr << "WARNING: Mask value mismatch for lens index " << i << " at position (" << xp << ", " << yp << ")." << std::endl;
+				std::cerr << "Table's mask value is " << galaxy.at_label("MASK") << ", but saved value is 'true'.\n";
 			}
 #endif
 		}
 
-		// Go over each column, and check if it passes the filter
-		for(auto col_it = map.begin(); col_it != map.end(); ++col_it)
+		if(galaxy_passes_source_filter(galaxy))
 		{
-			const std::string & key = col_it->first;
-			if(!column_passes_source_filter(key,col_it->second.at(i)))
-			{
-				bad_indices.push_back(i);
-				break;
-			}
+			good_indices.push_back(i);
 		}
 	}
 
-	return bad_indices;
+	return good_indices;
 }
 
-bool column_passes_lens_filter(const std::string & col_name,const std::string & value)
+bool galaxy_passes_lens_filter(const brgastro::labeled_array<double>::const_row_reference & galaxy)
 {
-	if(!column_passes_global_filter(col_name,value)) return false;
+	if(galaxy.at_label("Z_B")>1.6) return false;
+	if(!galaxy_passes_global_filter(galaxy)) return false;
 	return true;
-	if(col_name=="Z_B")
-	{
-		double dval = boost::lexical_cast<double>(value);
-		return (dval <= 1.3) && (dval >= 0.2);
-	}
-	else
-	{
-		return true;
-	}
 }
-bool column_passes_source_filter(const std::string & col_name,const std::string & value)
+bool galaxy_passes_source_filter(const brgastro::labeled_array<double>::const_row_reference & galaxy)
 {
-	if(!column_passes_global_filter(col_name,value)) return false;
-	if(col_name=="Z_B")
-	{
-		return boost::lexical_cast<double>(value) >= 0.2;
-	}
-	else
-	{
-		return true;
-	}
+	if(!galaxy_passes_global_filter(galaxy)) return false;
+	return true;
 }
-bool column_passes_global_filter(const std::string & col_name,const std::string & value)
+bool galaxy_passes_global_filter(const brgastro::labeled_array<double>::const_row_reference & galaxy)
 {
-	if(col_name=="Z_B")
-	{
-		double dval = boost::lexical_cast<double>(value);
-		return (dval <= 4);
-	}
-	else if(col_name=="MAG_r")
-	{
-		double dval = std::fabs(boost::lexical_cast<double>(value));
-		return (dval <= 24.7);
-	}
-	else if(col_name=="CHI_SQUARED_BPZ")
-	{
-		double dval = boost::lexical_cast<double>(value);
-		return (dval <= 2);
-	}
-//	else if(col_name=="ODDS")
-//	{
-//		double dval = boost::lexical_cast<double>(value);
-//		return (dval >= 0.8);
-//	}
-	else
-	{
-		return true;
-	}
+	if(galaxy.at_label("Z_B")>4) return false;
+	if(galaxy.at_label("MAG_r")>24.7) return false;
+	if(galaxy.at_label("CHI_SQUARED_BPZ")>2) return false;
+	//if(galaxy.at_label("ODDS")<0.8) return false;
+	return true;
 }

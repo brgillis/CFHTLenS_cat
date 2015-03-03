@@ -35,10 +35,11 @@
 #include <string>
 #include <vector>
 
+#include "brg/container/labeled_array.hpp"
 #include "brg/container/table_typedefs.hpp"
 
-brgastro::table_map_t<std::string> make_output_map(const brgastro::table_map_t<std::string> & map,
-		const std::vector<size_t> & filtered_indices, const brgastro::header_t & header_columns,
+brgastro::labeled_array<double> make_output_map(const brgastro::labeled_array<double> & map,
+		const std::vector<size_t> & good_indices, const brgastro::header_t & header_labels,
 		const std::map<std::string,std::function<double(double)>> & conversions);
 
 

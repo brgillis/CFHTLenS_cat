@@ -33,6 +33,7 @@
 #include <brg/external/sgsmooth.h>
 #include <Eigen/Core>
 
+#include "brg/container/labeled_array.hpp"
 #include "brg/container/table_typedefs.hpp"
 
 #include "brg/file_access/open_file.hpp"
@@ -54,12 +55,16 @@
 #include "brg_physics/sky_obj/galaxy.h"
 
 // Magic values
-const std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
-const std::string fields_list = fields_directory + "fields_list.txt";
-const std::string output_table_root = fields_directory + "magnitude_hist_z";
-const std::string g_output_table_root = fields_directory + "magnitude_hist_gz";
+const std::string data_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
+const std::string fields_directory = data_directory + "filtered_tables/";
+const std::string lens_weight_file = data_directory + "field_lens_weights.dat";
+const std::string fields_list = data_directory + "fields_list.txt";
+const std::string output_table_root = data_directory + "magnitude_hist_z";
+const std::string g_output_table_root = data_directory + "magnitude_hist_gz";
 const std::string output_table_tail = ".dat";
 const std::string field_size_file_name = "/disk2/brg/git/CFHTLenS_cat/Data/masks/field_sizes.dat";
+
+constexpr double z_buffer = 0.3;
 
 #undef USE_MOCK_SOURCES
 
@@ -90,8 +95,8 @@ int main( const int argc, const char *argv[] )
 	brgastro::limit_vector<double> mag_bin_limits(brgastro::mag_m_counting_min,
 			brgastro::mag_m_counting_max,brgastro::round_int((brgastro::mag_m_counting_max-brgastro::mag_m_counting_min)/brgastro::mag_m_step));
 
-	size_t num_z_bins = z_bin_limits.size()-1;
-	size_t num_mag_bins = mag_bin_limits.size()-1;
+	size_t num_z_bins = z_bin_limits.num_bins();
+	size_t num_mag_bins = mag_bin_limits.num_bins();
 
 	typedef std::vector<unsigned long> int_hist;
 	typedef std::vector<long double> double_hist;
@@ -102,6 +107,7 @@ int main( const int argc, const char *argv[] )
 	std::vector<double_hist> weighted_z_bin_hists(num_z_bins,
 			double_hist(num_mag_bins,0));
 	int_hist z_bin_counts(num_z_bins,0);
+	double_hist z_tot_weight(num_z_bins,0);
 
 	// Hists for in this bin or greater
 	std::vector<int_hist> gz_bin_hists(num_z_bins,
@@ -109,6 +115,7 @@ int main( const int argc, const char *argv[] )
 	std::vector<double_hist> weighted_gz_bin_hists(num_z_bins,
 			double_hist(num_mag_bins,0));
 	int_hist gz_bin_counts(num_z_bins,0);
+	double_hist gz_tot_weight(num_z_bins,0);
 
 	std::vector<std::string> field_names;
 	std::string field_name;
@@ -123,11 +130,19 @@ int main( const int argc, const char *argv[] )
 
 	fi.close();
 
-	// Load each field in turn and process it
-
 	size_t num_fields = field_names.size();
 	size_t num_processed = 0;
 
+
+	// Load the lens weight table
+	const brgastro::labeled_array<double> lens_weight_table(lens_weight_file);
+	auto lens_weight_z_limits_builder = brgastro::coerce<std::vector<double>>(lens_weight_table.at_label("z_bin_min"));
+	lens_weight_z_limits_builder.push_back(2*lens_weight_z_limits_builder.back()-
+										   lens_weight_z_limits_builder.at(lens_weight_z_limits_builder.size()-2));
+	const brgastro::limit_vector<double> lens_weight_z_limits(std::move(lens_weight_z_limits_builder));
+
+
+	// Load each field in turn and process it
 	//num_fields = 1;
 
 	#ifdef _OPENMP
@@ -141,11 +156,14 @@ int main( const int argc, const char *argv[] )
 		{
 			// Get the field size
 			const auto size_measurements = field_size_table.at(field_name_root);
-			//const double field_size = brgastro::mean(size_measurements);
-			//const double field_size = size_measurements[0];
+
 			const double field_size = size_measurements[1];
+
+			// Get the weights for each redshift for this field
+			const auto z_weights = lens_weight_table.at_label(field_name_root).raw();
+
 			#ifdef _OPENMP
-			#pragma omp critical(append_field_size)
+			#pragma omp critical(append_field_size_and_weights)
 			#endif
 			{
 				field_sizes.push_back(field_size);
@@ -153,7 +171,7 @@ int main( const int argc, const char *argv[] )
 
 			// Get the source file names
 			std::stringstream ss("");
-			ss << fields_directory << "filtered_tables/" << field_name_root << source_root;
+			ss << fields_directory << field_name_root << source_root;
 			std::string source_input_name = ss.str();
 
 			// Load in sources
@@ -162,44 +180,45 @@ int main( const int argc, const char *argv[] )
 			source_map = (brgastro::load_table_map<double>(source_input_name));
 			size_t num_sources = source_map.begin()->second.size();
 
-			//unsigned counter = 0;  //!!
-
 			for(size_t i=0; i<num_sources; ++i)
 			{
-				const auto & source_z = source_map.at("Z_B").at(i);
+				const double & source_z = source_map.at("Z_B").at(i);
 				if(z_bin_limits.outside_limits(source_z)) continue;
+
 				size_t z_i = z_bin_limits.get_bin_index(source_z);
+
 				const double & mag = source_map.at("MAG_r").at(i);
-				const double & weight = source_map.at("weight").at(i);
-
 				if(mag_bin_limits.outside_limits(mag)) continue;
-
 				size_t mag_i = mag_bin_limits.get_bin_index(mag);
+
+				const double implicit_lens_z = source_z - z_buffer;
+
+				double weight = 0;
+				if(lens_weight_z_limits.inside_limits(implicit_lens_z))
+				{
+					weight = z_weights(lens_weight_z_limits.get_bin_index(source_z));
+				} // else weight = 0
 
 				#ifdef _OPENMP
 				#pragma omp critical(increment_count_bins)
 				#endif
 				{
-					//if((mag>=brgastro::mag_m_min)&&(source_z>=1.14)) ++counter; //!!
-
 					// Add to the specific bin
 					++z_bin_hists[z_i][mag_i];
-					weighted_z_bin_hists[z_i][mag_i]+=weight;
 					++z_bin_counts[z_i];
+					weighted_z_bin_hists[z_i][mag_i]+=weight;
+					z_tot_weight[z_i]+=weight;
 
 					// Add to the cumulative bins
 					for(size_t j=0; j<=z_i; ++j)
 					{
 						++gz_bin_hists[j][mag_i];
-						weighted_gz_bin_hists[j][mag_i]+=weight;
 						++gz_bin_counts[j];
-
-						//if((mag>=brgastro::mag_m_min)&&(j==47)) ++counter; //!!
+						weighted_gz_bin_hists[j][mag_i]+=weight;
+						gz_tot_weight[j]+=weight;
 					}
 				}
 			}
-
-			//std::cout << counter << std::endl; //!!
 
 		}
 		catch (const std::runtime_error &e)
@@ -234,7 +253,8 @@ int main( const int argc, const char *argv[] )
 	auto z_hist_it = z_bin_hists.begin();
 	auto z_w_hist_it = weighted_z_bin_hists.begin();
 	auto z_count_it = z_bin_counts.begin();
-	for(auto z_it=z_bin_limits.begin();z_hist_it!=z_bin_hists.end(); ++z_it, ++z_hist_it, ++z_w_hist_it, ++z_count_it)
+	auto z_tot_weight_it = z_tot_weight.begin();
+	for(auto z_it=z_bin_limits.begin();z_hist_it!=z_bin_hists.end(); ++z_it, ++z_hist_it, ++z_w_hist_it, ++z_count_it, ++z_tot_weight_it)
 	{
 		// Get the name for the table we'll output to
 		std::string z_label = boost::lexical_cast<std::string>(brgastro::round_int(1000 * *z_it));
@@ -246,6 +266,8 @@ int main( const int argc, const char *argv[] )
 		data["count"];
 		data["weighted_count"];
 
+		double count_factor = *z_count_it / *z_tot_weight_it;
+
 		// Add each bin to the table
 		auto h_it = z_hist_it->begin();
 		auto w_h_it = z_w_hist_it->begin();
@@ -254,7 +276,7 @@ int main( const int argc, const char *argv[] )
 		{
 			data["mag_bin_lower"].push_back(*mag_it);
 			data["count"].push_back(*h_it / survey_size);
-			data["weighted_count"].push_back(*w_h_it / survey_size);
+			data["weighted_count"].push_back(*w_h_it * count_factor / survey_size);
 		}
 
 		double mag_step = data["mag_bin_lower"].at(1)-data["mag_bin_lower"].at(0);
@@ -263,7 +285,7 @@ int main( const int argc, const char *argv[] )
 		auto rep_func = [] (const double & v) {if(v>0) return v; else return 0.1;};
 
 		// Now calculate the smoothed count
-		auto log_count = brgastro::divide(brgastro::log(brgastro::apply(rep_func,data["count"])),
+		auto log_count = brgastro::divide(brgastro::log(brgastro::apply(rep_func,data["weighted_count"])),
 				std::log(10.));
 		auto smoothed_log = brgastro::sg_smooth(log_count,sg_window,sg_deg);
 		data["smoothed_count"] = brgastro::pow(10.,smoothed_log);
@@ -287,7 +309,8 @@ int main( const int argc, const char *argv[] )
 	z_hist_it = gz_bin_hists.begin();
 	z_w_hist_it = weighted_gz_bin_hists.begin();
 	z_count_it = gz_bin_counts.begin();
-	for(auto z_it=z_bin_limits.begin();z_hist_it!=gz_bin_hists.end(); ++z_it, ++z_hist_it, ++z_w_hist_it, ++z_count_it)
+	z_tot_weight_it = gz_tot_weight.begin();
+	for(auto z_it=z_bin_limits.begin();z_hist_it!=gz_bin_hists.end(); ++z_it, ++z_hist_it, ++z_w_hist_it, ++z_count_it, ++z_tot_weight_it)
 	{
 		// Get the name for the table we'll output to
 		std::string z_label = boost::lexical_cast<std::string>(brgastro::round_int(1000 * *z_it));
@@ -299,6 +322,8 @@ int main( const int argc, const char *argv[] )
 		data["count"];
 		data["weighted_count"];
 
+		double count_factor = *z_count_it / brgastro::safe_d(*z_tot_weight_it);
+
 		// Add each bin to the table
 		auto h_it = z_hist_it->begin();
 		auto w_h_it = z_w_hist_it->begin();
@@ -307,7 +332,7 @@ int main( const int argc, const char *argv[] )
 		{
 			data["mag_bin_lower"].push_back(*mag_it);
 			data["count"].push_back(*h_it / survey_size);
-			data["weighted_count"].push_back(*w_h_it / survey_size);
+			data["weighted_count"].push_back(*w_h_it * count_factor / survey_size);
 		}
 
 		double mag_step = data["mag_bin_lower"].at(1)-data["mag_bin_lower"].at(0);
@@ -316,7 +341,7 @@ int main( const int argc, const char *argv[] )
 		auto rep_func = [] (const double & v) {if(v>0) return v; else return 0.1;};
 
 		// Now calculate the smoothed count
-		auto log_count = brgastro::divide(brgastro::log(brgastro::apply(rep_func,data["count"])),
+		auto log_count = brgastro::divide(brgastro::log(brgastro::apply(rep_func,data["weighted_count"])),
 				std::log(10.));
 		auto smoothed_log = brgastro::sg_smooth(log_count,sg_window,sg_deg);
 
@@ -331,7 +356,7 @@ int main( const int argc, const char *argv[] )
 		};
 		double integrated_count = brgastro::integrate_Romberg(&smooth_count_func,brgastro::mag_m_counting_min,
 				brgastro::mag_m_counting_max,0.000001);
-		double smooth_correction_factor = brgastro::sum(data["count"])*brgastro::mag_m_step/
+		double smooth_correction_factor = brgastro::sum(data["weighted_count"])*brgastro::mag_m_step/
 				integrated_count;
 
 		smoothed_count *= smooth_correction_factor;
@@ -384,5 +409,7 @@ int main( const int argc, const char *argv[] )
 		brgastro::print_table_map(output_file_name,data);
 
 	}
+
+	std::cout << "Done!\n";
 	return 0;
 }

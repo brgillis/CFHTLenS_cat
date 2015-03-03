@@ -30,7 +30,7 @@
 #include <sstream>
 #include <string>
 
-#include "brg/file_access/ascii_table_map.hpp"
+#include "brg/container/labeled_array.hpp"
 #include "brg/file_access/binary_archive.hpp"
 #include "brg/file_access/open_file.hpp"
 #include "brg_physics/units/unit_conversions.hpp"
@@ -113,10 +113,10 @@ int main( const int argc, const char *argv[] )
 #endif
 
 		// Load in the input file
-		brgastro::table_map_t<std::string> table_map;
+		brgastro::labeled_array<double> table;
 		try
 		{
-			table_map = brgastro::load_table_map<std::string>(input_file_name);
+			table.load(input_file_name); // TODO Check we're properly loading
 		}
 		catch(const std::runtime_error &e)
 		{
@@ -125,10 +125,10 @@ int main( const int argc, const char *argv[] )
 		}
 
 		// Rename the y magnitude column i if it's present
-		move_y_column_to_i(table_map);
+		move_y_column_to_i(table);
 
 		// Lens file
-		std::vector<size_t> bad_indices(get_bad_lenses(table_map,good_pixels));
+		std::vector<size_t> good_indices(get_good_lenses(table,good_pixels));
 
 		// Set up the header columns vector for the ones we want to output
 		brgastro::header_t lens_header_columns;
@@ -162,21 +162,23 @@ int main( const int argc, const char *argv[] )
 		lens_conversions["LP_log10_SM_INF"] = l10_Msun_to_kg;
 		lens_conversions["LP_log10_SM_SUP"] = l10_Msun_to_kg;
 
-		brgastro::table_map_t<std::string> output_map(make_output_map(table_map,bad_indices,lens_header_columns,
+		brgastro::labeled_array<double> output_map(make_output_map(table,good_indices,lens_header_columns,
 				lens_conversions));
 
 		// Rename columns we've applied unit convesions to
-		output_map.change_key("ALPHA_J2000","ra_radians");
-		output_map.change_key("DELTA_J2000","dec_radians");
-		output_map.change_key("LP_log10_SM_MED","Mstel_kg");
-		output_map.change_key("LP_log10_SM_INF","Mstel_lo_kg");
-		output_map.change_key("LP_log10_SM_SUP","Mstel_hi_kg");
+		output_map.change_label("ALPHA_J2000","ra_radians");
+		output_map.change_label("DELTA_J2000","dec_radians");
+		output_map.change_label("LP_log10_SM_MED","Mstel_kg");
+		output_map.change_label("LP_log10_SM_INF","Mstel_lo_kg");
+		output_map.change_label("LP_log10_SM_SUP","Mstel_hi_kg");
 
 		//correct_redshift_bias(output_map.at("Z_B"));
 
+		output_map.save(lens_output_name,true);
+
 		// Source file
 
-		bad_indices = get_bad_sources(table_map, good_pixels);
+		good_indices = get_good_sources(table, good_pixels);
 
 		// Set up the header columns vector for the ones we want to output
 		brgastro::header_t source_header_columns;
@@ -212,19 +214,18 @@ int main( const int argc, const char *argv[] )
 		source_conversions["LP_log10_SM_INF"] = l10_Msun_to_kg;
 		source_conversions["LP_log10_SM_SUP"] = l10_Msun_to_kg;
 
-		output_map = make_output_map(table_map,bad_indices,source_header_columns,source_conversions);
+		output_map = make_output_map(table,good_indices,source_header_columns,source_conversions);
 
 		// Rename columns we've applied unit convesions to
-		output_map.change_key("ALPHA_J2000","ra_radians");
-		output_map.change_key("DELTA_J2000","dec_radians");
-		output_map.change_key("LP_log10_SM_MED","Mstel_kg");
-		output_map.change_key("LP_log10_SM_INF","Mstel_lo_kg");
-		output_map.change_key("LP_log10_SM_SUP","Mstel_hi_kg");
+		output_map.change_label("ALPHA_J2000","ra_radians");
+		output_map.change_label("DELTA_J2000","dec_radians");
+		output_map.change_label("LP_log10_SM_MED","Mstel_kg");
+		output_map.change_label("LP_log10_SM_INF","Mstel_lo_kg");
+		output_map.change_label("LP_log10_SM_SUP","Mstel_hi_kg");
 
 		//correct_redshift_bias(output_map.at("Z_B"));
 
-		brgastro::print_table_map(lens_output_name,output_map);
-		brgastro::print_table_map(source_output_name,output_map);
+		output_map.save(source_output_name,true);
 
 #ifdef _OPENMP
 #pragma omp critical(CFHTLenS_catalogue_filtering_print_tables)
@@ -234,6 +235,8 @@ int main( const int argc, const char *argv[] )
 		}
 
 	}
+
+	std::cout << "Done!\n";
 
 	return 0;
 }

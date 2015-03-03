@@ -39,6 +39,8 @@
 
 #include "brg_physics/units/unit_conversions.hpp"
 
+#define MAKE_WEIGHT_TABLE
+
 // Magic values
 const std::string data_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
 const std::string field_directory = data_directory + "filtered_tables/";
@@ -47,11 +49,16 @@ const std::string lens_suffix = "_lens.dat";
 const std::string source_suffix = "_source.dat";
 const std::string pixel_map_suffix = "_lens_good_pixels.bin";
 
-const std::string output_filename = data_directory + "field_stats.dat";
-
 constexpr double z_bin_min = 0.2;
 constexpr double z_bin_max = 1.3;
-constexpr unsigned z_bins = 1;
+
+#ifdef MAKE_WEIGHT_TABLE
+const std::string output_filename = data_directory + "field_lens_weights.dat";
+constexpr unsigned z_bins = 110;
+#else
+const std::string output_filename = data_directory + "field_stats.dat";
+constexpr unsigned z_bins = 11;
+#endif
 
 constexpr double rad_per_px = 0.185965*brgastro::unitconv::asectorad;
 
@@ -91,43 +98,45 @@ int main( const int argc, const char *argv[] )
 
 	// Set up output data table
 	brgastro::labeled_array<double> output_table;
-	std::vector<std::string> output_header;
-
-	std::stringstream ss;
-
-	output_header.push_back("field_index");
-
-	for(unsigned i=0; i<z_limits.num_bins(); ++i)
-	{
-		ss.str("");
-		ss << "lens_count_z_" << z_limits.lower_limit(i);
-		output_header.push_back(ss.str());
-		ss.str("");
-		ss << "source_count_z_" << z_limits.lower_limit(i);
-		output_header.push_back(ss.str());
-		ss.str("");
-		ss << "lens_dens_z_" << z_limits.lower_limit(i);
-		output_header.push_back(ss.str());
-		ss.str("");
-		ss << "source_dens_z_" << z_limits.lower_limit(i);
-		output_header.push_back(ss.str());
-	}
-
-	output_table.set_labels(output_header);
 
 	// Open and read in the fields list
 	std::ifstream fi;
 	brgastro::open_file_input(fi,fields_list);
 
 	std::vector<std::string> field_names;
+	std::vector<std::string> output_header;
+
+	#ifdef MAKE_WEIGHT_TABLE
+	output_header.push_back("z_bin_min");
+	output_table.insert_col(z_limits.lower_limits());
+	#endif
+
 	std::string temp_field_name;
 
 	while(fi>>temp_field_name)
 	{
 		field_names.push_back(temp_field_name);
+
+		#ifdef MAKE_WEIGHT_TABLE
+		output_header.push_back(temp_field_name.substr(0,6));
+		#endif
 	}
 
 	unsigned num_fields = field_names.size();
+
+	#ifndef MAKE_WEIGHT_TABLE
+
+	std::stringstream ss;
+
+	output_header.push_back("field_index");
+	for(unsigned i=0; i<z_limits.num_bins(); ++i)
+	{
+		ss.str("");
+		ss << "lens_dens_z_" << z_limits.lower_limit(i);
+		output_header.push_back(ss.str());
+	}
+	#endif // #ifdef MAKE_WEIGHT_TABLE
+
 	unsigned num_completed_fields = 0;
 
 	//num_fields = 1;
@@ -160,61 +169,55 @@ int main( const int argc, const char *argv[] )
 		ss << field_directory << field_name_root << lens_suffix;
 		const std::string lens_file_name = ss.str();
 
-		// Get the source file name
-		ss.str("");
-		ss << field_directory << field_name_root << source_suffix;
-		const std::string source_file_name = ss.str();
-
 		brgastro::labeled_array<double> lens_table;
-		brgastro::labeled_array<double> source_table;
 
 		lens_table.load(lens_file_name);
-		source_table.load(source_file_name);
 
 		// Loop over lenses and bin them by redshift
-		Eigen::ArrayXd lens_count = Eigen::ArrayXd::Zero(z_bins+2);
+		Eigen::ArrayXd lens_count = Eigen::ArrayXd::Zero(z_bins);
 
 		for(const auto & lens : lens_table.rows())
 		{
-			lens_count[z_limits.get_bin_index(lens.at_label("Z_B"))] += 1;
-		}
-
-		// Loop over sources and bin them by redshift
-		Eigen::ArrayXd source_count = Eigen::ArrayXd::Zero(z_bins+2);
-
-		for(const auto & source : source_table.rows())
-		{
-			source_count[z_limits.get_bin_index(source.at_label("Z_B"))] += 1;
+			double z = lens.at_label("Z_B");
+			if(z_limits.inside_limits(z))
+				lens_count[z_limits.get_bin_index(z)] += 1;
 		}
 
 		Eigen::ArrayXd lens_dens = lens_count/field_size;
-		Eigen::ArrayXd source_dens = lens_count/field_size;
+
+#ifndef MAKE_WEIGHT_TABLE
+
+		std::vector<double> output_row;
+		output_row.reserve(lens_dens.size()+1);
+
+		output_row.push_back(field_i);
+
+		for(int i=0; i<lens_dens.size(); ++i)
+			output_row.push_back(lens_dens(i));
+
+#endif // #ifndef MAKE_WEIGHT_TABLE
 
 		// Add this data to the output table
-
-		std::vector<double> output_data;
-
-		output_data.push_back(field_i);
-
-		for(unsigned i=0; i<z_limits.num_bins(); ++i)
-		{
-			output_data.push_back(lens_count(i));
-			output_data.push_back(source_count(i));
-			output_data.push_back(lens_dens(i));
-			output_data.push_back(source_dens(i));
-		}
 
 		#ifdef _OPENMP
 		#pragma omp critical(update_field_stats_output)
 		#endif
 		{
-			output_table.insert_row(output_data);
+			#ifdef MAKE_WEIGHT_TABLE
+			output_table.insert_col(lens_dens);
+			#else
+			output_table.insert_row(output_row);
+			#endif
 			std::cout << "Field " << field_name_root << " (#" <<
 					++num_completed_fields << "/" << num_fields << ") complete.\n";
 		}
 	}
 
+	output_table.set_labels(output_header);
+
 	output_table.save(output_filename);
+
+	std::cout << "Done!\n";
 
 	return 0;
 }

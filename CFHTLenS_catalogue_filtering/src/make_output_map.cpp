@@ -35,46 +35,50 @@
 
 #include "make_output_map.h"
 
-brgastro::table_map_t<std::string> make_output_map(const brgastro::table_map_t<std::string> & map,
-		const std::vector<size_t> & bad_indices, const brgastro::header_t & header_columns,
-		const std::map<std::string,std::function<double(double)>> & conversions)
+brgastro::labeled_array<double> make_output_map(const brgastro::labeled_array<double> & map,
+													const std::vector<size_t> & good_indices, const brgastro::header_t & header_labels,
+													const std::map<std::string,std::function<double(double)>> & conversions)
 {
-	brgastro::table_map_t<std::string> result_map;
+	brgastro::labeled_array<double> result_map;
+	result_map.set_labels(header_labels);
 
-	// Loop over columns
-	for(auto col_it = header_columns.begin(); col_it != header_columns.end(); ++col_it)
+	size_t num_new_cols = header_labels.size();
+
+	for(const auto & i : good_indices)
 	{
-		// Initialize column
-		result_map[*col_it] = std::vector<std::string>();
+		const auto & galaxy = map.row(i);
+		std::vector<double> new_row;
 
-		// Check if we'll apply a conversion to this column
-		auto conv_it = conversions.find(*col_it);
-		const bool apply_conversion = !(conv_it==conversions.end());
+		new_row.reserve(num_new_cols);
 
-		auto ele_to_skip_next = bad_indices.begin();
-
-		// Add appropriate elements
-		for(size_t i=0; i<map.at(*col_it).size(); ++i)
+		for(const auto & label : header_labels)
 		{
-			if(i==*ele_to_skip_next)
+			new_row.push_back(galaxy.at_label(label));
+		}
+
+		result_map.insert_row(std::move(new_row));
+	}
+
+	// Now apply conversions as appropriate
+	for(const auto & conv_value_pair : conversions)
+	{
+		const auto & label = conv_value_pair.first;
+		const auto & func = conv_value_pair.second;
+
+		// If this label is in the map, apply the conversion to that column
+		try
+		{
+			auto col = result_map.at_label(label);
+			for(auto & val : col)
 			{
-				++ele_to_skip_next;
-				if(ele_to_skip_next==bad_indices.end())
-					ele_to_skip_next = bad_indices.begin();
+				val = func(val);
 			}
-			else
-			{
-				if(!apply_conversion)
-				{
-					result_map[*col_it].push_back(map.at(*col_it)[i]);
-				}
-				else
-				{
-					double val = boost::lexical_cast<double>(map.at(*col_it)[i]);
-					double new_val = conv_it->second(val);
-					result_map[*col_it].push_back(boost::lexical_cast<std::string>(new_val));
-				}
-			}
+		}
+		catch(const std::exception &e)
+		{
+			// The label isn't in the map most likely.
+			std::cerr << "ERROR: Cannot apply conversion for label " << label << ".\n";
+			throw;
 		}
 	}
 
