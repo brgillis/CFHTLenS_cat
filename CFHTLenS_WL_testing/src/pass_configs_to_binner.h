@@ -2,11 +2,12 @@
  @file pass_configs_to_binner.h
  ------------------
 
- TODO <Insert file description here>
+ A function to create a pair_binner object using a set of configuration
+ settings.
 
  **********************************************************************
 
- Copyright (C) 2014  Bryan R. Gillis
+ Copyright (C) 2014, 2015  Bryan R. Gillis
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -34,6 +35,6 @@
 
 #include "gg_lensing_config.h"
 
-brgastro::pair_binner pass_configs_to_binner(gg_lensing_config config);
+brgastro::pair_binner pass_configs_to_binner(const gg_lensing_config & config);
 
 #endif // _BRG_PASS_CONFIGURATIONS_TO_BINNER_H_INCLUDED_

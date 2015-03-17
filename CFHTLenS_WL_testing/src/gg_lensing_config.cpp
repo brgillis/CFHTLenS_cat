@@ -2,11 +2,12 @@
  @file gg_lensing_config.cpp
  ------------------
 
- TODO <Insert file description here>
+ Corresponding source file for gg_lensing_config.h - see that file for
+ documentation.
 
  **********************************************************************
 
- Copyright (C) 2014  Bryan R. Gillis
+ Copyright (C) 2014, 2015  Bryan R. Gillis
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by

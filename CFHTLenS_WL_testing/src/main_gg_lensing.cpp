@@ -1,12 +1,13 @@
 /**********************************************************************\
- @file main.cpp
+ @file main_gg_lensing.cpp
  ------------------
 
- TODO <Insert file description here>
+ Main source file for calculating a galaxy-galaxy lensing signal in the
+ CFHTLenS, including both shear and magnification.
 
  **********************************************************************
 
- Copyright (C) 2014  Bryan R. Gillis
+ Copyright (C) 2014, 2015  Bryan R. Gillis
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -28,9 +29,10 @@
 #include <vector>
 
 #include <boost/lexical_cast.hpp>
-#include <brg/file_access/ascii_table_map.hpp>
-#include <brg/file_access/open_file.hpp>
 
+#include "brg/container/labeled_array.hpp"
+#include "brg/file_access/ascii_table_map.hpp"
+#include "brg/file_access/open_file.hpp"
 #include "brg/vector/elementwise_functions.hpp"
 #include "brg/vector/limit_vector.hpp"
 
@@ -53,70 +55,91 @@
 
 #undef USE_CALIBRATION_LENSES
 
-#undef USE_MOCK_LENSES
+#define USE_MOCK_LENSES
 #undef USE_MOCK_SOURCES
 
 // Magic values
-std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
-std::string fields_list = fields_directory + "fields_list.txt";
+const std::string data_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
+const std::string fields_list = data_directory + "fields_list.txt";
 
 #ifdef USE_CALIBRATION_LENSES
 
-std::string output_table = fields_directory + "gg_calibration_lensing_signal.dat";
-std::string output_data = fields_directory + "gg_calibration_lensing_data.dat";
+const std::string output_table = data_directory + "gg_calibration_lensing_signal.dat";
+const std::string output_data = data_directory + "gg_calibration_lensing_data.dat";
 
-std::string lens_root = "_calibration_lens.dat";
-std::string lens_unmasked_frac_root = "_calibration_lens_mask_frac.dat";
+const std::string lens_root = "_calibration_lens.dat";
+const std::string lens_unmasked_frac_root = "_calibration_lens_mask_frac.dat";
+
+const std::string lens_weight_file = data_directory + "field_lens_weights.dat";
 
 #else // #ifdef USE_CALIBRATION_LENSES
 
 #ifdef USE_MOCK_LENSES
 
-std::string output_table = fields_directory + "gg_mock_lensing_signal.dat";
-std::string output_data = fields_directory + "gg_mock_lensing_data.dat";
+const std::string output_table = data_directory + "gg_mock_lensing_signal.dat";
+const std::string output_data = data_directory + "gg_mock_lensing_data.dat";
 
-std::string lens_root = "_small_mock_lens.dat";
-std::string lens_unmasked_frac_root = "_small_mock_lens_mask_frac.dat";
+const std::string lens_root = "_small_mock_lens.dat";
+const std::string lens_unmasked_frac_root = "_small_mock_lens_mask_frac.dat";
+
+const std::string lens_weight_file = data_directory + "field_lens_weights.dat";
 
 #else // #ifdef USE_MOCK_LENSES
 
-std::string output_table = fields_directory + "gg_lensing_signal.dat";
-std::string output_data = fields_directory + "gg_lensing_data.dat";
+const std::string output_table = data_directory + "gg_lensing_signal.dat";
+const std::string output_data = data_directory + "gg_lensing_data.dat";
 
-std::string lens_root = "_lens.dat";
-std::string lens_unmasked_frac_root = "_lens_mask_frac.dat";
+const std::string lens_root = "_lens.dat";
+const std::string lens_unmasked_frac_root = "_lens_mask_frac.dat";
 
 #endif // #ifdef USE_MOCK_LENSES // #else
 
 #endif // #ifdef USE_CALIBRATION_LENSES // #else
 
 #ifdef USE_MOCK_SOURCES
-std::string source_root = "_small_mock_source.dat";
+const std::string source_root = "_small_mock_source.dat";
 #else
-std::string source_root = "_source.dat";
+const std::string source_root = "_source.dat";
 #endif
 
-std::string expected_count_cache_output_file = fields_directory + "ex_count_cache.dat";
-std::string expected_count_derivative_cache_output_file = fields_directory + "alpha_cache.dat";
-std::string mag_signal_integral_cache_output_file = fields_directory + "mag_sig_integral_cache.dat";
-std::string mag_weight_integral_cache_output_file = fields_directory + "mag_W_integral_cache.dat";
-std::string mag_calibration_cache_output_file = fields_directory + "mag_calibration_cache.dat";
-
-constexpr double mag_fudge_shift = 0;
+const std::string expected_count_cache_output_file = data_directory + "ex_count_cache.dat";
+const std::string expected_count_derivative_cache_output_file = data_directory + "alpha_cache.dat";
+const std::string mag_signal_integral_cache_output_file = data_directory + "mag_sig_integral_cache.dat";
+const std::string mag_weight_integral_cache_output_file = data_directory + "mag_W_integral_cache.dat";
+const std::string mag_calibration_cache_output_file = data_directory + "mag_calibration_cache.dat";
 
 int main( const int argc, const char *argv[] )
 {
+	// Get the configuration file from the command-line arguments
+	const gg_lensing_config config(argc,argv);
+
 	// Set up the caches before we get to the parallel section, so they can be calculated in parallel
 	brgastro::expected_count_cache().print(expected_count_cache_output_file);
 	brgastro::expected_count_derivative_cache().print(expected_count_derivative_cache_output_file);
 	brgastro::mag_weight_integral_cache().print(mag_weight_integral_cache_output_file);
 	brgastro::mag_signal_integral_cache().print(mag_signal_integral_cache_output_file);
-#ifndef USE_CALIBRATION_LENSES
-	brgastro::mag_calibration_cache().print(mag_calibration_cache_output_file);
-#endif // #ifndef USE_CALIBRATION_LENSES
 
-	constexpr size_t batch_size = 1000000;
-	const gg_lensing_config config(argc,argv);
+	#ifdef USE_CALIBRATION_LENSES
+	// Load the lens weight table
+	const brgastro::labeled_array<double> lens_weight_table(lens_weight_file);
+	auto lens_weight_z_limits_builder = brgastro::coerce<std::vector<double>>(lens_weight_table.at_label("z_bin_min"));
+	lens_weight_z_limits_builder.push_back(2*lens_weight_z_limits_builder.back()-
+										   lens_weight_z_limits_builder.at(lens_weight_z_limits_builder.size()-2));
+	const brgastro::limit_vector<double> lens_weight_z_limits(std::move(lens_weight_z_limits_builder));
+	#else
+	#ifdef USE_MOCK_LENSES
+	// Load the lens weight table
+	const brgastro::labeled_array<double> lens_weight_table(lens_weight_file);
+	auto lens_weight_z_limits_builder = brgastro::coerce<std::vector<double>>(lens_weight_table.at_label("z_bin_min"));
+	lens_weight_z_limits_builder.push_back(2*lens_weight_z_limits_builder.back()-
+										   lens_weight_z_limits_builder.at(lens_weight_z_limits_builder.size()-2));
+	const brgastro::limit_vector<double> lens_weight_z_limits(std::move(lens_weight_z_limits_builder));
+	#endif
+	// Set up the calibration cache
+	//brgastro::mag_calibration_cache().print(mag_calibration_cache_output_file);
+	#endif // #ifndef USE_CALIBRATION_LENSES
+
+	constexpr size_t batch_size = 1000000; // Max number of lenses that can be added to the binner before forcing a flush
 
 	// Set up the bins summary
 	brgastro::pair_bins_summary bins_summary(pass_configs_to_binner(config));
@@ -126,7 +149,7 @@ int main( const int argc, const char *argv[] )
 	{
 		bins_summary.load(config.precalculated_data_filename);
 	}
-	else
+	else // if(config.use_precalculated_data)
 	{
 
 		// Open and read in the fields list
@@ -159,19 +182,28 @@ int main( const int argc, const char *argv[] )
 			brgastro::pair_binner lens_binner(pass_configs_to_binner(config));
 			std::string field_name_root = field_names[field_i].substr(0,6);
 
+			#ifdef USE_CALIBRATION_LENSES
+			// Get the weights for each redshift for this field
+			const auto z_weights = lens_weight_table.at_label(field_name_root).raw();
+			#else
+			#ifdef USE_MOCK_LENSES
+			const auto z_weights = lens_weight_table.at_label(field_name_root).raw();
+			#endif // #ifdef USE_MOCK_LENSES
+			#endif // #ifdef USE_CALIBRATION_LENSES
+
 			try
 			{
 				// Get the lens and source file names
 				std::stringstream ss("");
-				ss << fields_directory << "filtered_tables/" << field_name_root << lens_root;
+				ss << data_directory << "filtered_tables/" << field_name_root << lens_root;
 				std::string lens_input_name = ss.str();
 
 				ss.str("");
-				ss << fields_directory << "filtered_tables/" << field_name_root << lens_unmasked_frac_root;
+				ss << data_directory << "filtered_tables/" << field_name_root << lens_unmasked_frac_root;
 				std::string lens_unmasked_name = ss.str();
 
 				ss.str("");
-				ss << fields_directory << "filtered_tables/" << field_name_root << source_root;
+				ss << data_directory << "filtered_tables/" << field_name_root << source_root;
 				std::string source_input_name = ss.str();
 
 				// Set up vectors
@@ -185,7 +217,8 @@ int main( const int argc, const char *argv[] )
 				for(size_t i=0; i<num_lenses; ++i)
 				{
 					brgastro::galaxy lens;
-					lens.set_z(lens_map.at("Z_B").at(i));
+					double z = lens_map.at("Z_B").at(i);
+					lens.set_z(z);
 					lens.set_ra(lens_map.at("ra_radians").at(i));
 					lens.set_dec(lens_map.at("dec_radians").at(i));
 					lens.stellar_mass = lens_map.at("Mstel_kg").at(i);
@@ -194,6 +227,18 @@ int main( const int argc, const char *argv[] )
 
 					// Check if the lens fits somewhere within the binner's limits
 					if(!lens_binner.binnable(lens)) continue;
+
+					#ifdef USE_CALIBRATION_LENSES
+					// Get the weight for this lens
+					double weight = z_weights(lens_weight_z_limits.get_bin_index(z-config.z_buffer));
+					lens.set_weight(weight);
+					#else
+					#ifdef USE_MOCK_LENSES
+					// Get the weight for this lens
+					double weight = z_weights(lens_weight_z_limits.get_bin_index(z-config.z_buffer));
+					//lens.set_weight(weight);
+					#endif
+					#endif // #ifdef USE_CALIBRATION_LENSES
 
 					lens_galaxies.push_back(std::move(lens));
 				}
@@ -216,7 +261,7 @@ int main( const int argc, const char *argv[] )
 										source_map.at("dec_radians").at(i),
 										source_map.at("Z_B").at(i),
 										source_map.at("e1").at(i), source_map.at("e2").at(i), 0,
-										source_map.at("Mstel_kg").at(i), source_map.at("MAG_r").at(i)+mag_fudge_shift);
+										source_map.at("Mstel_kg").at(i), source_map.at("MAG_r").at(i));
 
 					source.set_weight(source_map.at("weight").at(i));
 					source.set_index(source_map.at("SeqNr").at(i));
@@ -326,7 +371,7 @@ int main( const int argc, const char *argv[] )
 
 		// Save the data so we can load it in again without needing to rerun
 		bins_summary.save(output_data);
-	}
+	} // if(config.use_precalculated_data) // else
 
 	// Set up the units we want data to be output in
 	brgastro::unitconv_map u_map;
