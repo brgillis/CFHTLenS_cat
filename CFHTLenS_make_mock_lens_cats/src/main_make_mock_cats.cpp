@@ -35,11 +35,11 @@
 
 #include <boost/serialization/vector.hpp>
 
-#include <brg/file_access/binary_archive.hpp>
+#include "brg/file_access/binary_archive.hpp"
 #include "brg/file_access/open_file.hpp"
-#include <brg/file_access/ascii_table_map.hpp>
+#include "brg/file_access/ascii_table_map.hpp"
 #include "brg/math/misc_math.hpp"
-#include <brg/math/random/random_functions.hpp>
+#include "brg/math/random/random_functions.hpp"
 
 #include "brg_physics/units/unit_conversions.hpp"
 #include "brg_lensing/magnification/mag_global_values.h"
@@ -47,7 +47,7 @@
 #include "get_ra_dec.h"
 #include "num_good_pixels.hpp"
 
-#define MAKE_CALIBRATION_LENSES
+#undef MAKE_CALIBRATION_LENSES
 #undef SMALL_MOCKS
 
 // Magic values
@@ -100,6 +100,8 @@ constexpr double max_T = 6.0;
 
 constexpr double min_good_frac = 0.01;
 
+constexpr int base_seed = 12431;
+
 int main( const int argc, const char *argv[] )
 {
 	// General setup
@@ -123,14 +125,15 @@ int main( const int argc, const char *argv[] )
 
 	//num_fields = 1;
 
-	srand48(12351);
-
 	// Loop over all fields
 	#ifdef _OPENMP
 	#pragma omp parallel for schedule(dynamic)
 	#endif
 	for(unsigned i=0;i<num_fields;++i)
 	{
+		// Set up and seed the random generator for this field
+		std::ranlux48 gen(base_seed*(i+1));
+
 		std::string & field_name = field_names[i];
 		std::string field_name_root = field_name.substr(0,6);
 
@@ -183,8 +186,8 @@ int main( const int argc, const char *argv[] )
 		// For each galaxy we want to generate, get good random pixel positions for it
 		for(unsigned j=0; j<num_lenses_to_generate; ++j)
 		{
-			const double x = brgastro::drand(-0.5,ncol-0.5);
-			const double y = brgastro::drand(-0.5,nrow-0.5);
+			const double x = brgastro::drand(-0.5,ncol-0.5,gen);
+			const double y = brgastro::drand(-0.5,nrow-0.5,gen);
 
 			const unsigned xp = brgastro::round_int(x);
 			const unsigned yp = brgastro::round_int(y);
@@ -232,15 +235,15 @@ int main( const int argc, const char *argv[] )
 			field_output_table["ODDS"].push_back(1);
 			field_output_table["CHI_SQUARED_BPZ"].push_back(1);
 
-			double Mstel_kg = pow(10,brgastro::drand(min_lens_lmsun,max_lens_lmsun))*brgastro::unitconv::Msuntokg;
+			double Mstel_kg = pow(10,brgastro::drand(min_lens_lmsun,max_lens_lmsun,gen))*brgastro::unitconv::Msuntokg;
 			field_output_table["Mstel_kg"].push_back(Mstel_kg);
 			field_output_table["Mstel_lo_kg"].push_back(Mstel_kg/2);
 			field_output_table["Mstel_hi_kg"].push_back(2*Mstel_kg);
 
-			field_output_table["MAG_i"].push_back(brgastro::drand(min_lens_mag,max_lens_mag));
+			field_output_table["MAG_i"].push_back(brgastro::drand(min_lens_mag,max_lens_mag,gen));
 			field_output_table["MAGERR_i"].push_back(1);
 			field_output_table["EXTINCTION_i"].push_back(0);
-			field_output_table["MAG_r"].push_back(brgastro::drand(min_lens_mag,max_lens_mag));
+			field_output_table["MAG_r"].push_back(brgastro::drand(min_lens_mag,max_lens_mag,gen));
 			field_output_table["MAGERR_r"].push_back(1);
 			field_output_table["EXTINCTION_r"].push_back(0);
 		}
@@ -267,8 +270,8 @@ int main( const int argc, const char *argv[] )
 		for(unsigned j=0; j<num_sources_to_generate; ++j)
 		{
 			// Generate a random position and add it if it's inside the mask
-			const double x = brgastro::drand(-0.5,ncol-0.5);
-			const double y = brgastro::drand(-0.5,nrow-0.5);
+			const double x = brgastro::drand(-0.5,ncol-0.5,gen);
+			const double y = brgastro::drand(-0.5,nrow-0.5,gen);
 
 			const unsigned xp = brgastro::round_int(x);
 			const unsigned yp = brgastro::round_int(y);
@@ -294,9 +297,9 @@ int main( const int argc, const char *argv[] )
 			field_output_table["dec_radians"].push_back(galaxy_sky_positions[j].first.second*brgastro::unitconv::degtorad);
 			field_output_table["Xpos"].push_back(galaxy_sky_positions[j].second.first);
 			field_output_table["Ypos"].push_back(galaxy_sky_positions[j].second.second);
-			unsigned z100 = 100*brgastro::drand(min_source_z,max_source_z);
+			unsigned z100 = 100*brgastro::drand(min_source_z,max_source_z,gen);
 			field_output_table["Z_B"].push_back(z100/100.);
-			field_output_table["T_B"].push_back(brgastro::drand(min_T,max_T));
+			field_output_table["T_B"].push_back(brgastro::drand(min_T,max_T,gen));
 			field_output_table["ODDS"].push_back(1);
 			field_output_table["e1"].push_back(0);
 			field_output_table["e2"].push_back(0);
@@ -304,15 +307,15 @@ int main( const int argc, const char *argv[] )
 			field_output_table["m"].push_back(0);
 			field_output_table["c2"].push_back(0);
 
-			double Mstel_kg = pow(10,brgastro::drand(min_lens_lmsun,max_lens_lmsun))*brgastro::unitconv::Msuntokg;
+			double Mstel_kg = pow(10,brgastro::drand(min_lens_lmsun,max_lens_lmsun,gen))*brgastro::unitconv::Msuntokg;
 			field_output_table["Mstel_kg"].push_back(Mstel_kg);
 			field_output_table["Mstel_lo_kg"].push_back(Mstel_kg/2);
 			field_output_table["Mstel_hi_kg"].push_back(2*Mstel_kg);
 
-			field_output_table["MAG_i"].push_back(brgastro::drand(min_source_mag,max_source_mag));
+			field_output_table["MAG_i"].push_back(brgastro::drand(min_source_mag,max_source_mag,gen));
 			field_output_table["MAGERR_i"].push_back(1);
 			field_output_table["EXTINCTION_i"].push_back(0);
-			field_output_table["MAG_r"].push_back(brgastro::drand(min_source_mag,max_source_mag));
+			field_output_table["MAG_r"].push_back(brgastro::drand(min_source_mag,max_source_mag,gen));
 			field_output_table["MAGERR_r"].push_back(1);
 			field_output_table["EXTINCTION_r"].push_back(0);
 		}

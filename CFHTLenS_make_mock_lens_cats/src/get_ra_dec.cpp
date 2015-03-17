@@ -55,6 +55,7 @@ std::vector<std::pair<std::pair<double,double>,std::pair<double,double>>>
 	// Set up the list of pairs
 	std::ofstream out;
 	brgastro::open_file(out,list_file_name);
+	out.precision(10);
 	for(const auto & pair : xp_yp)
 	{
 		out << pair.first << " " << pair.second << "\n";

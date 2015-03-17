@@ -63,7 +63,7 @@ const std::string fields_list = data_directory + "fields_list.txt";
 const std::string lens_pixel_map_root = "_lens_good_pixels.bin";
 
 #undef USE_CALIBRATION
-#undef USE_MOCKS
+#define USE_MOCKS
 
 #ifdef USE_CALIBRATION
 

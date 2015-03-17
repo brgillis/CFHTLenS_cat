@@ -1,5 +1,5 @@
 /**********************************************************************\
- @file main.cpp
+ @file main_source_counting.cpp
  ------------------
 
  TODO <Insert file description here>
@@ -68,10 +68,18 @@ constexpr double z_buffer = 0.3;
 
 #undef USE_MOCK_SOURCES
 
+#define USE_FIELD_WEIGHTING
+
 #ifdef USE_MOCK_SOURCES
 const std::string source_root = "_small_mock_source.dat";
 #else
 const std::string source_root = "_source.dat";
+#endif
+
+#ifdef USE_FIELD_WEIGHTING
+const std::string count_column_to_use = "weighted_count";
+#else
+const std::string count_column_to_use = "count";
 #endif
 
 constexpr double sg_mag_window = 0.4;
@@ -115,7 +123,6 @@ int main( const int argc, const char *argv[] )
 	std::vector<double_hist> weighted_gz_bin_hists(num_z_bins,
 			double_hist(num_mag_bins,0));
 	int_hist gz_bin_counts(num_z_bins,0);
-	double_hist gz_tot_weight(num_z_bins,0);
 
 	std::vector<std::string> field_names;
 	std::string field_name;
@@ -143,7 +150,7 @@ int main( const int argc, const char *argv[] )
 
 
 	// Load each field in turn and process it
-	//num_fields = 1;
+	// num_fields = 2;
 
 	#ifdef _OPENMP
 	#pragma omp parallel for schedule(dynamic)
@@ -163,10 +170,29 @@ int main( const int argc, const char *argv[] )
 			const auto z_weights = lens_weight_table.at_label(field_name_root).raw();
 
 			#ifdef _OPENMP
-			#pragma omp critical(append_field_size_and_weights)
+			#pragma omp critical(append_field_size)
 			#endif
 			{
 				field_sizes.push_back(field_size);
+			}
+
+			// Append the weights for each z bin
+			for(size_t j=0; j<num_z_bins; ++j)
+			{
+				const double implicit_lens_z = z_bin_limits.lower_limit(j) - z_buffer;
+
+				double weight = 1;
+				if(lens_weight_z_limits.inside_limits(implicit_lens_z))
+				{
+					weight = z_weights(lens_weight_z_limits.get_bin_index(implicit_lens_z));
+				} // else weight = 1
+
+				#ifdef _OPENMP
+				#pragma omp critical(append_field_z_weight)
+				#endif
+				{
+					z_tot_weight[j] += weight;
+				}
 			}
 
 			// Get the source file names
@@ -193,29 +219,40 @@ int main( const int argc, const char *argv[] )
 
 				const double implicit_lens_z = source_z - z_buffer;
 
-				double weight = 0;
+				double weight = 1;
 				if(lens_weight_z_limits.inside_limits(implicit_lens_z))
 				{
-					weight = z_weights(lens_weight_z_limits.get_bin_index(source_z));
-				} // else weight = 0
+					weight = z_weights(lens_weight_z_limits.get_bin_index(implicit_lens_z));
+				} // else weight = 1
 
 				#ifdef _OPENMP
 				#pragma omp critical(increment_count_bins)
 				#endif
 				{
+
 					// Add to the specific bin
 					++z_bin_hists[z_i][mag_i];
 					++z_bin_counts[z_i];
 					weighted_z_bin_hists[z_i][mag_i]+=weight;
-					z_tot_weight[z_i]+=weight;
 
 					// Add to the cumulative bins
 					for(size_t j=0; j<=z_i; ++j)
 					{
 						++gz_bin_hists[j][mag_i];
 						++gz_bin_counts[j];
+
+
+						// Get the weight here
+						const double bin_z = z_bin_limits.lower_limit(j);
+						const double implicit_lens_z = bin_z - z_buffer;
+
+						double weight = 0;
+						if(lens_weight_z_limits.inside_limits(implicit_lens_z))
+						{
+							weight = z_weights(lens_weight_z_limits.get_bin_index(implicit_lens_z));
+						} // else weight = 0
+
 						weighted_gz_bin_hists[j][mag_i]+=weight;
-						gz_tot_weight[j]+=weight;
 					}
 				}
 			}
@@ -266,7 +303,7 @@ int main( const int argc, const char *argv[] )
 		data["count"];
 		data["weighted_count"];
 
-		double count_factor = *z_count_it / *z_tot_weight_it;
+		const double count_factor = num_fields / *z_tot_weight_it;
 
 		// Add each bin to the table
 		auto h_it = z_hist_it->begin();
@@ -285,7 +322,7 @@ int main( const int argc, const char *argv[] )
 		auto rep_func = [] (const double & v) {if(v>0) return v; else return 0.1;};
 
 		// Now calculate the smoothed count
-		auto log_count = brgastro::divide(brgastro::log(brgastro::apply(rep_func,data["weighted_count"])),
+		auto log_count = brgastro::divide(brgastro::log(brgastro::apply(rep_func,data[count_column_to_use])),
 				std::log(10.));
 		auto smoothed_log = brgastro::sg_smooth(log_count,sg_window,sg_deg);
 		data["smoothed_count"] = brgastro::pow(10.,smoothed_log);
@@ -309,7 +346,7 @@ int main( const int argc, const char *argv[] )
 	z_hist_it = gz_bin_hists.begin();
 	z_w_hist_it = weighted_gz_bin_hists.begin();
 	z_count_it = gz_bin_counts.begin();
-	z_tot_weight_it = gz_tot_weight.begin();
+	z_tot_weight_it = z_tot_weight.begin();
 	for(auto z_it=z_bin_limits.begin();z_hist_it!=gz_bin_hists.end(); ++z_it, ++z_hist_it, ++z_w_hist_it, ++z_count_it, ++z_tot_weight_it)
 	{
 		// Get the name for the table we'll output to
@@ -322,7 +359,7 @@ int main( const int argc, const char *argv[] )
 		data["count"];
 		data["weighted_count"];
 
-		double count_factor = *z_count_it / brgastro::safe_d(*z_tot_weight_it);
+		const double count_factor = num_fields / *z_tot_weight_it;
 
 		// Add each bin to the table
 		auto h_it = z_hist_it->begin();
@@ -341,7 +378,7 @@ int main( const int argc, const char *argv[] )
 		auto rep_func = [] (const double & v) {if(v>0) return v; else return 0.1;};
 
 		// Now calculate the smoothed count
-		auto log_count = brgastro::divide(brgastro::log(brgastro::apply(rep_func,data["weighted_count"])),
+		auto log_count = brgastro::divide(brgastro::log(brgastro::apply(rep_func,data[count_column_to_use])),
 				std::log(10.));
 		auto smoothed_log = brgastro::sg_smooth(log_count,sg_window,sg_deg);
 
@@ -356,7 +393,7 @@ int main( const int argc, const char *argv[] )
 		};
 		double integrated_count = brgastro::integrate_Romberg(&smooth_count_func,brgastro::mag_m_counting_min,
 				brgastro::mag_m_counting_max,0.000001);
-		double smooth_correction_factor = brgastro::sum(data["weighted_count"])*brgastro::mag_m_step/
+		double smooth_correction_factor = brgastro::sum(data[count_column_to_use])*brgastro::mag_m_step/
 				integrated_count;
 
 		smoothed_count *= smooth_correction_factor;
