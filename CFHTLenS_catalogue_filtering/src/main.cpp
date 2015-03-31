@@ -91,7 +91,7 @@ int main( const int argc, const char *argv[] )
 
 		try
 		{
-			good_pixels = brgastro::binary_load_vector<std::vector<std::vector<bool>>>(
+			good_pixels = brgastro::binary_load<std::vector<std::vector<bool>>>(
 				lens_pixel_map_file_name);
 		}
 		catch( const std::exception &e )

@@ -159,7 +159,7 @@ int main( const int argc, const char *argv[] )
 
 		std::vector<std::vector<bool>> good_pixels;
 
-		good_pixels = brgastro::binary_load_vector<std::vector<std::vector<bool>>>(pixel_map_file_name);
+		good_pixels = brgastro::binary_load<std::vector<std::vector<bool>>>(pixel_map_file_name);
 		// Get the good size of this field now
 		size_t num_good = num_good_pixels(good_pixels);
 		const double field_size = brgastro::square(rad_per_px)*num_good;

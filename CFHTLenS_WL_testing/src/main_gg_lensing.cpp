@@ -55,7 +55,7 @@
 
 #undef USE_CALIBRATION_LENSES
 
-#define USE_MOCK_LENSES
+#undef USE_MOCK_LENSES
 #undef USE_MOCK_SOURCES
 
 // Magic values

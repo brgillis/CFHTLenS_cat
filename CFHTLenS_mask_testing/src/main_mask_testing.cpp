@@ -63,7 +63,7 @@ const std::string fields_list = data_directory + "fields_list.txt";
 const std::string lens_pixel_map_root = "_lens_good_pixels.bin";
 
 #undef USE_CALIBRATION
-#define USE_MOCKS
+#undef USE_MOCKS
 
 #ifdef USE_CALIBRATION
 
@@ -200,7 +200,7 @@ int main( const int argc, const char *argv[] )
 		try
 		{
 			#ifdef USE_SAVED_MASK
-			good_pixels = brgastro::binary_load_vector<std::vector<std::vector<bool>>>(
+			good_pixels = brgastro::binary_load<std::vector<std::vector<bool>>>(
 					lens_pixel_map_file_name);
 			#else
 			good_pixels = load_pixel_table(input_file_name);

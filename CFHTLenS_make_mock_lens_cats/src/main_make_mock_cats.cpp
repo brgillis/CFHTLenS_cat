@@ -141,7 +141,7 @@ int main( const int argc, const char *argv[] )
 		std::string lens_output_file_name = field_directory + field_name_root + lens_output_root;
 
 		const std::vector<std::vector<bool>> good_pixels =
-				brgastro::binary_load_vector<std::vector<std::vector<bool>>>(pixel_map_name);
+				brgastro::binary_load<std::vector<std::vector<bool>>>(pixel_map_name);
 
 		const size_t ncol = good_pixels.size();
 		assert(ncol>0);

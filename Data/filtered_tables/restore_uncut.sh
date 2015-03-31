@@ -1,0 +1,5 @@
+source restore_lenses_uncut.sh
+source restore_sources_uncut.sh
+source restore_lens_masks_uncut.sh
+source restore_small_mock_lens_masks.sh
+source restore_calibration_lens_masks.sh

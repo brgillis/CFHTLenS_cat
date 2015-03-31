@@ -64,7 +64,7 @@ const std::string g_output_table_root = data_directory + "magnitude_hist_gz";
 const std::string output_table_tail = ".dat";
 const std::string field_size_file_name = "/disk2/brg/git/CFHTLenS_cat/Data/masks/field_sizes.dat";
 
-constexpr double z_buffer = 0.3;
+constexpr double z_buffer = 0.2;
 
 #undef USE_MOCK_SOURCES
 
