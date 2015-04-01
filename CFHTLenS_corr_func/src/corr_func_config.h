@@ -41,7 +41,7 @@
  */
 struct corr_func_config {
 
-	static constexpr size_t num_config_params = 19;
+	static constexpr size_t num_config_params = 18;
 
 	BRG_DISTANCE R_min, R_max;
 	BRG_MASS m_min, m_max;
@@ -52,6 +52,8 @@ struct corr_func_config {
 	bool R_log, m_log, z_log, mag_log;
 
 	double z_buffer;
+
+	bool lensing_style;
 
 	corr_func_config( const int argc=0, const char *argv[]=nullptr );
 	virtual ~corr_func_config()

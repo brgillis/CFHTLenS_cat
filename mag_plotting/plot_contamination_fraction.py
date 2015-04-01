@@ -13,7 +13,7 @@ matplotlib.rcParams['ps.useafm'] = True
 matplotlib.rcParams['pdf.use14corefonts'] = True
 matplotlib.rcParams['text.usetex'] = True
 
-import z_bins as zb
+import bins_funcs as bf
 
 def main(argv):
     
@@ -23,7 +23,7 @@ def main(argv):
     default_z_phot_name = "Z_B"
     default_z_bins_min = 0.2
     default_z_bins_max = 1.3
-    default_z_bins_step = 0.1
+    default_num_z_bins = 11
     default_z_buffer_min = 0
     default_z_buffer_max = 0.3
     default_z_buffer_step = 0.05
@@ -82,9 +82,9 @@ def main(argv):
         
     cur_arg += 1
     if(num_args) <= cur_arg:
-        z_bins_step = default_z_bins_step
+        num_z_bins = default_num_z_bins
     else:
-        z_bins_step = float(argv[cur_arg])
+        num_z_bins = float(argv[cur_arg])
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -114,7 +114,7 @@ def main(argv):
     num_z_buffers = int(np.round((z_buffer_max-z_buffer_min)/z_buffer_step))+1
     
     # Set up the z bins arrays and data
-    num_z_bins, z_bins, z_bins_mids = zb.setup_z_bins(z_min=z_bins_min, z_max=z_bins_max, z_step=z_bins_step)
+    z_bins, z_bins_mids = bf.setup_lin_bins(bins_min=z_bins_min, bins_max=z_bins_max, num_bins=num_z_bins)
     
     # Get an array of buffer points
     z_buffers = np.linspace(start=z_buffer_min,
@@ -153,7 +153,7 @@ def main(argv):
                 total_counts[lens_z_i,z_buffer_i] += 1
                 
                 # Check if this is a contaminating galaxy
-                source_z_i = zb.get_bin_index(z_s, z_bins)
+                source_z_i = bf.get_bin_index(z_s, z_bins)
                 
                 if(source_z_i==lens_z_i):
                     contamination_counts[lens_z_i,z_buffer_i] += 1
@@ -182,7 +182,7 @@ def main(argv):
     for fracs, errs, z_buffer in zip(contamination_fractions,contamination_fraction_errors,z_buffers):
         ax.errorbar(z_bins_mids+(z_buffer-z_buffer_mean)/8, fracs, yerr=errs, label=r"$\Delta z$ = "+str(z_buffer))
         
-    ax.legend(loc='lower right')
+    ax.legend(numpoints=1,loc='lower right')
     ax.semilogy()
     ax.set_xlim(0.2,1.3)
     ax.set_ylim(0.0005,0.3)

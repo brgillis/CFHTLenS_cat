@@ -40,32 +40,32 @@ corr_func_config::corr_func_config( const int argc, const char *argv[] )
 {
 	using namespace brgastro::unitconv;
 
-	if(argc==1)
+	if(argc<=1)
 	{
-		use_precalculated_data = false;
-		precalculated_data_filename = "";
-
+		// Use default values if no config file is passed at command line
 		R_min = 10*kpctom;
 		R_max = 2000*kpctom;
-		R_bins = 100;
+		R_bins = 40;
 		R_log = true;
 
-		m_min = 1e8*Msuntokg;
-		m_max = 1e11*Msuntokg;
+		m_min = 1e9*Msuntokg;
+		m_max = 1e12*Msuntokg;
 		m_bins = 3;
 		m_log = true;
 
 		z_min = 0.2;
-		z_max = 1.1;
-		z_bins = 1;
+		z_max = 1.3;
+		z_bins = 11;
 		z_log = false;
 
-		mag_min = -std::numeric_limits<double>::infinity();
+		mag_min = 15;
 		mag_max = 25;
 		mag_bins = 1;
 		mag_log = false;
 
-		z_buffer = 0.1;
+		z_buffer = 0.2;
+
+		lensing_style = true;
 	}
 	else
 	{
@@ -105,9 +105,6 @@ corr_func_config::corr_func_config( const int argc, const char *argv[] )
 
 		// Load in the values
 		size_t i=0;
-		use_precalculated_data = brgastro::bool_cast(config_value_strings.at(i++));
-		precalculated_data_filename = config_value_strings.at(i++);
-
 		R_min = brgastro::min_cast<double>(config_value_strings.at(i++))*kpctom;
 		R_max = brgastro::max_cast<double>(config_value_strings.at(i++))*kpctom;
 		R_bins = boost::lexical_cast<size_t>(config_value_strings.at(i++));
@@ -129,6 +126,8 @@ corr_func_config::corr_func_config( const int argc, const char *argv[] )
 		mag_log = brgastro::bool_cast(config_value_strings.at(i++));
 
 		z_buffer = boost::lexical_cast<double>(config_value_strings.at(i++));
+
+		lensing_style = brgastro::bool_cast(config_value_strings.at(i++));
 
 	}
 }
