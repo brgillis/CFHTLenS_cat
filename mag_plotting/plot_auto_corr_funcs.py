@@ -4,7 +4,6 @@ import os
 import subprocess as sbp
 import sys
 
-import numpy as np
 import astropy.io.ascii as ascii
 
 import matplotlib
@@ -260,9 +259,6 @@ def main(argv):
     ax.set_ylabel(r"$\xi$",labelpad=35)
     ax.set_yticklabels([])
     ax.set_xticklabels([])
-    
-    emptiness = matplotlib.patches.Rectangle((0,0), 1, 1, fill=False, edgecolor='none',
-                                 visible=False)
     
     for z_i in xrange(num_z_bins):
         
