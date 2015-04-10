@@ -197,6 +197,20 @@ def main(argv):
         
     # Show the figure
     pyplot.show()
+    
+    # Now, let's set up and save a table of the contamination fractions
+    cols = [z_bins_mids]
+    names = ['z_mid']
+    
+    for z_buffer_i in xrange(num_z_buffers):
+        cols.append(contamination_fractions[z_buffer_i])
+        names.append("Dz_"+str(z_buffers[z_buffer_i]) + "_con_frac")
+        cols.append(contamination_fraction_errors[z_buffer_i])
+        names.append("Dz_"+str(z_buffers[z_buffer_i]) + "_con_frac_err")
+        
+    # Save the table
+    outfile_table_name = os.path.splitext(redshift_table_name)[0] + "_contamination_fractions.dat"
+    ascii.write(cols, outfile_table_name, names=names)
 
 if __name__ == "__main__":
     main(sys.argv)

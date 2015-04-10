@@ -20,7 +20,9 @@ def main(argv):
     
     # Magic values
     
-    default_lensing_signal_table = "/home/brg/git/CFHTLenS_cat/Data/gg_lensing_signal_with_bf_models.dat"
+    chi_2_i_min = 2
+    
+    default_lensing_signal_table = "/home/brg/git/CFHTLenS_cat/Data/gg_lensing_signal_20_bins_with_bf_models.dat"
     
     default_R_col_name = "shear_R_mean"
     
@@ -56,6 +58,9 @@ def main(argv):
     
     default_bf_overall_model_dS_col_name = "bf_overall_model_dS_t"
     default_bf_overall_model_Sigma_col_name = "bf_overall_model_Sigma"
+    
+    default_shear_sigma_crit_col_name = "shear_Sigma_crit"
+    default_magf_sigma_crit_col_name = "magf_Sigma_crit"
     
     default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/Magnification_Method/"
     
@@ -332,6 +337,32 @@ def main(argv):
         
     cur_arg += 1
     if(num_args) <= cur_arg:
+        shear_sigma_crit_col_name = default_shear_sigma_crit_col_name
+    else:
+        shear_sigma_crit_col_name = argv[cur_arg]
+        
+    # Try to load in the bf_overall_model_Sigma column
+    try:
+        shear_sigma_crits = lensing_signal_table[shear_sigma_crit_col_name]
+    except:
+        print("ERROR: Cannot read column " + shear_sigma_crit_col_name + " from table " + lensing_signal_table_name + ".")
+        return
+        
+    cur_arg += 1
+    if(num_args) <= cur_arg:
+        magf_sigma_crit_col_name = default_magf_sigma_crit_col_name
+    else:
+        magf_sigma_crit_col_name = argv[cur_arg]
+        
+    # Try to load in the bf_overall_model_Sigma column
+    try:
+        magf_sigma_crits = lensing_signal_table[magf_sigma_crit_col_name]
+    except:
+        print("ERROR: Cannot read column " + magf_sigma_crit_col_name + " from table " + lensing_signal_table_name + ".")
+        return
+        
+    cur_arg += 1
+    if(num_args) <= cur_arg:
         paper_location = default_paper_location
     else:
         paper_location = argv[cur_arg]
@@ -368,6 +399,8 @@ def main(argv):
     binned_bf_overall_model_dSs = []
     binned_bf_overall_model_Sigmas = []
     binned_neg_bf_overall_model_Sigmas = []
+    binned_shear_sigma_crits = []
+    binned_magf_sigma_crits = []
     
     for z_i in xrange(num_z_bins):
         zR_list = []
@@ -385,6 +418,8 @@ def main(argv):
         zbf_overall_model_dS_list = []
         zbf_overall_model_Sigma_list = []
         zneg_bf_overall_model_Sigma_list = []
+        zshear_sigma_crits = []
+        zmagf_sigma_crits = []
         for m_i in xrange(num_m_bins):
             zR_list.append([])
             zdS_list.append([])
@@ -401,6 +436,8 @@ def main(argv):
             zbf_overall_model_dS_list.append([])
             zbf_overall_model_Sigma_list.append([])
             zneg_bf_overall_model_Sigma_list.append([])
+            zshear_sigma_crits.append([])
+            zmagf_sigma_crits.append([])
         binned_Rs.append(zR_list)
         binned_dSs.append(zdS_list)
         binned_dS_errs.append(zdS_err_list)
@@ -416,11 +453,15 @@ def main(argv):
         binned_bf_overall_model_dSs.append(zbf_overall_model_dS_list)
         binned_bf_overall_model_Sigmas.append(zbf_overall_model_Sigma_list)
         binned_neg_bf_overall_model_Sigmas.append(zneg_bf_overall_model_Sigma_list)
+        binned_shear_sigma_crits.append(zshear_sigma_crits)
+        binned_magf_sigma_crits.append(zmagf_sigma_crits)
     
     for z, m, R, dS, dS_err, Sigma, Sigma_err, bf_shear_model_dS, bf_shear_model_Sigma, \
-        bf_magf_model_dS, bf_magf_model_Sigma, bf_overall_model_dS, bf_overall_model_Sigma in \
+        bf_magf_model_dS, bf_magf_model_Sigma, bf_overall_model_dS, bf_overall_model_Sigma, \
+        shear_sigma_crit, magf_sigma_crit in \
             zip(redshifts, masses, Rs, dSs, dS_errs, Sigmas, Sigma_errs, bf_shear_model_dSs, bf_shear_model_Sigmas, \
-            bf_magf_model_dSs, bf_magf_model_Sigmas,bf_overall_model_dSs, bf_overall_model_Sigmas):
+            bf_magf_model_dSs, bf_magf_model_Sigmas,bf_overall_model_dSs, bf_overall_model_Sigmas, \
+            shear_sigma_crits, magf_sigma_crits):
         
         z_i = bf.get_bin_index(z, z_bins)
         if(z_i<0): continue
@@ -443,6 +484,36 @@ def main(argv):
         binned_bf_overall_model_dSs[z_i][m_i].append(bf_overall_model_dS)
         binned_bf_overall_model_Sigmas[z_i][m_i].append(bf_overall_model_Sigma)
         binned_neg_bf_overall_model_Sigmas[z_i][m_i].append(-bf_overall_model_Sigma)
+        binned_shear_sigma_crits[z_i][m_i].append(shear_sigma_crit)
+        binned_magf_sigma_crits[z_i][m_i].append(magf_sigma_crit)
+        
+    # Convert all lists to arrays
+    
+    for z_i in xrange(num_z_bins):        
+        for m_i in xrange(num_m_bins):
+            binned_Rs[z_i][m_i] = np.array(binned_Rs[z_i][m_i])
+            binned_dSs[z_i][m_i] = np.array(binned_dSs[z_i][m_i])
+            binned_dS_errs[z_i][m_i] = np.array(binned_dS_errs[z_i][m_i])
+            binned_Sigmas[z_i][m_i] = np.array(binned_Sigmas[z_i][m_i])
+            binned_neg_Sigmas[z_i][m_i] = np.array(binned_neg_Sigmas[z_i][m_i])
+            binned_Sigma_errs[z_i][m_i] = np.array(binned_Sigma_errs[z_i][m_i])
+            binned_bf_shear_model_dSs[z_i][m_i] = np.array(binned_bf_shear_model_dSs[z_i][m_i])
+            binned_bf_shear_model_Sigmas[z_i][m_i] = np.array(binned_bf_shear_model_Sigmas[z_i][m_i])
+            binned_neg_bf_shear_model_Sigmas[z_i][m_i] = np.array(binned_neg_bf_shear_model_Sigmas[z_i][m_i])
+            binned_bf_magf_model_dSs[z_i][m_i] = np.array(binned_bf_magf_model_dSs[z_i][m_i])
+            binned_bf_magf_model_Sigmas[z_i][m_i] = np.array(binned_bf_magf_model_Sigmas[z_i][m_i])
+            binned_neg_bf_magf_model_Sigmas[z_i][m_i] = np.array(binned_neg_bf_magf_model_Sigmas[z_i][m_i])
+            binned_bf_overall_model_dSs[z_i][m_i] = np.array(binned_bf_overall_model_dSs[z_i][m_i])
+            binned_bf_overall_model_Sigmas[z_i][m_i] = np.array(binned_bf_overall_model_Sigmas[z_i][m_i])
+            binned_neg_bf_overall_model_Sigmas[z_i][m_i] = np.array(binned_neg_bf_overall_model_Sigmas[z_i][m_i])
+            binned_shear_sigma_crits[z_i][m_i] = np.array(binned_shear_sigma_crits[z_i][m_i])
+            binned_magf_sigma_crits[z_i][m_i] = np.array(binned_magf_sigma_crits[z_i][m_i])
+            
+    # Set up chi-squared storage arrays
+    shear_dS_chi2s = np.empty((num_z_bins,num_m_bins))
+    magf_dS_chi2s = np.empty((num_z_bins,num_m_bins))
+    shear_Sigma_chi2s = np.empty((num_z_bins,num_m_bins))
+    magf_Sigma_chi2s = np.empty((num_z_bins,num_m_bins))
         
     # Do the shear plot now
     fig = pyplot.figure()
@@ -450,7 +521,7 @@ def main(argv):
     
     ax = fig.add_subplot(1,1,1)
     ax.set_xlabel("Projected Separation (kpc)",labelpad=20)
-    ax.set_ylabel(r"$\Delta \Sigma$",labelpad=25)
+    ax.set_ylabel(r"$\gamma_{\rm t}$",labelpad=25)
     ax.set_yticklabels([])
     ax.set_xticklabels([])
     
@@ -461,26 +532,40 @@ def main(argv):
         for m_i in xrange(num_m_bins):
         
             m = m_bins_mids[m_i]
-    
+            
+            # Calculate the chi-squared values for this bin            
+            shear_chi2s = np.square((binned_dSs[z_i][m_i] - binned_bf_shear_model_dSs[z_i][m_i])/binned_dS_errs[z_i][m_i])
+            magf_chi2s = np.square((binned_dSs[z_i][m_i] - binned_bf_magf_model_dSs[z_i][m_i])/binned_dS_errs[z_i][m_i])
+            
+            shear_dS_chi2s[z_i,m_i] = np.sum(shear_chi2s[chi_2_i_min:])
+            magf_dS_chi2s[z_i,m_i] = np.sum(magf_chi2s[chi_2_i_min:])
+            
+            # Plot this bin
             ax = fig.add_subplot( num_m_bins, num_z_bins, z_i + num_z_bins*m_i + 1)
             ax.set_yscale("log", nonposy='clip')
-            ax.errorbar( binned_Rs[z_i][m_i], binned_dSs[z_i][m_i], color='b', linestyle='None', label="Measured values",
-                         marker='.',yerr=binned_dS_errs[z_i][m_i] )
-            ax.plot( binned_Rs[z_i][m_i], binned_bf_shear_model_dSs[z_i][m_i], 'b', linestyle='--', linewidth=2,
+            ax.errorbar( binned_Rs[z_i][m_i], binned_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
+                         color='b', linestyle='None', label="Measured values",
+                         marker='.',yerr=binned_dS_errs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i] )
+            ax.plot( binned_Rs[z_i][m_i], binned_bf_shear_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
+                     'k', linestyle='--', linewidth=2,
                      label="Best fit to shear only")
-            ax.plot( binned_Rs[z_i][m_i], binned_bf_magf_model_dSs[z_i][m_i], 'r', linestyle=':', linewidth=2,
+            ax.plot( binned_Rs[z_i][m_i], binned_bf_magf_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
+                     'r', linestyle=':', linewidth=2,
                      label="Best fit to mag. only")
             #ax.legend( [emptiness,emptiness] , [r"$z_{mid}$="+ str(z) ,r"$M_{mid}$=" + "%.1E" % m],loc='upper right')
-            ax.set_ylim(1,100)
+            ax.set_ylim(0.0003,0.03)
             
             # Label the redshift and mass
             xmin = 0.
             xmax = 1.
             ymin = 0.
             ymax = 1.
-            ax.text(xmin+(xmax-xmin)*0.9, ymin+(ymax-ymin)*0.85, r"$z_{mid}$="+ str(z), size=10,
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.9, r"$z_{mid}$="+ str(z), size=10,
                     horizontalalignment='right', transform = ax.transAxes)
-            ax.text(xmin+(xmax-xmin)*0.9, ymin+(ymax-ymin)*0.75, r"$M_{mid}$=" + "%.1E" % m, size=10,
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.8, r"$M_{mid}$=" + "%.1e" % m, size=10,
+                    horizontalalignment='right', transform = ax.transAxes)
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
+                     "%2.1f, %2.1f" % (shear_dS_chi2s[z_i,m_i], magf_dS_chi2s[z_i,m_i]), size=10,
                     horizontalalignment='right', transform = ax.transAxes)
             
             # set the labels as appropriate
@@ -491,15 +576,15 @@ def main(argv):
                 ax.set_xticklabels([])
                 
             if((z_i==0) and (m_i==num_m_bins-1)): # bottom-left
-                ax.set_yticks([1, 10, 100])
-                ax.set_yticklabels([1, 10, 100],fontsize=10)
+                ax.set_yticks([0.001, 0.01])
+                ax.set_yticklabels([0.001, 0.01],fontsize=10)
                 ax.set_xticks([0, 500,1000,1500,2000])
                 ax.set_xticklabels([0, 500,1000,1500,2000],fontsize=10)
                 continue
                 
             if(z_i==0): # left column
-                ax.set_yticks([10, 100])
-                ax.set_yticklabels([10, 100],fontsize=10)
+                ax.set_yticks([0.001, 0.01])
+                ax.set_yticklabels([0.001, 0.01],fontsize=10)
                 
             if(m_i==num_m_bins-1): # bottom row
                 ax.set_xticks([500,1000,1500,2000])
@@ -516,6 +601,13 @@ def main(argv):
         
     # Show the figure
     pyplot.show()
+    
+    # Print stats on the chi-squared value
+    print("shear dS Chi^2 = " + str(np.mean(shear_dS_chi2s)) + " +/- " +
+          str(np.std(shear_dS_chi2s)/np.sqrt(np.size(shear_dS_chi2s)-1)) )
+    print("magf dS Chi^2 = " + str(np.mean(magf_dS_chi2s)) + " +/- " +
+          str(np.std(magf_dS_chi2s)/np.sqrt(np.size(magf_dS_chi2s)-1)) )
+    print("")
         
     # Do the mag plot now
     fig = pyplot.figure()
@@ -523,7 +615,7 @@ def main(argv):
     
     ax = fig.add_subplot(1,1,1)
     ax.set_xlabel("Projected Separation (kpc)",labelpad=20)
-    ax.set_ylabel(r"$\left|\Sigma\right|$",labelpad=25)
+    ax.set_ylabel(r"$\left|\kappa\right|$",labelpad=25)
     ax.set_yticklabels([])
     ax.set_xticklabels([])
     
@@ -534,32 +626,49 @@ def main(argv):
         for m_i in xrange(num_m_bins):
         
             m = m_bins_mids[m_i]
+            
+            # Calculate the chi-squared values for this bin            
+            shear_chi2s = np.square((binned_Sigmas[z_i][m_i] - binned_bf_shear_model_Sigmas[z_i][m_i])/binned_Sigma_errs[z_i][m_i])
+            magf_chi2s = np.square((binned_Sigmas[z_i][m_i] - binned_bf_magf_model_Sigmas[z_i][m_i])/binned_Sigma_errs[z_i][m_i])
+            
+            shear_Sigma_chi2s[z_i,m_i] = np.sum(shear_chi2s[chi_2_i_min:])
+            magf_Sigma_chi2s[z_i,m_i] = np.sum(magf_chi2s[chi_2_i_min:])
     
             ax = fig.add_subplot( num_m_bins, num_z_bins, z_i + num_z_bins*m_i + 1)
             ax.set_yscale("log", nonposy='clip')
-            ax.errorbar( binned_Rs[z_i][m_i], binned_Sigmas[z_i][m_i], color='r', linestyle='None', label="Measured values",
-                         marker='.', yerr=binned_Sigma_errs[z_i][m_i] )
-            ax.errorbar( binned_Rs[z_i][m_i], binned_neg_Sigmas[z_i][m_i], color='r', linestyle='None', label="Negative Measured values",
-                         marker='o', markerfacecolor='none', markeredgecolor='r', yerr=binned_Sigma_errs[z_i][m_i] )
-            ax.plot( binned_Rs[z_i][m_i], binned_bf_shear_model_Sigmas[z_i][m_i], 'b', linestyle='--',  linewidth=2,
+            ax.errorbar( binned_Rs[z_i][m_i], binned_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+                         color='r', linestyle='None', label="Measured values",
+                         marker='.', yerr=binned_Sigma_errs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i] )
+            ax.errorbar( binned_Rs[z_i][m_i], binned_neg_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+                         color='r', linestyle='None', label="Negative Measured values",
+                         marker='o', markerfacecolor='none', markeredgecolor='r',
+                         yerr=binned_Sigma_errs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i] )
+            ax.plot( binned_Rs[z_i][m_i], binned_bf_shear_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+                     'b', linestyle='--',  linewidth=2,
                      label="Best fit to shear only")
-            ax.plot( binned_Rs[z_i][m_i], binned_neg_bf_shear_model_Sigmas[z_i][m_i], 'b', linestyle='--', linewidth=2,
+            ax.plot( binned_Rs[z_i][m_i], binned_neg_bf_shear_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+                     'b', linestyle='--', linewidth=2,
                      label="Best fit to shear only")
-            ax.plot( binned_Rs[z_i][m_i], binned_bf_magf_model_Sigmas[z_i][m_i], 'r', linestyle=':', linewidth=2,
+            ax.plot( binned_Rs[z_i][m_i], binned_bf_magf_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+                     'k', linestyle=':', linewidth=2,
                      label="Best fit to mag. only")
-            ax.plot( binned_Rs[z_i][m_i], binned_neg_bf_magf_model_Sigmas[z_i][m_i], 'r', linestyle=':', linewidth=2,
+            ax.plot( binned_Rs[z_i][m_i], binned_neg_bf_magf_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+                     'k', linestyle=':', linewidth=2,
                      label="Best fit to mag. only")
             #ax.legend( [emptiness,emptiness] , [r"$z_{mid}$="+ str(z) ,r"$M_{mid}$=" + "%.1E" % m],loc='upper right')
-            ax.set_ylim(1,100)
+            ax.set_ylim(0.0003,0.03)
             
             # Label the redshift and mass
             xmin = 0.
             xmax = 1.
             ymin = 0.
             ymax = 1.
-            ax.text(xmin+(xmax-xmin)*0.9, ymin+(ymax-ymin)*0.85, r"$z_{mid}$="+ str(z), size=10,
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.9, r"$z_{mid}$="+ str(z), size=10,
                     horizontalalignment='right', transform = ax.transAxes)
-            ax.text(xmin+(xmax-xmin)*0.9, ymin+(ymax-ymin)*0.75, r"$M_{mid}$=" + "%.1E" % m, size=10,
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.8, r"$M_{mid}$=" + "%.1E" % m, size=10,
+                    horizontalalignment='right', transform = ax.transAxes)
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
+                    "%2.1f, %2.1f" % (magf_Sigma_chi2s[z_i,m_i], shear_Sigma_chi2s[z_i,m_i]), size=10,
                     horizontalalignment='right', transform = ax.transAxes)
             
             # set the labels as appropriate
@@ -570,15 +679,15 @@ def main(argv):
                 ax.set_xticklabels([])
                 
             if((z_i==0) and (m_i==num_m_bins-1)): # bottom-left
-                ax.set_yticks([1, 10, 100])
-                ax.set_yticklabels([1, 10, 100],fontsize=10)
+                ax.set_yticks([0.001, 0.01])
+                ax.set_yticklabels([0.001, 0.01],fontsize=10)
                 ax.set_xticks([0, 500,1000,1500,2000])
                 ax.set_xticklabels([0, 500,1000,1500,2000],fontsize=10)
                 continue
                 
             if(z_i==0): # left column
-                ax.set_yticks([10, 100])
-                ax.set_yticklabels([10, 100],fontsize=10)
+                ax.set_yticks([0.001, 0.01])
+                ax.set_yticklabels([0.001, 0.01],fontsize=10)
                 
             if(m_i==num_m_bins-1): # bottom row
                 ax.set_xticks([500,1000,1500,2000])
@@ -595,6 +704,12 @@ def main(argv):
         
     # Show the figure
     pyplot.show()
+    
+    # Print stats on the chi-squared value
+    print("magf Sigma Chi^2 = " + str(np.mean(magf_Sigma_chi2s)) + " +/- " +
+          str(np.std(magf_Sigma_chi2s)/np.sqrt(np.size(magf_Sigma_chi2s)-1)) )
+    print("shear Sigma Chi^2 = " + str(np.mean(shear_Sigma_chi2s)) + " +/- " +
+          str(np.std(shear_Sigma_chi2s)/np.sqrt(np.size(shear_Sigma_chi2s)-1)) )
 
 if __name__ == "__main__":
     main(sys.argv)

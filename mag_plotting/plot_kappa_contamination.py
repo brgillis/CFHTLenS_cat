@@ -6,6 +6,8 @@ import sys
 
 import astropy.io.ascii as ascii
 
+import numpy as np
+
 import matplotlib
 import matplotlib.pyplot as pyplot
 matplotlib.rcParams['ps.useafm'] = True
@@ -20,6 +22,7 @@ def main(argv):
     
     xi_min = -100.
     xi_max = 100.
+    kappa_factor = 0.25
     
     default_corr_funcs_table_name = "/home/brg/git/CFHTLenS_cat/Data/auto_corr_funcs.dat"
     
@@ -45,6 +48,11 @@ def main(argv):
     
     default_xi_col_name = "w_mp"
     
+    default_contamination_table_name = "/home/brg/git/CFHTLenS_cat/Data/spec_matched_tables/all_matched_galaxies_contamination_fractions.dat"
+    
+    default_z_mid_col_name = "z_mid"
+    default_contamination_fraction_col_name = "Dz_0.2_con_frac"
+    
     default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/Magnification_Method/"
     
     # Load in values from command line if provided, otherwise use defaults
@@ -61,7 +69,7 @@ def main(argv):
     try:
         corr_funcs_table = ascii.read(corr_funcs_table_name)
     except:
-        print("ERROR: Corr funcs table " + corr_funcs_table + " cannot be read.")
+        print("ERROR: Corr funcs table " + corr_funcs_table_name + " cannot be read.")
         return
         
     cur_arg += 1
@@ -194,11 +202,47 @@ def main(argv):
     else:
         xi_col_name = argv[cur_arg]
         
-    # Try to load in the redshift column
     try:
         xis = corr_funcs_table[xi_col_name]
     except:
         print("ERROR: Cannot read column " + xi_col_name + " from table " + corr_funcs_table_name + ".")
+        return
+        
+    cur_arg += 1
+    if(num_args) <= cur_arg:
+        contamination_table_name = default_contamination_table_name
+    else:
+        contamination_table_name = argv[cur_arg]
+    
+    # Load in the redshift table
+    try:
+        contamination_table = ascii.read(contamination_table_name)
+    except:
+        print("ERROR: Corr funcs table " + contamination_table_name + " cannot be read.")
+        return
+        
+    cur_arg += 1
+    if(num_args) <= cur_arg:
+        z_mid_col_name = default_z_mid_col_name
+    else:
+        z_mid_col_name = argv[cur_arg]
+        
+    try:
+        z_mids = contamination_table[z_mid_col_name]
+    except:
+        print("ERROR: Cannot read column " + z_mid_col_name + " from table " + corr_funcs_table_name + ".")
+        return
+        
+    cur_arg += 1
+    if(num_args) <= cur_arg:
+        contamination_fraction_col_name = default_contamination_fraction_col_name
+    else:
+        contamination_fraction_col_name = argv[cur_arg]
+        
+    try:
+        contamination_fractions = contamination_table[contamination_fraction_col_name]
+    except:
+        print("ERROR: Cannot read column " + z_mid_col_name + " from table " + corr_funcs_table_name + ".")
         return
         
     cur_arg += 1
@@ -256,7 +300,7 @@ def main(argv):
     
     ax = fig.add_subplot(1,1,1)
     ax.set_xlabel("Projected Separation (kpc)",labelpad=20)
-    ax.set_ylabel(r"$w$",labelpad=35)
+    ax.set_ylabel(r"Maximum $\kappa$ contamination",labelpad=35)
     ax.set_yticklabels([])
     ax.set_xticklabels([])
     
@@ -264,14 +308,20 @@ def main(argv):
         
         z = z_bins_mids[z_i]
         
+        # Get the contamination fraction for this redshift
+        cf_z_i = np.argmax(z<=z_mids)
+        contamination_fraction = contamination_fractions[cf_z_i]
+        
+        kappa_contamination_fraction = kappa_factor * contamination_fraction
+        
         for m_i in xrange(num_m_bins):
         
             m = m_bins_mids[m_i]
     
             ax = fig.add_subplot( num_m_bins, num_z_bins, z_i + num_z_bins*m_i + 1)
-            ax.semilogy( binned_Rs[z_i][m_i], binned_xis[z_i][m_i], 'r' )
+            ax.semilogy( binned_Rs[z_i][m_i], np.multiply(kappa_contamination_fraction,binned_xis[z_i][m_i]), 'r' )
             #ax.legend( [emptiness,emptiness] , [r"$z_{mid}$="+ str(z) ,r"$M_{mid}$=" + "%.1E" % m],loc='upper right')
-            ax.set_ylim(0.01,1)
+            ax.set_ylim(0.00001,0.01)
             
             # Label the redshift and mass
             xmin = 0.
@@ -291,15 +341,15 @@ def main(argv):
                 ax.set_xticklabels([])
                 
             if((z_i==0) and (m_i==num_m_bins-1)): # bottom-left
-                ax.set_yticks([0.01, 0.1, 1])
-                ax.set_yticklabels([0.01, 0.1, 1],fontsize=10)
+                ax.set_yticks([0.00001, 0.0001, 0.001, 0.01])
+                ax.set_yticklabels([0.00001, 0.0001, 0.001, 0.01],fontsize=10)
                 ax.set_xticks([0, 500,1000,1500,2000])
                 ax.set_xticklabels([0, 500,1000,1500,2000],fontsize=10)
                 continue
                 
             if(z_i==0): # left column
-                ax.set_yticks([0.1, 1])
-                ax.set_yticklabels([0.1, 1],fontsize=10)
+                ax.set_yticks([0.0001, 0.001, 0.01])
+                ax.set_yticklabels([0.0001, 0.001, 0.01],fontsize=10)
                 
             if(m_i==num_m_bins-1): # bottom row
                 ax.set_xticks([500,1000,1500,2000])
@@ -307,7 +357,7 @@ def main(argv):
     
     
     # Save the figure
-    outfile_name = os.path.splitext(corr_funcs_table_name)[0] + ".eps"
+    outfile_name = os.path.splitext(corr_funcs_table_name)[0] + "_kappa_contamination.eps"
     pyplot.savefig(outfile_name, format="eps", bbox_inches="tight", pad_inches=0.05)
     
     # Copy it to the paper location
