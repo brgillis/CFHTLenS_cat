@@ -46,9 +46,10 @@ class columns_reader(object):
             
             self._read_in_data_ = []
             for col_i in xrange(self.num_cols()):
-                self._read_in_data_.append(np.array(data_table[self._col_names_[col_i]])+self._offsets_[col_i]*self._factors_[col_i])
+                self._read_in_data_.append((np.array(data_table[self._col_names_[col_i]])+self._offsets_[col_i])*self._factors_[col_i])
             
             self._cols_changed_ = False
+            self._filename_ = filename
             
         return self._read_in_data_
     

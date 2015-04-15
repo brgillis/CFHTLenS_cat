@@ -23,7 +23,7 @@ def main(argv):
     
     # Magic values
     
-    data_table_name = "/home/brg/git/CFHTLenS_cat/Data/alpha_cache_weighted.dat"
+    data_table_name = "/home/brg/git/CFHTLenS_cat/Data/alpha_cache_r_weighted.dat"
     
     paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/Magnification_Method/"
     

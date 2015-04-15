@@ -278,9 +278,9 @@ def main(argv):
             xmax = 1.
             ymin = 0.
             ymax = 1.
-            ax.text(xmin+(xmax-xmin)*0.9, ymin+(ymax-ymin)*0.85, r"$z_{mid}$="+ str(z), size=10,
+            ax.text(xmin+(xmax-xmin)*0.9, ymin+(ymax-ymin)*0.85, r"$z_{\rm mid}$="+ str(z), size=10,
                     horizontalalignment='right', transform = ax.transAxes)
-            ax.text(xmin+(xmax-xmin)*0.9, ymin+(ymax-ymin)*0.75, r"$M_{mid}$=" + "%.1E" % m, size=10,
+            ax.text(xmin+(xmax-xmin)*0.9, ymin+(ymax-ymin)*0.75, r"$M_{\rm mid}$=" + "%.1E" % m, size=10,
                     horizontalalignment='right', transform = ax.transAxes)
             
             # set the labels as appropriate

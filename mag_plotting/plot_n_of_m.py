@@ -24,7 +24,7 @@ def main(argv):
     
     # Magic values
     
-    data_table_name = "/home/brg/git/CFHTLenS_cat/Data/ex_count_cache_r.dat"
+    data_table_name = "/home/brg/git/CFHTLenS_cat/Data/ex_count_cache_r_weighted.dat"
     
     paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/Magnification_Method/"
     
@@ -40,6 +40,21 @@ def main(argv):
     reader.add("z","x_2",offset=0.001)
     reader.add("mag","x_1",offset=0.005)
     reader.add("count","y")
+        
+    fig = pyplot.figure()
+    fig.subplots_adjust(wspace=0.5, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
+        
+    scale = 1/(sqdeg_per_sqrad)
+    
+    ax = fig.add_subplot(1,1,1)
+    ax.set_xlabel(r"$r'$" + " magnitude",labelpad=20)
+    ax.set_xlim(20,24.7)
+    
+    ax.set_ylabel(r"Count per deg$^2$ per unit magnitude",labelpad=20)
+    ax.set_yscale("log", nonposy='clip')
+    ax.set_ylim(1e4*scale,1.5e8*scale)
+    
+    plotted_y_cols = []
 
     cols = reader.read(data_table_name)
     
@@ -77,28 +92,25 @@ def main(argv):
         
     # Do the plotting now
     
-    scale = 1/(sqdeg_per_sqrad)
-    
-    fig = pyplot.figure()
-    fig.subplots_adjust(wspace=0.5, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
-    
-    ax = fig.add_subplot(1,1,1)
-    ax.set_xlabel(r"$r'$ magnitude",labelpad=20)
-    ax.set_xlim(20,24.7)
-    ax.set_ylabel(r"Count per deg$^2$ per unit magnitude",labelpad=20)
-    ax.set_yscale("log", nonposy='clip')
-    ax.set_ylim(1e4*scale,1.5e8*scale)
     
     for z_i in xrange(0, num_z_bins, z_bins_skip):
         z = z_bins[z_i][0]
+    
+        if("unweighted" in data_table_name):
+            lstyle = '--'
+            label = None
+        else:
+            lstyle = '-'
+            label = "z="+str(z)
         
-        label = "z="+str(z)
+        ax.plot(binned_cols[reader.index("mag")][z_i],binned_cols[reader.index("count")][z_i]*scale,
+                lstyle,label=label)
         
-        ax.plot(binned_cols[reader.index("mag")][z_i],binned_cols[reader.index("count")][z_i]*scale,label=label)
-        
+        plotted_y_cols.append(binned_cols[reader.index("count")][z_i]*scale)
+            
     ax.legend(loc='lower right')
-    
-    
+        
+        
     # Save the figure
     outfile_name = os.path.splitext(data_table_name)[0] + ".eps"
     pyplot.savefig(outfile_name, format="eps", bbox_inches="tight", pad_inches=0.05)
@@ -106,8 +118,9 @@ def main(argv):
     # Copy it to the paper location
     cmd = "cp " + outfile_name + " " + paper_location
     sbp.call(cmd,shell=True)
-        
+            
     # Show the figure
+        
     pyplot.show()
 
 if __name__ == "__main__":

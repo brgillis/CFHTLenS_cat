@@ -433,7 +433,7 @@ def main(argv):
             xmax = 1.
             ymin = 0.
             ymax = 1.
-            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.9, r"$M_{mid}$=" + "%.1e" % m, size=12,
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.9, r"$M_{\rm mid}$=" + "%.1e" % m, size=12,
                     horizontalalignment='right', transform = ax.transAxes)
             
             # set the labels as appropriate
