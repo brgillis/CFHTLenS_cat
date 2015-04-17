@@ -44,12 +44,15 @@ class lensing_fitting_bin
 private:
 
 	// Bin boundaries
-	flt_type _z_min_, _z_max_;
-	flt_type _m_min_, _m_max_;
+	flt_type _z_min_ = 0, _z_max_ = 0;
+	flt_type _m_min_ = 0, _m_max_ = 0;
 
 	// R bins
 	std::vector<fitting_bin> shear_fitting_bins;
 	std::vector<fitting_bin> magf_fitting_bins;
+
+	// Other data
+	flt_type _Sigma_crit_ = 0;
 
 public:
 
@@ -59,12 +62,12 @@ public:
 	{
 	}
 	lensing_fitting_bin(const brgastro::labeled_array<flt_type>::row_reference & row)
+	:	_z_min_(row.at_label(z_min_label)),
+		_z_max_(row.at_label(z_max_label)),
+		_m_min_(row.at_label(m_min_label)),
+		_m_max_(row.at_label(m_max_label)),
+		_Sigma_crit_(row.at_label(Sigma_crit_label))
 	{
-		_z_min_ = row.at_label(z_min_label);
-		_z_max_ = row.at_label(z_max_label);
-		_m_min_ = row.at_label(m_min_label);
-		_m_max_ = row.at_label(m_max_label);
-
 		insert(row);
 	}
 
@@ -102,6 +105,8 @@ public:
 		assert(_m_min_==row.at_label(m_min_label));
 		assert(_m_max_==row.at_label(m_max_label));
 
+		_Sigma_crit_ = row.at_label(Sigma_crit_label);
+
 		shear_fitting_bins.push_back(fitting_bin(row.at_label(shear_R_mean_label),
 												 row.at_label(dS_t_mean_label),
 												 row.at_label(dS_t_stderr_label)));
@@ -113,13 +118,15 @@ public:
 	}
 #endif // Set/insert data and bounds
 
-	// Get bounds
+	// Get bounds and other data
 #if(1)
 
 	const flt_type & z_min() const { return _z_min_; }
 	const flt_type & z_max() const { return _z_max_; }
 	const flt_type & m_min() const { return _m_min_; }
 	const flt_type & m_max() const { return _m_max_; }
+
+	const flt_type & Sigma_crit() const { return _Sigma_crit_; }
 
 	const flt_type z_mid() const { return (_z_min_+_z_max_)/2;}
 	const flt_type m_mid() const { return (_m_min_+_m_max_)/2;}

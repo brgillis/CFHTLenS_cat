@@ -69,6 +69,7 @@ constexpr const char * Sigma_stderr_label = "Sigma_stderr";
 constexpr const char * model_Sigma_label = "model_Sigma";
 
 constexpr const char * magf_Sigma_crit_label = "magf_Sigma_crit";
+constexpr const char * Sigma_crit_label = magf_Sigma_crit_label;
 
 constexpr const char * best_fit_shear_model_dS_t_label = "bf_shear_model_dS_t";
 constexpr const char * best_fit_shear_model_Sigma_label = "bf_shear_model_Sigma";

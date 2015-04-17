@@ -31,7 +31,7 @@
 #include <boost/bimap.hpp>
 
 #include "brg/container/labeled_array.hpp"
-#include "brg/math/solvers/solvers.hpp"
+#include "brg/math/solvers/solver_classes.hpp"
 
 #include "brg_lensing/lensing_tNFW_profile.h"
 
@@ -55,6 +55,13 @@ constexpr flt_type min_Sigma_offset = -max_Sigma_offset;
 
 constexpr int_type MCMC_max_steps = 10000;
 constexpr int_type MCMC_annealing_period = MCMC_max_steps/10;
+constexpr flt_type MCMC_annealing_factor = 4;
+constexpr int_type MCMC_skip_factor = 10;
+
+constexpr int_type num_params = 4;
+
+typedef Eigen::Array<flt_type,num_params,1> array_type;
+typedef brgastro::MCMC_solver<flt_type,num_params> solver_type;
 
 /**
  * TODO (description)
@@ -67,7 +74,7 @@ int main( const int argc, const char *argv[] )
 	// Check that we got a filename in the command line
 	if(argc<=2)
 	{
-		std::cerr << "ERROR: Filename of lensing data to be fit must be passed at command line.\n";
+		std::cerr << "ERROR: Filename of lensing data to be fit and output name must be passed at command line.\n";
 		return 1;
 	}
 
@@ -180,6 +187,7 @@ int main( const int argc, const char *argv[] )
 	result_header.push_back("overall_sat_frac_err");
 	result_header.push_back("overall_Sigma_offset_best");
 	result_header.push_back("overall_Sigma_offset_err");
+	result_header.push_back("Sigma_crit");
 
 	results.set_labels(std::move(result_header));
 
@@ -228,6 +236,13 @@ int main( const int argc, const char *argv[] )
 				return std::vector<flt_type>(1,shear_fitting_function(std::pow(10.,in[0]),std::pow(10.,in[1]),in[2]));
 			};
 
+			// Array version wrapper
+			const auto shear_fitting_array_function = [&shear_fitting_function] (const array_type & in)
+			{
+				return shear_fitting_function(std::pow(10.,in[0]),std::pow(10.,in[1]),in[2]);
+			};
+
+			// Magf fitting function
 			const auto magf_fitting_function = [&Sigma_model, &fitting_bin] (const flt_type & sat_m, const flt_type & group_m, const flt_type & sat_frac, const flt_type & Sigma_offset)
 			{
 				const auto magf_chi_squared_func = [&Sigma_model, &sat_m, &group_m, &sat_frac, &Sigma_offset, &fitting_bin] (const flt_type & R)
@@ -245,6 +260,13 @@ int main( const int argc, const char *argv[] )
 				return std::vector<flt_type>(1,magf_fitting_function(std::pow(10.,in[0]),std::pow(10.,in[1]),in[2],in[3]));
 			};
 
+			// Vector version wrapper
+			const auto magf_fitting_array_function = [&magf_fitting_function] (const array_type & in)
+			{
+				return magf_fitting_function(std::pow(10.,in[0]),std::pow(10.,in[1]),in[2],in[3]);
+			};
+
+			// Overall fitting function
 			const auto fitting_function = [&shear_fitting_function, &magf_fitting_function]
 										   (const flt_type & sat_m, const flt_type & group_m, const flt_type & sat_frac,
 											   const flt_type & Sigma_offset)
@@ -255,6 +277,7 @@ int main( const int argc, const char *argv[] )
 				return shear_chi_squared+magf_chi_squared;
 			};
 
+			// Vector version wrapper
 			const auto fitting_vector_function = [&fitting_function]
 												  (const std::vector<flt_type> & in)
 			{
@@ -262,66 +285,79 @@ int main( const int argc, const char *argv[] )
 				return std::vector<flt_type>(1,fitting_function(std::pow(10.,in[0]),std::pow(10.,in[1]),in[2],in[3]));
 			};
 
+			// Array version wrapper
+			const auto fitting_array_function = [&fitting_function]
+												  (const array_type & in)
+			{
+				assert(in.size()>=4);
+				return fitting_function(std::pow(10.,in[0]),std::pow(10.,in[1]),in[2],in[3]);
+			};
+
 			// Set up boundaries and step values. Parameters are in order: sat_m, group_m, Sigma_offset
-			std::vector<flt_type> init_in = { std::log10(50*fitting_bin.m_mid()),
+			array_type init_in = { std::log10(50*fitting_bin.m_mid()),
 				std::log10(10000*fitting_bin.m_mid()),
 				init_frac_in_groups,
 				0. };
-			std::vector<flt_type> min_in = { std::log10(fitting_bin.m_mid()),
+			array_type min_in = { std::log10(fitting_bin.m_mid()),
 				std::log10(fitting_bin.m_mid()),
 				min_frac_in_groups,
 				min_Sigma_offset };
-			std::vector<flt_type> max_in = { std::log10(200*fitting_bin.m_mid()),
+			array_type max_in = { std::log10(200*fitting_bin.m_mid()),
 				std::log10(max_group_mass),
 				max_frac_in_groups,
 				max_Sigma_offset };
-			std::vector<flt_type> in_step = {  0.1,
+			array_type in_step = {  0.1,
 				0.1,
 				(max_frac_in_groups-min_frac_in_groups)/100.,
 				(max_Sigma_offset-min_Sigma_offset)/100. };
 
-			std::vector<flt_type> best_shear_in_params = brgastro::solve_MCMC(&shear_fitting_vector_function,init_in,
-																			  min_in,max_in,in_step,
-																			  MCMC_max_steps,MCMC_annealing_period);
+			solver_type shear_solver;
+			solver_type magf_solver;
+			solver_type overall_solver;
 
-			std::vector<flt_type> best_magf_in_params = brgastro::solve_MCMC(&magf_fitting_vector_function,init_in,
+			array_type best_shear_in_params = shear_solver.solve(shear_fitting_array_function,init_in,
 																			  min_in,max_in,in_step,
-																			  MCMC_max_steps,MCMC_annealing_period);
+																			  MCMC_max_steps,MCMC_annealing_period,
+																			  MCMC_annealing_factor,MCMC_skip_factor);
 
-			std::vector<flt_type> best_overall_in_params = brgastro::solve_MCMC(&fitting_vector_function,init_in,
+			array_type best_magf_in_params = magf_solver.solve(magf_fitting_array_function,init_in,
 																			  min_in,max_in,in_step,
-																			  MCMC_max_steps,MCMC_annealing_period);
+																			  MCMC_max_steps,MCMC_annealing_period,
+																			  MCMC_annealing_factor,MCMC_skip_factor);
 
-			flt_type best_shear_chi_squared = shear_fitting_vector_function(best_shear_in_params).at(0);
-			flt_type best_magf_chi_squared = magf_fitting_vector_function(best_magf_in_params).at(0);
-			flt_type best_overall_chi_squared = fitting_vector_function(best_overall_in_params).at(0);
+			array_type best_overall_in_params = overall_solver.solve(fitting_array_function,init_in,
+																			  min_in,max_in,in_step,
+																			  MCMC_max_steps,MCMC_annealing_period,
+																			  MCMC_annealing_factor,MCMC_skip_factor);
+
+			flt_type best_shear_chi_squared = shear_fitting_array_function(best_shear_in_params);
+			flt_type best_magf_chi_squared = magf_fitting_array_function(best_magf_in_params);
+			flt_type best_overall_chi_squared = fitting_array_function(best_overall_in_params);
 
 			// Get the errors on each of these fits
-			std::vector<flt_type> shear_errors = get_errors_on_in_params(shear_fitting_vector_function,best_shear_in_params,
-																		 best_shear_chi_squared);
-			std::vector<flt_type> magf_errors = get_errors_on_in_params(magf_fitting_vector_function,best_magf_in_params,
-																		 best_magf_chi_squared);
-			std::vector<flt_type> overall_errors = get_errors_on_in_params(fitting_vector_function,best_overall_in_params,
-																		 best_overall_chi_squared);
+			array_type shear_errors = shear_solver.get_stddevs();
+			array_type magf_errors = magf_solver.get_stddevs();
+			array_type overall_errors = overall_solver.get_stddevs();
 
 			// Set the best-fitting sigma offset for the best_shear_in_params vector to that from the best_overall_in_params vector
-			best_shear_in_params.at(3) = best_overall_in_params.at(3);
+			best_shear_in_params[3] = best_overall_in_params[3];
 
 			std::vector<flt_type> new_row = { fitting_bin.z_min(), fitting_bin.m_min(),
 				best_shear_chi_squared,
-				best_shear_in_params.at(0), shear_errors.at(0),
-				best_shear_in_params.at(1), shear_errors.at(1),
-				best_shear_in_params.at(2), shear_errors.at(2),
+				best_shear_in_params[0], shear_errors[0],
+				best_shear_in_params[1], shear_errors[1],
+				best_shear_in_params[2], shear_errors[2],
 				best_magf_chi_squared,
-				best_magf_in_params.at(0), magf_errors.at(0),
-				best_magf_in_params.at(1), magf_errors.at(1),
-				best_magf_in_params.at(2), magf_errors.at(2),
-				best_magf_in_params.at(3), magf_errors.at(3),
+				best_magf_in_params[0], magf_errors[0],
+				best_magf_in_params[1], magf_errors[1],
+				best_magf_in_params[2], magf_errors[2],
+				best_magf_in_params[3], magf_errors[3],
 				best_overall_chi_squared,
-				best_overall_in_params.at(0), overall_errors.at(0),
-				best_overall_in_params.at(1), overall_errors.at(1),
-				best_overall_in_params.at(2), overall_errors.at(2),
-				best_overall_in_params.at(3), overall_errors.at(3) };
+				best_overall_in_params[0], overall_errors[0],
+				best_overall_in_params[1], overall_errors[1],
+				best_overall_in_params[2], overall_errors[2],
+				best_overall_in_params[3], overall_errors[3],
+				fitting_bin.Sigma_crit() };
 			results.insert_row(std::move(new_row));
 
 			std::cout << "Finished processing bin " << fitting_bin.z_min() << ", " << fitting_bin.m_min() << ".\n";
@@ -338,9 +374,9 @@ int main( const int argc, const char *argv[] )
 				const int_type & m_i = m_bounds.left.at(mb);
 
 				best_fit_params.at(z_i).at(m_i).reserve(3);
-				best_fit_params.at(z_i).at(m_i).push_back(best_shear_in_params);
-				best_fit_params.at(z_i).at(m_i).push_back(best_magf_in_params);
-				best_fit_params.at(z_i).at(m_i).push_back(best_overall_in_params);
+				best_fit_params.at(z_i).at(m_i).push_back(brgastro::coerce<std::vector<flt_type>>(best_shear_in_params));
+				best_fit_params.at(z_i).at(m_i).push_back(brgastro::coerce<std::vector<flt_type>>(best_magf_in_params));
+				best_fit_params.at(z_i).at(m_i).push_back(brgastro::coerce<std::vector<flt_type>>(best_overall_in_params));
 			}
 		}
 	}
