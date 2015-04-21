@@ -130,6 +130,10 @@ def main(argv):
     overall_Sigma_offset_err_offset = 0
     overall_Sigma_offset_err_factor = pc*pc/m_sun
     
+    Sigma_crit_col_name = "Sigma_crit"
+    Sigma_crit_offset = 0
+    Sigma_crit_factor = pc*pc/m_sun
+    
     
     
     # Load in the fitting results table
@@ -235,6 +239,10 @@ def main(argv):
     overall_Sigma_offset_errs = np.array(overall_Sigma_offset_errs)
     overall_Sigma_offset_errs = (overall_Sigma_offset_errs + overall_Sigma_offset_err_offset)*overall_Sigma_offset_err_factor
     
+    Sigma_crits = fitting_results_table[Sigma_crit_col_name]
+    Sigma_crits = np.array(Sigma_crits)
+    Sigma_crits = (Sigma_crits + Sigma_crit_offset)*Sigma_crit_factor
+    
     # Set up bins
     if(m_bins_log):
         m_bins, m_bins_mids = bf.setup_log_bins(m_bins_min, m_bins_max, num_m_bins)
@@ -265,6 +273,7 @@ def main(argv):
     binned_overall_sat_frac_errs = []
     binned_overall_Sigma_offset_bests = []
     binned_overall_Sigma_offset_errs = []
+    binned_Sigma_crits = []
     
     for m_i in xrange(num_m_bins):
         binned_zs.append([])
@@ -290,14 +299,17 @@ def main(argv):
         binned_overall_sat_frac_errs.append([])
         binned_overall_Sigma_offset_bests.append([])
         binned_overall_Sigma_offset_errs.append([])
+        binned_Sigma_crits.append([])
 
     
     for z, m, shear_sat_m_best, shear_sat_m_err, shear_group_m_best, shear_group_m_err, shear_sat_frac_best, shear_sat_frac_err, \
         magf_sat_m_best, magf_sat_m_err, magf_group_m_best, magf_group_m_err, magf_sat_frac_best, magf_sat_frac_err, magf_Sigma_offset_best, magf_Sigma_offset_err, \
-        overall_sat_m_best, overall_sat_m_err, overall_group_m_best, overall_group_m_err, overall_sat_frac_best, overall_sat_frac_err, overall_Sigma_offset_best, overall_Sigma_offset_err \
+        overall_sat_m_best, overall_sat_m_err, overall_group_m_best, overall_group_m_err, overall_sat_frac_best, overall_sat_frac_err, overall_Sigma_offset_best, overall_Sigma_offset_err, \
+        Sigma_crit \
          in zip(zs, ms, shear_sat_m_bests, shear_sat_m_errs, shear_group_m_bests, shear_group_m_errs, shear_sat_frac_bests, shear_sat_frac_errs, \
                 magf_sat_m_bests, magf_sat_m_errs, magf_group_m_bests, magf_group_m_errs, magf_sat_frac_bests, magf_sat_frac_errs, magf_Sigma_offset_bests, magf_Sigma_offset_errs, \
-                overall_sat_m_bests, overall_sat_m_errs, overall_group_m_bests, overall_group_m_errs, overall_sat_frac_bests, overall_sat_frac_errs, overall_Sigma_offset_bests, overall_Sigma_offset_errs):
+                overall_sat_m_bests, overall_sat_m_errs, overall_group_m_bests, overall_group_m_errs, overall_sat_frac_bests, overall_sat_frac_errs, overall_Sigma_offset_bests, overall_Sigma_offset_errs, \
+                Sigma_crits):
         
         m_i = bf.get_bin_index(m, m_bins)
         if(m_i<0): continue
@@ -325,6 +337,7 @@ def main(argv):
         binned_overall_sat_frac_errs[m_i].append(overall_sat_frac_err)
         binned_overall_Sigma_offset_bests[m_i].append(overall_Sigma_offset_best)
         binned_overall_Sigma_offset_errs[m_i].append(overall_Sigma_offset_err)
+        binned_Sigma_crits[m_i].append(Sigma_crit)
         
     # Convert all lists to arrays      
     for m_i in xrange(num_m_bins):
@@ -351,6 +364,7 @@ def main(argv):
         binned_overall_sat_frac_errs= np.array(binned_overall_sat_frac_errs)
         binned_overall_Sigma_offset_bests= np.array(binned_overall_Sigma_offset_bests)
         binned_overall_Sigma_offset_errs= np.array(binned_overall_Sigma_offset_errs)
+        binned_Sigma_crits= np.array(binned_Sigma_crits)
         
     # Do the shear plot now
     fig = pyplot.figure(figsize=(12,6))
@@ -419,14 +433,14 @@ def main(argv):
             elif(p_i==3):
                 # Plot sat_frac
                 ax = fig.add_subplot( num_m_bins, num_p_bins, p_i + num_p_bins*m_i + 1)
-                ax.errorbar( binned_zs[m_i], binned_magf_Sigma_offset_bests[m_i],
+                ax.errorbar( binned_zs[m_i], binned_magf_Sigma_offset_bests[m_i]/binned_Sigma_crits[m_i],
                              color='r', linestyle='None', label="Magnification fit",
-                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_Sigma_offset_errs[m_i] )
-                ax.errorbar( binned_zs[m_i]+z_shift, binned_overall_Sigma_offset_bests[m_i],
+                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_Sigma_offset_errs[m_i]/binned_Sigma_crits[m_i] )
+                ax.errorbar( binned_zs[m_i]+z_shift, binned_overall_Sigma_offset_bests[m_i]/binned_Sigma_crits[m_i],
                              color='k', linestyle='None', label="Overall fit",
-                             marker='*',yerr=binned_overall_Sigma_offset_errs[m_i] )
-                ax.set_ylim(-25,25)
-                ax.set_ylabel(r"$\Sigma_{\rm offset}$",labelpad=5)
+                             marker='*',yerr=binned_overall_Sigma_offset_errs[m_i]/binned_Sigma_crits[m_i] )
+                ax.set_ylim(-0.00549,0.00549)
+                ax.set_ylabel(r"$\kappa_{\rm offset}$",labelpad=5)
             
             # Label the mass
             xmin = 0.
@@ -442,8 +456,8 @@ def main(argv):
                 ax.set_xticklabels([])
                 
             if(m_i==num_m_bins-1): # bottom row
-                ax.set_xticks([0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4])
-                ax.set_xticklabels([.2, .4, .6, .8, 1.0, 1.2, 1.4],fontsize=12)
+                ax.set_xticks([0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
+                ax.set_xticklabels([.2, .4, .6, .8, 1.0, 1.2],fontsize=12)
     
     
     # Save the figure

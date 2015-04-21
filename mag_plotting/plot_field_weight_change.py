@@ -43,6 +43,7 @@ def main(argv):
         reader.add("m","m_min",factor=1./m_sun)
         reader.add("sigma_offset_best","magf_Sigma_offset_best",factor=pc*pc/m_sun)
         reader.add("sigma_offset_err","magf_Sigma_offset_err",factor=pc*pc/m_sun)
+        reader.add("sigma_crit","Sigma_crit",factor=pc*pc/m_sun)
         
     fig = pyplot.figure()
     fig.subplots_adjust(wspace=0.5, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
@@ -50,7 +51,7 @@ def main(argv):
     ax = fig.add_subplot(1,1,1)
     ax.set_xlabel(r"$z_{\rm mid}$",fontsize=18,labelpad=20)
     
-    ax.set_ylabel(r"Change in $\Sigma_{\rm offset}$ from field weighting",labelpad=20)
+    ax.set_ylabel(r"Change in $\kappa_{\rm offset}$ from field weighting",labelpad=40)
     
     ax.spines["top"].set_color("none")
     ax.spines["bottom"].set_color("none")
@@ -120,11 +121,15 @@ def main(argv):
                           binned_uw_cols[unweighted_reader.index("sigma_offset_best")][m_i])
         sigma_off_err = np.sqrt(binned_w_cols[weighted_reader.index("sigma_offset_err")][m_i]**2 +
                          binned_uw_cols[unweighted_reader.index("sigma_offset_err")][m_i]**2)
+        
+        kappa_off_diff = sigma_off_diff/binned_w_cols[weighted_reader.index("sigma_crit")][m_i]
+        kappa_off_err = sigma_off_err/binned_w_cols[weighted_reader.index("sigma_crit")][m_i]
                          
-        ax.errorbar( binned_w_cols[unweighted_reader.index("z")][m_i], sigma_off_diff,
+        ax.errorbar( binned_w_cols[unweighted_reader.index("z")][m_i], kappa_off_diff,
                              linestyle='None', color='r',
-                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=sigma_off_err )
-        ax.set_ylim(-25,25)
+                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=kappa_off_err )
+        ax.plot([0.2,1.3],[0,0],label=None,color="k",linestyle="dashed")
+        ax.set_ylim(-0.00549,0.00549)
         ax.set_xlim(0.2,1.3)
             
         # Label the mass

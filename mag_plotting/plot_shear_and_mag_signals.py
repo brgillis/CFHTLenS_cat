@@ -592,7 +592,7 @@ def main(argv):
     
     
     # Save the figure
-    outfile_name = os.path.splitext(lensing_signal_table_name)[0] + "_Delta_Sigma.eps"
+    outfile_name = os.path.splitext(lensing_signal_table_name)[0] + "_gamma.eps"
     pyplot.savefig(outfile_name, format="eps", bbox_inches="tight", pad_inches=0.05)
     
     # Copy it to the paper location
@@ -695,7 +695,7 @@ def main(argv):
     
     
     # Save the figure
-    outfile_name = os.path.splitext(lensing_signal_table_name)[0] + "_Sigma.eps"
+    outfile_name = os.path.splitext(lensing_signal_table_name)[0] + "_kappa.eps"
     pyplot.savefig(outfile_name, format="eps", bbox_inches="tight", pad_inches=0.05)
     
     # Copy it to the paper location
