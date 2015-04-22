@@ -23,6 +23,9 @@ def main(argv):
     
     # Magic values
     
+    figsize = (12,5)
+    labelsize = 10
+    
     z_shift = 0.01
     
     fitting_results_table_name = "/home/brg/git/CFHTLenS_cat/Data/gg_lensing_signal_20_bins_fitting_results.dat"
@@ -221,7 +224,7 @@ def main(argv):
         binned_overall_Sigma_offset_errs= np.array(binned_overall_Sigma_offset_errs)
         
     # Do the shear plot now
-    fig = pyplot.figure(figsize=(12,6))
+    fig = pyplot.figure(figsize=figsize)
     fig.subplots_adjust(wspace=0.5, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
     
     ax = fig.add_subplot(1,1,1)
@@ -343,7 +346,7 @@ def main(argv):
             xmax = 1.
             ymin = 0.
             ymax = 1.
-            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.9, r"$M_{mid}$=" + "%.1e" % m, size=12,
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.9, r"$M_{mid}$=" + "%.1e" % m, size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
             
             # set the x ticks and labels as appropriate

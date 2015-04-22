@@ -20,6 +20,11 @@ def main(argv):
     
     # Magic values
     
+    high_z = False
+    
+    figsize = (8,4)
+    labelsize = 8
+    
     chi_2_i_min = 2
     
     default_lensing_signal_table = "/home/brg/git/CFHTLenS_cat/Data/gg_lensing_signal_20_bins_with_bf_models.dat"
@@ -27,9 +32,18 @@ def main(argv):
     default_R_col_name = "shear_R_mean"
     
     default_z_col_name = "shear_lens_z_mean"
-    default_z_bins_min = 0.2
-    default_z_bins_max = 0.7
-    default_num_z_bins = 5
+    if(not high_z):
+        default_z_bins_min = 0.2
+        default_z_bins_max = 0.7
+        default_num_z_bins = 5
+        z_str = ""
+        xl_fontsize = 10
+    else:
+        default_z_bins_min = 0.7
+        default_z_bins_max = 1.3
+        default_num_z_bins = 6
+        z_str = "_high_z"
+        xl_fontsize = 8
     default_z_bins_log = False
     
     default_m_col_name = "shear_lens_m_mean"
@@ -516,11 +530,11 @@ def main(argv):
     magf_Sigma_chi2s = np.empty((num_z_bins,num_m_bins))
         
     # Do the shear plot now
-    fig = pyplot.figure()
+    fig = pyplot.figure(figsize=figsize)
     fig.subplots_adjust(wspace=0, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
     
     ax = fig.add_subplot(1,1,1)
-    ax.set_xlabel("Projected Separation (kpc)",labelpad=20)
+    ax.set_xlabel("Projected Separation (kpc)",labelpad=10)
     ax.set_ylabel(r"$\gamma_{\rm t}$",labelpad=25)
     ax.set_yticklabels([])
     ax.set_xticklabels([])
@@ -560,12 +574,12 @@ def main(argv):
             xmax = 1.
             ymin = 0.
             ymax = 1.
-            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.9, r"$z_{mid}$="+ str(z), size=10,
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.9, r"$z_{mid}$="+ str(z), size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
-            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.8, r"$M_{mid}$=" + "%.1e" % m, size=10,
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.8, r"$M_{mid}$=" + "%.1e" % m, size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
             ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
-                     "%2.1f, %2.1f" % (shear_dS_chi2s[z_i,m_i], magf_dS_chi2s[z_i,m_i]), size=10,
+                     "%2.1f, %2.1f" % (shear_dS_chi2s[z_i,m_i], magf_dS_chi2s[z_i,m_i]), size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
             
             # set the labels as appropriate
@@ -579,7 +593,7 @@ def main(argv):
                 ax.set_yticks([0.001, 0.01])
                 ax.set_yticklabels([0.001, 0.01],fontsize=10)
                 ax.set_xticks([0, 500,1000,1500,2000])
-                ax.set_xticklabels([0, 500,1000,1500,2000],fontsize=10)
+                ax.set_xticklabels([0, 500,1000,1500,2000],fontsize=xl_fontsize)
                 continue
                 
             if(z_i==0): # left column
@@ -588,11 +602,11 @@ def main(argv):
                 
             if(m_i==num_m_bins-1): # bottom row
                 ax.set_xticks([500,1000,1500,2000])
-                ax.set_xticklabels([500,1000,1500,2000],fontsize=10)
+                ax.set_xticklabels([500,1000,1500,2000],fontsize=xl_fontsize)
     
     
     # Save the figure
-    outfile_name = os.path.splitext(lensing_signal_table_name)[0] + "_gamma.eps"
+    outfile_name = os.path.splitext(lensing_signal_table_name)[0] + z_str + "_gamma.eps"
     pyplot.savefig(outfile_name, format="eps", bbox_inches="tight", pad_inches=0.05)
     
     # Copy it to the paper location
@@ -610,7 +624,7 @@ def main(argv):
     print("")
         
     # Do the mag plot now
-    fig = pyplot.figure()
+    fig = pyplot.figure(figsize=figsize)
     fig.subplots_adjust(wspace=0, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
     
     ax = fig.add_subplot(1,1,1)
@@ -663,12 +677,12 @@ def main(argv):
             xmax = 1.
             ymin = 0.
             ymax = 1.
-            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.9, r"$z_{mid}$="+ str(z), size=10,
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.9, r"$z_{mid}$="+ str(z), size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
-            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.8, r"$M_{mid}$=" + "%.1E" % m, size=10,
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.8, r"$M_{mid}$=" + "%.1E" % m, size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
             ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
-                    "%2.1f, %2.1f" % (magf_Sigma_chi2s[z_i,m_i], shear_Sigma_chi2s[z_i,m_i]), size=10,
+                    "%2.1f, %2.1f" % (magf_Sigma_chi2s[z_i,m_i], shear_Sigma_chi2s[z_i,m_i]), size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
             
             # set the labels as appropriate
@@ -682,7 +696,7 @@ def main(argv):
                 ax.set_yticks([0.001, 0.01])
                 ax.set_yticklabels([0.001, 0.01],fontsize=10)
                 ax.set_xticks([0, 500,1000,1500,2000])
-                ax.set_xticklabels([0, 500,1000,1500,2000],fontsize=10)
+                ax.set_xticklabels([0, 500,1000,1500,2000],fontsize=xl_fontsize)
                 continue
                 
             if(z_i==0): # left column
@@ -691,11 +705,11 @@ def main(argv):
                 
             if(m_i==num_m_bins-1): # bottom row
                 ax.set_xticks([500,1000,1500,2000])
-                ax.set_xticklabels([500,1000,1500,2000],fontsize=10)
+                ax.set_xticklabels([500,1000,1500,2000],fontsize=xl_fontsize)
     
     
     # Save the figure
-    outfile_name = os.path.splitext(lensing_signal_table_name)[0] + "_kappa.eps"
+    outfile_name = os.path.splitext(lensing_signal_table_name)[0] + z_str + "_kappa.eps"
     pyplot.savefig(outfile_name, format="eps", bbox_inches="tight", pad_inches=0.05)
     
     # Copy it to the paper location

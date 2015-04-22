@@ -23,6 +23,9 @@ def main(argv):
     
     # Magic values
     
+    figsize = (12,5)
+    labelsize = 10
+    
     z_shift = 0.01
     
     fitting_results_table_name = "/home/brg/git/CFHTLenS_cat/Data/gg_lensing_signal_20_bins_fitting_results.dat"
@@ -367,7 +370,7 @@ def main(argv):
         binned_Sigma_crits= np.array(binned_Sigma_crits)
         
     # Do the shear plot now
-    fig = pyplot.figure(figsize=(12,6))
+    fig = pyplot.figure(figsize=figsize)
     fig.subplots_adjust(wspace=0.5, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
     
     ax = fig.add_subplot(1,1,1)
@@ -441,13 +444,15 @@ def main(argv):
                              marker='*',yerr=binned_overall_Sigma_offset_errs[m_i]/binned_Sigma_crits[m_i] )
                 ax.set_ylim(-0.00549,0.00549)
                 ax.set_ylabel(r"$\kappa_{\rm offset}$",labelpad=5)
+                
+            ax.set_xlim(0.2,1.3)
             
             # Label the mass
             xmin = 0.
             xmax = 1.
             ymin = 0.
             ymax = 1.
-            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.9, r"$M_{\rm mid}$=" + "%.1e" % m, size=12,
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.9, r"$M_{\rm mid}$=" + "%.1e" % m, size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
             
             # set the labels as appropriate

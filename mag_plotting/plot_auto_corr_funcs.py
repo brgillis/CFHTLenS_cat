@@ -18,6 +18,9 @@ def main(argv):
     
     # Magic values
     
+    figsize = (8,4)
+    labelsize = 8
+    
     xi_min = -100.
     xi_max = 100.
     
@@ -251,7 +254,7 @@ def main(argv):
         binned_xis[z_i][m_i].append(xi)
         
     # Now start setting up the plot
-    fig = pyplot.figure()
+    fig = pyplot.figure(figsize=figsize)
     fig.subplots_adjust(wspace=0, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
     
     ax = fig.add_subplot(1,1,1)
@@ -278,9 +281,9 @@ def main(argv):
             xmax = 1.
             ymin = 0.
             ymax = 1.
-            ax.text(xmin+(xmax-xmin)*0.9, ymin+(ymax-ymin)*0.85, r"$z_{\rm mid}$="+ str(z), size=10,
+            ax.text(xmin+(xmax-xmin)*0.9, ymin+(ymax-ymin)*0.85, r"$z_{\rm mid}$="+ str(z), size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
-            ax.text(xmin+(xmax-xmin)*0.9, ymin+(ymax-ymin)*0.75, r"$M_{\rm mid}$=" + "%.1E" % m, size=10,
+            ax.text(xmin+(xmax-xmin)*0.9, ymin+(ymax-ymin)*0.75, r"$M_{\rm mid}$=" + "%.1E" % m, size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
             
             # set the labels as appropriate
