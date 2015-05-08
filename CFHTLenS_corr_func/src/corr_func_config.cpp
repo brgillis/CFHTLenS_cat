@@ -65,7 +65,7 @@ corr_func_config::corr_func_config( const int argc, const char *argv[] )
 
 		z_buffer = 0.2;
 
-		lensing_style = true;
+		lensing_style = 0;
 	}
 	else
 	{
@@ -127,7 +127,7 @@ corr_func_config::corr_func_config( const int argc, const char *argv[] )
 
 		z_buffer = boost::lexical_cast<double>(config_value_strings.at(i++));
 
-		lensing_style = brgastro::bool_cast(config_value_strings.at(i++));
+		lensing_style = boost::lexical_cast<short>(config_value_strings.at(i++));
 
 	}
 }

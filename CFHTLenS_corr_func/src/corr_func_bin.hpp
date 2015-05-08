@@ -34,18 +34,20 @@
 #include "brg_physics/correlation_function_estimator.h"
 #include "brg_physics/lensing_correlation_function_estimator.h"
 
+#include "brg_lensing/magnification/mag_correlation_function_estimator.h"
+
 /**
  *
  */
 struct corr_func_bin
 {
-	typedef std::vector<std::tuple<double,double,double>> pos_vec;
+	typedef std::vector<std::tuple<double,double,double,double>> pos_vec;
 	boost::optional<pos_vec> lens_positions;
 	const pos_vec * source_positions;
 	const pos_vec * mock_lens_positions;
 	const pos_vec * mock_source_positions;
 
-	bool lensing_style;
+	short lensing_style;
 	double z_buffer;
 
 	typedef Eigen::ArrayXd array;
@@ -79,7 +81,21 @@ struct corr_func_bin
 	{
 		R_limits.multiply(brgastro::afd(1,mean_z));
 
-		if(lensing_style)
+		if(lensing_style==2)
+		{
+			brgastro::mag_correlation_function_estimator estimator(R_limits,*lens_positions,
+				*source_positions,*mock_lens_positions,*mock_source_positions,z_buffer);
+
+			estimator.calculate();
+			array weights = estimator.weights()*weight;
+
+			#pragma omp critical(combine_corr_funcs)
+			{
+				monopole_corr_func_sum += estimator.calculate()*weights;
+				corr_func_weight_sum += weights;
+			}
+		}
+		else if(lensing_style==1)
 		{
 			brgastro::lensing_correlation_function_estimator estimator(R_limits,*lens_positions,
 				*source_positions,*mock_lens_positions,*mock_source_positions,z_buffer);
@@ -113,7 +129,29 @@ struct corr_func_bin
 	{
 		R_limits.multiply(brgastro::afd(1,mean_z));
 
-		if(lensing_style)
+		if(lensing_style==2)
+		{
+			brgastro::mag_correlation_function_estimator estimator(R_limits,*lens_positions,
+				*source_positions,*mock_lens_positions,*mock_source_positions,z_buffer);
+
+			estimator.calculate();
+			array weights = estimator.weights()*weight;
+
+
+			#pragma omp critical(combine_corr_funcs)
+			{
+				monopole_corr_func_sum += estimator.calculate()*weights;
+				corr_func_weight_sum += weights;
+
+				dipole_1_corr_func_sum = estimator.calculate_dipole(0)*weights;
+				dipole_2_corr_func_sum = estimator.calculate_dipole(0.5)*weights;
+				quadrupole_1_corr_func_sum = estimator.calculate_quadrupole(0)*weights;
+				quadrupole_2_corr_func_sum = estimator.calculate_quadrupole(0.5)*weights;
+				octopole_1_corr_func_sum = estimator.calculate_octopole(0)*weights;
+				octopole_2_corr_func_sum = estimator.calculate_octopole(0.5)*weights;
+			}
+		}
+		else if(lensing_style==1)
 		{
 			brgastro::lensing_correlation_function_estimator estimator(R_limits,*lens_positions,
 				*source_positions,*mock_lens_positions,*mock_source_positions,z_buffer);

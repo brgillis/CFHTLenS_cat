@@ -53,7 +53,7 @@ struct corr_func_config {
 
 	double z_buffer;
 
-	bool lensing_style;
+	short lensing_style;
 
 	corr_func_config( const int argc=0, const char *argv[]=nullptr );
 	virtual ~corr_func_config()

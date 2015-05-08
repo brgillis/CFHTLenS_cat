@@ -45,7 +45,7 @@
 #include "corr_func_bin.hpp"
 #include "corr_func_config.h"
 
-#define SMALL_MOCKS
+#undef SMALL_MOCKS
 
 #define LIMIT_TO_MONOPOLE
 
@@ -72,7 +72,7 @@ int main( const int argc, const char *argv[] )
 	// Get the configuration file from the command-line arguments
 	const corr_func_config config(argc,argv);
 
-	const bool lensing_style = config.lensing_style;
+	const short lensing_style = config.lensing_style;
 
 	double source_z_min = brgastro::mag_z_min;
 	double source_z_max = brgastro::mag_z_max;
@@ -88,7 +88,9 @@ int main( const int argc, const char *argv[] )
 
 	#ifdef SMALL_MOCKS
 
-	if(lensing_style)
+	if(lensing_style==2)
+		const_cast<std::string &>(output_name) = data_directory + "magf_corr_funcs_quick.dat";
+	else if(lensing_style==1)
 		const_cast<std::string &>(output_name) = data_directory + "lensing_corr_funcs_quick.dat";
 	else
 		const_cast<std::string &>(output_name) = data_directory + "auto_corr_funcs_quick.dat";
@@ -98,7 +100,9 @@ int main( const int argc, const char *argv[] )
 
 	#else // #ifdef SMALL_MOCKS
 
-	if(lensing_style)
+	if(lensing_style==2)
+		const_cast<std::string &>(output_name) = data_directory + "magf_corr_funcs.dat";
+	else if(lensing_style==1)
 		const_cast<std::string &>(output_name) = data_directory + "lensing_corr_funcs.dat";
 	else
 		const_cast<std::string &>(output_name) = data_directory + "auto_corr_funcs.dat";
@@ -149,7 +153,7 @@ int main( const int argc, const char *argv[] )
 	const brgastro::limit_vector<double> lens_weight_z_limits(std::move(lens_weight_z_limits_builder));
 	#endif
 
-	typedef std::vector<std::tuple<double,double,double>> pos_vec;
+	typedef std::vector<std::tuple<double,double,double,double>> pos_vec;
 
 	// Make the multi-vector of bin sums
 
@@ -223,7 +227,7 @@ int main( const int argc, const char *argv[] )
 				const double & mag = gal.at(mag_col);
 				if(lens_mag_limits.outside_limits(mag)) continue;
 
-				auto pos = std::make_tuple(gal.at(ra_col),gal.at(dec_col),z);
+				auto pos = std::make_tuple(gal.at(ra_col),gal.at(dec_col),z,mag);
 
 				corr_func_bins.at(lens_z_limits.get_bin_index(z)).at(lens_m_limits.get_bin_index(m)).at(
 					lens_mag_limits.get_bin_index(mag)).lens_positions->push_back(std::move(pos));
@@ -249,7 +253,7 @@ int main( const int argc, const char *argv[] )
 				const double & mag = gal.at(mag_col);
 				if((mag<brgastro::mag_m_min)||(mag>brgastro::mag_m_max)) continue;
 
-				auto pos = std::make_tuple(gal.at(ra_col),gal.at(dec_col),z);
+				auto pos = std::make_tuple(gal.at(ra_col),gal.at(dec_col),z,mag);
 
 				if(lensing_style)
 				{
@@ -271,6 +275,7 @@ int main( const int argc, const char *argv[] )
 			const brgastro::labeled_array<double> gals(mock_lens_input_name);
 
 			int z_col = gals.get_index_for_label("Z_B");
+			int mag_col = gals.get_index_for_label("MAG_r");
 			int ra_col = gals.get_index_for_label("ra_radians");
 			int dec_col = gals.get_index_for_label("dec_radians");
 
@@ -278,8 +283,9 @@ int main( const int argc, const char *argv[] )
 			{
 				const double & z = gal.at(z_col);
 				if(lens_z_limits.outside_limits(z)) continue;
+				const double & mag = gal.at(mag_col);
 
-				auto pos = std::make_tuple(gal.at(ra_col),gal.at(dec_col),z);
+				auto pos = std::make_tuple(gal.at(ra_col),gal.at(dec_col),z,mag);
 				mock_lens_positions[lens_z_limits.get_bin_index(z)].push_back(std::move(pos));
 			}
 		}
@@ -303,7 +309,7 @@ int main( const int argc, const char *argv[] )
 				const double & mag = gal.at(mag_col);
 				if((mag<brgastro::mag_m_min)||(mag>brgastro::mag_m_max)) continue;
 
-				auto pos = std::make_tuple(gal.at(ra_col),gal.at(dec_col),z);
+				auto pos = std::make_tuple(gal.at(ra_col),gal.at(dec_col),z,mag);
 
 				if(lensing_style)
 				{
