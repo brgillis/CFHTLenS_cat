@@ -62,6 +62,11 @@ const std::string field_directory = data_directory + "filtered_tables/";
 const std::string fields_list = data_directory + "fields_list.txt";
 const std::string lens_pixel_map_root = "_lens_good_pixels.bin";
 
+constexpr double lens_z_min = 0.2;
+constexpr double lens_z_max = 1.3;
+constexpr double lens_m_min = 1e9*brgastro::unitconv::Msuntokg;
+constexpr double lens_m_max = 1e12*brgastro::unitconv::Msuntokg;
+
 #undef USE_CALIBRATION
 #undef USE_MOCKS
 
@@ -102,7 +107,7 @@ constexpr float num_sep_steps = 1;
 
 constexpr float min_kpc_sep=0;
 constexpr float max_kpc_sep=2000;
-constexpr float num_sep_steps = 100;
+constexpr float num_sep_steps = 40;
 #define COUNTING_TYPE unsigned
 
 #endif
@@ -173,7 +178,7 @@ int main( const int argc, const char *argv[] )
 
 	size_t num_fields = field_names.size();
 
-	//num_fields = 10;
+	//num_fields = 1;
 
 	unsigned num_finished_fields = 0;
 
@@ -276,6 +281,15 @@ int main( const int argc, const char *argv[] )
 
 		for(size_t lens_i = 0; lens_i<num_lenses; ++lens_i)
 		{
+
+			// Get the lens's redshift and calculate related information
+			const float lens_z = lens_table_map.at("Z_B")[lens_i];
+			if(lens_z>lens_z_max) continue;
+			if(lens_z<lens_z_min) continue;
+			const double lens_m = lens_table_map.at("Mstel_kg")[lens_i];
+			if(lens_m<lens_m_min) continue;
+			if(lens_m>lens_m_max) continue;
+
 			// Get the lens's position on the image
 			const unsigned lens_xp = brgastro::round_int(lens_table_map.at("Xpos")[lens_i]);
 			const unsigned lens_yp = brgastro::round_int(lens_table_map.at("Ypos")[lens_i]);
@@ -283,9 +297,6 @@ int main( const int argc, const char *argv[] )
 			// Initialize per-lens vectors
 			for(auto & elem : lens_good_px_per_bin) elem = 0;
 			for(auto & elem : lens_total_px_per_bin) elem = 0;
-
-			// Get the lens's redshift and calculate related information
-			const float lens_z = lens_table_map.at("Z_B")[lens_i];
 
 			const double pxfd_fact = brgastro::afd(brgastro::unitconv::kpctom,lens_z)/rad_per_px;
 
