@@ -69,10 +69,10 @@ class columns_reader(object):
         return self._indices_from_keys_.values()
     
     def indices_from_keys(self):
-        return self._indices_from_keys_()
+        return self._indices_from_keys_
     
     def keys_from_indices(self):
-        return self._keys_from_indices_()
+        return self._keys_from_indices_
     
     def index(self, key):
         return self._indices_from_keys_[key]

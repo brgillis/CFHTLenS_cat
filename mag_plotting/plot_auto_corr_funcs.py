@@ -18,6 +18,8 @@ def main(argv):
     
     # Magic values
     
+    high_z = True
+    
     figsize = (8,4)
     labelsize = 8
     
@@ -28,10 +30,19 @@ def main(argv):
     
     default_R_col_name = "R_bin_mid_kpc"
     
+    if(not high_z):
+        default_z_bins_min = 0.2
+        default_z_bins_max = 0.7
+        default_num_z_bins = 5
+        z_str = ""
+        xl_fontsize = 10
+    else:
+        default_z_bins_min = 0.7
+        default_z_bins_max = 1.3
+        default_num_z_bins = 6
+        z_str = "_high_z"
+        xl_fontsize = 8
     default_z_col_name = "z_bin_mid"
-    default_z_bins_min = 0.2
-    default_z_bins_max = 0.7
-    default_num_z_bins = 5
     default_z_bins_log = False
     
     default_m_col_name = "m_bin_mid_Msun"
@@ -297,7 +308,7 @@ def main(argv):
                 ax.set_yticks([0.01, 0.1, 1])
                 ax.set_yticklabels([0.01, 0.1, 1],fontsize=10)
                 ax.set_xticks([0, 500,1000,1500,2000])
-                ax.set_xticklabels([0, 500,1000,1500,2000],fontsize=10)
+                ax.set_xticklabels([0, 500,1000,1500,2000],fontsize=xl_fontsize)
                 continue
                 
             if(z_i==0): # left column
@@ -306,11 +317,11 @@ def main(argv):
                 
             if(m_i==num_m_bins-1): # bottom row
                 ax.set_xticks([500,1000,1500,2000])
-                ax.set_xticklabels([500,1000,1500,2000],fontsize=10)
+                ax.set_xticklabels([500,1000,1500,2000],fontsize=xl_fontsize)
     
     
     # Save the figure
-    outfile_name = os.path.splitext(corr_funcs_table_name)[0] + ".eps"
+    outfile_name = os.path.splitext(corr_funcs_table_name)[0] + z_str + ".eps"
     pyplot.savefig(outfile_name, format="eps", bbox_inches="tight", pad_inches=0.05)
     
     # Copy it to the paper location

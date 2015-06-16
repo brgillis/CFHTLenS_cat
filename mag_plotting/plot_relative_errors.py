@@ -349,7 +349,7 @@ def main(argv):
             ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.9, r"$M_{mid}$=" + "%.1e" % m, size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
             
-            # set the x ticks and labels as appropriate
+            # set the x ticks, labels, and legend as appropriate
             ax.set_xticks([0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
                             
             if(m_i!=num_m_bins-1): # Not on the bottom row
@@ -357,6 +357,9 @@ def main(argv):
                 
             if(m_i==num_m_bins-1): # bottom row
                 ax.set_xticklabels([.2, .4, .6, .8, 1.0, 1.2],fontsize=12)
+                
+                if(p_i==0): # On bottom-left
+                    ax.legend(loc='lower left', prop={'size':8}, numpoints=1)
     
     
     # Save the figure

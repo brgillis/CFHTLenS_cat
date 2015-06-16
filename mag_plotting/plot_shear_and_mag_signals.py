@@ -526,8 +526,10 @@ def main(argv):
     # Set up chi-squared storage arrays
     shear_dS_chi2s = np.empty((num_z_bins,num_m_bins))
     magf_dS_chi2s = np.empty((num_z_bins,num_m_bins))
+    overall_dS_chi2s = np.empty((num_z_bins,num_m_bins))
     shear_Sigma_chi2s = np.empty((num_z_bins,num_m_bins))
     magf_Sigma_chi2s = np.empty((num_z_bins,num_m_bins))
+    overall_Sigma_chi2s = np.empty((num_z_bins,num_m_bins))
         
     # Do the shear plot now
     fig = pyplot.figure(figsize=figsize)
@@ -550,9 +552,11 @@ def main(argv):
             # Calculate the chi-squared values for this bin            
             shear_chi2s = np.square((binned_dSs[z_i][m_i] - binned_bf_shear_model_dSs[z_i][m_i])/binned_dS_errs[z_i][m_i])
             magf_chi2s = np.square((binned_dSs[z_i][m_i] - binned_bf_magf_model_dSs[z_i][m_i])/binned_dS_errs[z_i][m_i])
+            overall_chi2s = np.square((binned_dSs[z_i][m_i] - binned_bf_overall_model_dSs[z_i][m_i])/binned_dS_errs[z_i][m_i])
             
             shear_dS_chi2s[z_i,m_i] = np.sum(shear_chi2s[chi_2_i_min:])
             magf_dS_chi2s[z_i,m_i] = np.sum(magf_chi2s[chi_2_i_min:])
+            overall_dS_chi2s[z_i,m_i] = np.sum(overall_chi2s[chi_2_i_min:])
             
             # Plot this bin
             ax = fig.add_subplot( num_m_bins, num_z_bins, z_i + num_z_bins*m_i + 1)
@@ -561,11 +565,15 @@ def main(argv):
                          color='b', linestyle='None', label="Measured values",
                          marker='.',yerr=binned_dS_errs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i] )
             ax.plot( binned_Rs[z_i][m_i], binned_bf_shear_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
-                     'k', linestyle='--', linewidth=2,
+                     'b', linestyle='--', linewidth=2,
                      label="Best fit to shear only")
-            ax.plot( binned_Rs[z_i][m_i], binned_bf_magf_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
-                     'r', linestyle=':', linewidth=2,
-                     label="Best fit to mag. only")
+            if(high_z):
+                ax.plot( binned_Rs[z_i][m_i], binned_bf_magf_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
+                         'r', linestyle=':', linewidth=2,
+                         label="Best fit to mag. only")
+                ax.plot( binned_Rs[z_i][m_i], binned_bf_overall_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
+                         'k', linestyle='-.', linewidth=2,
+                         label="Best fit to both")
             #ax.legend( [emptiness,emptiness] , [r"$z_{mid}$="+ str(z) ,r"$M_{mid}$=" + "%.1E" % m],loc='upper right')
             ax.set_ylim(0.0003,0.03)
             
@@ -578,8 +586,15 @@ def main(argv):
                     horizontalalignment='right', transform = ax.transAxes)
             ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.8, r"$M_{mid}$=" + "%.1e" % m, size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
-            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
-                     "%2.1f, %2.1f" % (shear_dS_chi2s[z_i,m_i], magf_dS_chi2s[z_i,m_i]), size=labelsize,
+            if(high_z):
+                ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
+                     "%2.1f, %2.1f, %2.1f" % (shear_dS_chi2s[z_i,m_i],
+                                              magf_dS_chi2s[z_i,m_i],
+                                              overall_dS_chi2s[z_i,m_i]),
+                    size=labelsize, horizontalalignment='right', transform = ax.transAxes)
+            else:
+                ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
+                     "%2.1f" % shear_dS_chi2s[z_i,m_i], size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
             
             # set the labels as appropriate
@@ -621,6 +636,8 @@ def main(argv):
           str(np.std(shear_dS_chi2s)/np.sqrt(np.size(shear_dS_chi2s)-1)) )
     print("magf dS Chi^2 = " + str(np.mean(magf_dS_chi2s)) + " +/- " +
           str(np.std(magf_dS_chi2s)/np.sqrt(np.size(magf_dS_chi2s)-1)) )
+    print("overall dS Chi^2 = " + str(np.mean(overall_dS_chi2s)) + " +/- " +
+          str(np.std(overall_dS_chi2s)/np.sqrt(np.size(overall_dS_chi2s)-1)) )
     print("")
         
     # Do the mag plot now
@@ -644,9 +661,11 @@ def main(argv):
             # Calculate the chi-squared values for this bin            
             shear_chi2s = np.square((binned_Sigmas[z_i][m_i] - binned_bf_shear_model_Sigmas[z_i][m_i])/binned_Sigma_errs[z_i][m_i])
             magf_chi2s = np.square((binned_Sigmas[z_i][m_i] - binned_bf_magf_model_Sigmas[z_i][m_i])/binned_Sigma_errs[z_i][m_i])
+            overall_chi2s = np.square((binned_Sigmas[z_i][m_i] - binned_bf_overall_model_Sigmas[z_i][m_i])/binned_Sigma_errs[z_i][m_i])
             
             shear_Sigma_chi2s[z_i,m_i] = np.sum(shear_chi2s[chi_2_i_min:])
             magf_Sigma_chi2s[z_i,m_i] = np.sum(magf_chi2s[chi_2_i_min:])
+            overall_Sigma_chi2s[z_i,m_i] = np.sum(overall_chi2s[chi_2_i_min:])
     
             ax = fig.add_subplot( num_m_bins, num_z_bins, z_i + num_z_bins*m_i + 1)
             ax.set_yscale("log", nonposy='clip')
@@ -661,14 +680,20 @@ def main(argv):
                      'b', linestyle='--',  linewidth=2,
                      label="Best fit to shear only")
             ax.plot( binned_Rs[z_i][m_i], binned_neg_bf_shear_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
-                     'b', linestyle='--', linewidth=2,
+                     'b', linestyle='--', linewidth=1,
                      label="Best fit to shear only")
             ax.plot( binned_Rs[z_i][m_i], binned_bf_magf_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
-                     'k', linestyle=':', linewidth=2,
+                     'r', linestyle=':', linewidth=2,
                      label="Best fit to mag. only")
             ax.plot( binned_Rs[z_i][m_i], binned_neg_bf_magf_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
-                     'k', linestyle=':', linewidth=2,
+                     'r', linestyle=':', linewidth=1,
                      label="Best fit to mag. only")
+            ax.plot( binned_Rs[z_i][m_i], binned_bf_overall_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+                     'k', linestyle='-.', linewidth=2,
+                     label="Best fit to both")
+            ax.plot( binned_Rs[z_i][m_i], binned_neg_bf_overall_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+                     'k', linestyle='-.', linewidth=1,
+                     label="Best fit to both")
             #ax.legend( [emptiness,emptiness] , [r"$z_{mid}$="+ str(z) ,r"$M_{mid}$=" + "%.1E" % m],loc='upper right')
             ax.set_ylim(0.0003,0.03)
             
@@ -682,8 +707,10 @@ def main(argv):
             ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.8, r"$M_{mid}$=" + "%.1E" % m, size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
             ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
-                    "%2.1f, %2.1f" % (magf_Sigma_chi2s[z_i,m_i], shear_Sigma_chi2s[z_i,m_i]), size=labelsize,
-                    horizontalalignment='right', transform = ax.transAxes)
+                     "%2.1f, %2.1f, %2.1f" % (shear_Sigma_chi2s[z_i,m_i],
+                                              magf_Sigma_chi2s[z_i,m_i],
+                                              overall_Sigma_chi2s[z_i,m_i]),
+                    size=labelsize, horizontalalignment='right', transform = ax.transAxes)
             
             # set the labels as appropriate
             if(z_i!=0): # Not on the left column
@@ -724,6 +751,8 @@ def main(argv):
           str(np.std(magf_Sigma_chi2s)/np.sqrt(np.size(magf_Sigma_chi2s)-1)) )
     print("shear Sigma Chi^2 = " + str(np.mean(shear_Sigma_chi2s)) + " +/- " +
           str(np.std(shear_Sigma_chi2s)/np.sqrt(np.size(shear_Sigma_chi2s)-1)) )
+    print("overall Sigma Chi^2 = " + str(np.mean(overall_Sigma_chi2s)) + " +/- " +
+          str(np.std(overall_Sigma_chi2s)/np.sqrt(np.size(overall_Sigma_chi2s)-1)) )
 
 if __name__ == "__main__":
     main(sys.argv)
