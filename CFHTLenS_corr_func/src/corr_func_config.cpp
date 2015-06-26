@@ -38,18 +38,19 @@
 
 corr_func_config::corr_func_config( const int argc, const char *argv[] )
 {
+	using namespace brgastro;
 	using namespace brgastro::unitconv;
 
 	if(argc<=1)
 	{
 		// Use default values if no config file is passed at command line
-		R_min = 10*kpctom;
-		R_max = 2000*kpctom;
+		R_min = 10*kpctom*m;
+		R_max = 2000*kpctom*m;
 		R_bins = 40;
 		R_log = true;
 
-		m_min = 1e9*Msuntokg;
-		m_max = 1e12*Msuntokg;
+		m_min = 1e9*Msuntokg*kg;
+		m_max = 1e12*Msuntokg*kg;
 		m_bins = 3;
 		m_log = true;
 
@@ -105,13 +106,13 @@ corr_func_config::corr_func_config( const int argc, const char *argv[] )
 
 		// Load in the values
 		size_t i=0;
-		R_min = brgastro::min_cast<double>(config_value_strings.at(i++))*kpctom;
-		R_max = brgastro::max_cast<double>(config_value_strings.at(i++))*kpctom;
+		R_min = brgastro::min_cast<double>(config_value_strings.at(i++))*kpctom*m;
+		R_max = brgastro::max_cast<double>(config_value_strings.at(i++))*kpctom*m;
 		R_bins = boost::lexical_cast<size_t>(config_value_strings.at(i++));
 		R_log = brgastro::bool_cast(config_value_strings.at(i++));
 
-		m_min = brgastro::min_cast<double>(config_value_strings.at(i++))*Msuntokg;
-		m_max = brgastro::max_cast<double>(config_value_strings.at(i++))*Msuntokg;
+		m_min = brgastro::min_cast<double>(config_value_strings.at(i++))*Msuntokg*kg;
+		m_max = brgastro::max_cast<double>(config_value_strings.at(i++))*Msuntokg*kg;
 		m_bins = boost::lexical_cast<size_t>(config_value_strings.at(i++));
 		m_log = brgastro::bool_cast(config_value_strings.at(i++));
 

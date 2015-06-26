@@ -33,6 +33,8 @@
 #include "brg/container/labeled_array.hpp"
 #include "brg/file_access/ascii_table_map.hpp"
 #include "brg/file_access/open_file.hpp"
+#include "brg/units/unitconv_map.hpp"
+#include "brg/units/units.hpp"
 #include "brg/vector/elementwise_functions.hpp"
 #include "brg/vector/limit_vector.hpp"
 
@@ -48,8 +50,6 @@
 
 #include "brg_physics/astro.h"
 #include "brg_physics/sky_obj/galaxy.h"
-#include "brg_physics/units/unitconv_map.hpp"
-
 #include "gg_lensing_config.h"
 #include "pass_configs_to_binner.h"
 
@@ -110,6 +110,8 @@ const std::string mag_calibration_cache_output_file = data_directory + "mag_cali
 
 int main( const int argc, const char *argv[] )
 {
+	using namespace brgastro;
+
 	// Get the configuration file from the command-line arguments
 	const gg_lensing_config config(argc,argv);
 
@@ -219,9 +221,9 @@ int main( const int argc, const char *argv[] )
 					brgastro::galaxy lens;
 					double z = lens_map.at("Z_B").at(i);
 					lens.set_z(z);
-					lens.set_ra(lens_map.at("ra_radians").at(i));
-					lens.set_dec(lens_map.at("dec_radians").at(i));
-					lens.stellar_mass = lens_map.at("Mstel_kg").at(i);
+					lens.set_ra(lens_map.at("ra_radians").at(i) * rad);
+					lens.set_dec(lens_map.at("dec_radians").at(i) * rad);
+					lens.stellar_mass = lens_map.at("Mstel_kg").at(i) * kg;
 					lens.imag = lens_map.at("MAG_i").at(i);
 					lens.set_index(lens_map.at("SeqNr").at(i));
 
@@ -246,10 +248,10 @@ int main( const int argc, const char *argv[] )
 				// Load the masked fraction table
 				const brgastro::table_map_t<double> lens_unmasked_frac_map(
 						brgastro::load_table_map<double>(lens_unmasked_name));
-				brgastro::limit_vector<double> unmasked_frac_bin_limits;
+				brgastro::limit_vector<distance_type> unmasked_frac_bin_limits;
 
 				unmasked_frac_bin_limits.reconstruct_from_bin_mids(brgastro::multiply(lens_unmasked_frac_map.at("bin_mid_kpc"),
-																						brgastro::unitconv::kpctom));
+																						brgastro::unitconv::kpctom*m));
 
 				// Load in sources
 				const brgastro::table_map_t<double> source_map(brgastro::load_table_map<double>(source_input_name));
@@ -257,11 +259,14 @@ int main( const int argc, const char *argv[] )
 
 				for(size_t i=0; i<num_sources; ++i)
 				{
-					brgastro::source_galaxy source(source_map.at("ra_radians").at(i),
-										source_map.at("dec_radians").at(i),
+					brgastro::source_galaxy source(source_map.at("ra_radians").at(i)*rad,
+										source_map.at("dec_radians").at(i)*rad,
 										source_map.at("Z_B").at(i),
-										source_map.at("e1").at(i), source_map.at("e2").at(i), 0,
-										source_map.at("Mstel_kg").at(i), source_map.at("MAG_r").at(i));
+										source_map.at("e1").at(i),
+										source_map.at("e2").at(i),
+										0,
+										source_map.at("Mstel_kg").at(i)*kg,
+										source_map.at("MAG_r").at(i));
 
 					source.set_weight(source_map.at("weight").at(i));
 					source.set_index(source_map.at("SeqNr").at(i));
@@ -291,7 +296,7 @@ int main( const int argc, const char *argv[] )
 
 					lens_binner.add_lens_id(lens.index(),lens.m(),lens.z(),lens.mag());
 
-					const BRG_ANGLE max_angle_sep = brgastro::afd(config.R_max,lens.z());
+					const angle_type max_angle_sep = brgastro::afd(config.R_max,lens.z());
 
 					// And loop over all sources
 
@@ -307,13 +312,13 @@ int main( const int argc, const char *argv[] )
 //						 (source.z()>=1.14) && (source.z()<brgastro::mag_z_max)) ) ++counter; //!!
 
 						// Check against maximum angular separation in ra and dec simply first for speed
-						auto ddec = std::fabs(lens.dec()-source.dec());
+						auto ddec = abs(lens.dec()-source.dec());
 						if(ddec>max_angle_sep) continue;
-						double cosdec = std::cos((lens.dec()+source.dec())/2);
-						auto dra = std::fabs(lens.ra()-source.ra())*cosdec;
+						double cosdec = cos((lens.dec()+source.dec())/2.);
+						auto dra = abs(lens.ra()-source.ra())*cosdec;
 						if(dra>max_angle_sep) continue;
 
-						double da = brgastro::dist2d(dra,ddec);
+						angle_type da = brgastro::dist2d(dra,ddec);
 
 						if(da <= max_angle_sep)
 						{

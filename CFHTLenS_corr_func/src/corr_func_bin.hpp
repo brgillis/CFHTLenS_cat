@@ -29,6 +29,7 @@
 #include <boost/optional.hpp>
 
 #include "brg/vector/limit_vector.hpp"
+#include "brg/units/units.hpp"
 
 #include "brg_physics/astro.h"
 #include "brg_physics/correlation_function_estimator.h"
@@ -41,7 +42,7 @@
  */
 struct corr_func_bin
 {
-	typedef std::vector<std::tuple<double,double,double,double>> pos_vec;
+	typedef std::vector<std::tuple<brgastro::angle_type,brgastro::angle_type,flt_type,flt_type>> pos_vec;
 	boost::optional<pos_vec> lens_positions;
 	const pos_vec * source_positions;
 	const pos_vec * mock_lens_positions;
@@ -72,14 +73,16 @@ struct corr_func_bin
 		octopole_2_corr_func_sum = array::Zero(size);
 	}
 
-	void initialize(const brgastro::limit_vector<double> & R_limits)
+	void initialize(const brgastro::limit_vector<brgastro::distance_type> & R_limits)
 	{
 		initialize(R_limits.num_bins());
 	}
 
-	void add_monopole(brgastro::limit_vector<double> R_limits, const double & mean_z, const double & weight=1.)
+	void add_monopole(const brgastro::limit_vector<brgastro::distance_type> & phys_R_limits,
+			const double & mean_z, const double & weight=1.)
 	{
-		R_limits.multiply(brgastro::afd(1,mean_z));
+		brgastro::limit_vector<brgastro::angle_type> R_limits =
+				phys_R_limits.get_multiplied(brgastro::afd(mean_z));
 
 		if(lensing_style==2)
 		{
@@ -125,9 +128,10 @@ struct corr_func_bin
 		}
 	}
 
-	void add_all(brgastro::limit_vector<double> R_limits, const double & mean_z, const double & weight=1.)
+	void add_all(brgastro::limit_vector<brgastro::distance_type> phys_R_limits, const double & mean_z, const double & weight=1.)
 	{
-		R_limits.multiply(brgastro::afd(1,mean_z));
+		brgastro::limit_vector<brgastro::angle_type> R_limits =
+				phys_R_limits.get_multiplied(brgastro::afd(mean_z));
 
 		if(lensing_style==2)
 		{

@@ -23,6 +23,7 @@
 
 \**********************************************************************/
 
+#include <brg/units/unit_conversions.hpp>
 #include <cmath>
 #include <iostream>
 #include <fstream>
@@ -31,9 +32,9 @@
 #include <string>
 
 #include "brg/container/labeled_array.hpp"
+#include "brg/error_handling.h"
 #include "brg/file_access/binary_archive.hpp"
 #include "brg/file_access/open_file.hpp"
-#include "brg_physics/units/unit_conversions.hpp"
 
 #include "correct_redshift_bias.h"
 #include "get_filtered_indices.h"
@@ -120,7 +121,7 @@ int main( const int argc, const char *argv[] )
 		}
 		catch(const std::runtime_error &e)
 		{
-			std::cerr << "WARNING: " << e.what() << std::endl;
+			brgastro::handle_error_message(e.what());
 			continue;
 		}
 

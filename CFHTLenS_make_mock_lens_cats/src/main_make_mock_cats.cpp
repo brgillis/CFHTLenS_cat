@@ -41,7 +41,7 @@
 #include "brg/math/misc_math.hpp"
 #include "brg/math/random/random_functions.hpp"
 
-#include "brg_physics/units/unit_conversions.hpp"
+#include <brg/units/unit_conversions.hpp>
 #include "brg_lensing/magnification/mag_global_values.h"
 
 #include "get_ra_dec.h"

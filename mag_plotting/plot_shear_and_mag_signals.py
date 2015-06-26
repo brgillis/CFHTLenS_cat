@@ -20,7 +20,7 @@ def main(argv):
     
     # Magic values
     
-    high_z = False
+    high_z = True
     
     figsize = (8,4)
     labelsize = 8
@@ -75,6 +75,9 @@ def main(argv):
     
     default_shear_sigma_crit_col_name = "shear_Sigma_crit"
     default_magf_sigma_crit_col_name = "magf_Sigma_crit"
+    
+    default_magf_sigma_offset_col_name = "bf_magf_Sigma_offset"
+    default_overall_sigma_offset_col_name = "bf_overall_Sigma_offset"
     
     default_paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/Magnification_Method/"
     
@@ -377,6 +380,32 @@ def main(argv):
         
     cur_arg += 1
     if(num_args) <= cur_arg:
+        magf_sigma_offset_col_name = default_magf_sigma_offset_col_name
+    else:
+        magf_sigma_offset_col_name = argv[cur_arg]
+        
+    # Try to load in the bf_overall_model_Sigma column
+    try:
+        magf_sigma_offsets = lensing_signal_table[magf_sigma_offset_col_name]
+    except:
+        print("ERROR: Cannot read column " + magf_sigma_offset_col_name + " from table " + lensing_signal_table_name + ".")
+        return
+        
+    cur_arg += 1
+    if(num_args) <= cur_arg:
+        overall_sigma_offset_col_name = default_overall_sigma_offset_col_name
+    else:
+        overall_sigma_offset_col_name = argv[cur_arg]
+        
+    # Try to load in the bf_overall_model_Sigma column
+    try:
+        overall_sigma_offsets = lensing_signal_table[overall_sigma_offset_col_name]
+    except:
+        print("ERROR: Cannot read column " + overall_sigma_offset_col_name + " from table " + lensing_signal_table_name + ".")
+        return
+        
+    cur_arg += 1
+    if(num_args) <= cur_arg:
         paper_location = default_paper_location
     else:
         paper_location = argv[cur_arg]
@@ -415,6 +444,8 @@ def main(argv):
     binned_neg_bf_overall_model_Sigmas = []
     binned_shear_sigma_crits = []
     binned_magf_sigma_crits = []
+    binned_magf_sigma_offsets = []
+    binned_overall_sigma_offsets = []
     
     for z_i in xrange(num_z_bins):
         zR_list = []
@@ -434,6 +465,8 @@ def main(argv):
         zneg_bf_overall_model_Sigma_list = []
         zshear_sigma_crits = []
         zmagf_sigma_crits = []
+        zmagf_sigma_offsets = []
+        zoverall_sigma_offsets = []
         for m_i in xrange(num_m_bins):
             zR_list.append([])
             zdS_list.append([])
@@ -452,6 +485,8 @@ def main(argv):
             zneg_bf_overall_model_Sigma_list.append([])
             zshear_sigma_crits.append([])
             zmagf_sigma_crits.append([])
+            zmagf_sigma_offsets.append([])
+            zoverall_sigma_offsets.append([])
         binned_Rs.append(zR_list)
         binned_dSs.append(zdS_list)
         binned_dS_errs.append(zdS_err_list)
@@ -469,13 +504,15 @@ def main(argv):
         binned_neg_bf_overall_model_Sigmas.append(zneg_bf_overall_model_Sigma_list)
         binned_shear_sigma_crits.append(zshear_sigma_crits)
         binned_magf_sigma_crits.append(zmagf_sigma_crits)
+        binned_magf_sigma_offsets.append(zmagf_sigma_offsets)
+        binned_overall_sigma_offsets.append(zoverall_sigma_offsets)
     
     for z, m, R, dS, dS_err, Sigma, Sigma_err, bf_shear_model_dS, bf_shear_model_Sigma, \
         bf_magf_model_dS, bf_magf_model_Sigma, bf_overall_model_dS, bf_overall_model_Sigma, \
-        shear_sigma_crit, magf_sigma_crit in \
+        shear_sigma_crit, magf_sigma_crit, magf_sigma_offset, overall_sigma_offset in \
             zip(redshifts, masses, Rs, dSs, dS_errs, Sigmas, Sigma_errs, bf_shear_model_dSs, bf_shear_model_Sigmas, \
             bf_magf_model_dSs, bf_magf_model_Sigmas,bf_overall_model_dSs, bf_overall_model_Sigmas, \
-            shear_sigma_crits, magf_sigma_crits):
+            shear_sigma_crits, magf_sigma_crits, magf_sigma_offsets, overall_sigma_offsets):
         
         z_i = bf.get_bin_index(z, z_bins)
         if(z_i<0): continue
@@ -500,6 +537,8 @@ def main(argv):
         binned_neg_bf_overall_model_Sigmas[z_i][m_i].append(-bf_overall_model_Sigma)
         binned_shear_sigma_crits[z_i][m_i].append(shear_sigma_crit)
         binned_magf_sigma_crits[z_i][m_i].append(magf_sigma_crit)
+        binned_magf_sigma_offsets[z_i][m_i].append(magf_sigma_offset)
+        binned_overall_sigma_offsets[z_i][m_i].append(overall_sigma_offset)
         
     # Convert all lists to arrays
     
@@ -522,6 +561,8 @@ def main(argv):
             binned_neg_bf_overall_model_Sigmas[z_i][m_i] = np.array(binned_neg_bf_overall_model_Sigmas[z_i][m_i])
             binned_shear_sigma_crits[z_i][m_i] = np.array(binned_shear_sigma_crits[z_i][m_i])
             binned_magf_sigma_crits[z_i][m_i] = np.array(binned_magf_sigma_crits[z_i][m_i])
+            binned_magf_sigma_offsets[z_i][m_i] = np.array(binned_magf_sigma_offsets[z_i][m_i])
+            binned_overall_sigma_offsets[z_i][m_i] = np.array(binned_overall_sigma_offsets[z_i][m_i])
             
     # Set up chi-squared storage arrays
     shear_dS_chi2s = np.empty((num_z_bins,num_m_bins))
@@ -567,13 +608,13 @@ def main(argv):
             ax.plot( binned_Rs[z_i][m_i], binned_bf_shear_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
                      'b', linestyle='--', linewidth=2,
                      label="Best fit to shear only")
-            if(high_z):
-                ax.plot( binned_Rs[z_i][m_i], binned_bf_magf_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
-                         'r', linestyle=':', linewidth=2,
-                         label="Best fit to mag. only")
-                ax.plot( binned_Rs[z_i][m_i], binned_bf_overall_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
-                         'k', linestyle='-.', linewidth=2,
-                         label="Best fit to both")
+#             if(high_z):
+#                 ax.plot( binned_Rs[z_i][m_i], binned_bf_magf_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
+#                          'r', linestyle=':', linewidth=2,
+#                          label="Best fit to mag. only")
+#                 ax.plot( binned_Rs[z_i][m_i], binned_bf_overall_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
+#                          'k', linestyle='-.', linewidth=2,
+#                          label="Best fit to both")
             #ax.legend( [emptiness,emptiness] , [r"$z_{mid}$="+ str(z) ,r"$M_{mid}$=" + "%.1E" % m],loc='upper right')
             ax.set_ylim(0.0003,0.03)
             
@@ -586,16 +627,16 @@ def main(argv):
                     horizontalalignment='right', transform = ax.transAxes)
             ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.8, r"$M_{mid}$=" + "%.1e" % m, size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
-            if(high_z):
-                ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
-                     "%2.1f, %2.1f, %2.1f" % (shear_dS_chi2s[z_i,m_i],
-                                              magf_dS_chi2s[z_i,m_i],
-                                              overall_dS_chi2s[z_i,m_i]),
-                    size=labelsize, horizontalalignment='right', transform = ax.transAxes)
-            else:
-                ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
-                     "%2.1f" % shear_dS_chi2s[z_i,m_i], size=labelsize,
-                    horizontalalignment='right', transform = ax.transAxes)
+#             if(high_z):
+#                 ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
+#                      "%2.1f, %2.1f, %2.1f" % (shear_dS_chi2s[z_i,m_i],
+#                                               magf_dS_chi2s[z_i,m_i],
+#                                               overall_dS_chi2s[z_i,m_i]),
+#                     size=labelsize, horizontalalignment='right', transform = ax.transAxes)
+#             else:
+            ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
+                 "%2.1f" % shear_dS_chi2s[z_i,m_i], size=labelsize,
+                horizontalalignment='right', transform = ax.transAxes)
             
             # set the labels as appropriate
             if(z_i!=0): # Not on the left column

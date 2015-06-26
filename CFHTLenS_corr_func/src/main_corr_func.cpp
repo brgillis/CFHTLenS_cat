@@ -23,6 +23,8 @@
 
 \**********************************************************************/
 
+#include <brg/units/unit_conversions.hpp>
+#include <brg/units/unitconv_map.hpp>
 #include <fstream>
 #include <iostream>
 #include <tuple>
@@ -38,8 +40,6 @@
 #include "brg/file_access/ascii_table_map.hpp"
 #include "brg/utility.hpp"
 #include "brg/vector/limit_vector.hpp"
-#include "brg_physics/units/unit_conversions.hpp"
-#include "brg_physics/units/unitconv_map.hpp"
 #include "brg_lensing/magnification/mag_global_values.h"
 
 #include "corr_func_bin.hpp"
@@ -69,13 +69,15 @@ const std::string lens_weight_file = data_directory + "field_lens_weights.dat";
 
 int main( const int argc, const char *argv[] )
 {
+	using namespace brgastro;
+
 	// Get the configuration file from the command-line arguments
 	const corr_func_config config(argc,argv);
 
 	const short lensing_style = config.lensing_style;
 
-	double source_z_min = brgastro::mag_z_min;
-	double source_z_max = brgastro::mag_z_max;
+	flt_type source_z_min = brgastro::mag_z_min;
+	flt_type source_z_max = brgastro::mag_z_max;
 
 	if(!lensing_style)
 	{
@@ -115,19 +117,17 @@ int main( const int argc, const char *argv[] )
 
 	// Set up global data
 
-	brgastro::limit_vector<double>::type lin_or_log;
+	auto R_lin_or_log = config.R_log ? brgastro::limit_vector<distance_type>::type::LOG : brgastro::limit_vector<distance_type>::type::LINEAR;
+	brgastro::limit_vector<distance_type> R_limits(R_lin_or_log, config.R_min,config.R_max,config.R_bins);
 
-	lin_or_log = config.R_log ? brgastro::limit_vector<double>::type::LOG : brgastro::limit_vector<double>::type::LINEAR;
-	brgastro::limit_vector<double> R_limits(lin_or_log, config.R_min,config.R_max,config.R_bins);
+	auto z_lin_or_log = config.z_log ? brgastro::limit_vector<flt_type>::type::LOG : brgastro::limit_vector<flt_type>::type::LINEAR;
+	brgastro::limit_vector<flt_type> lens_z_limits(z_lin_or_log, config.z_min,config.z_max,config.z_bins);
 
-	lin_or_log = config.z_log ? brgastro::limit_vector<double>::type::LOG : brgastro::limit_vector<double>::type::LINEAR;
-	brgastro::limit_vector<double> lens_z_limits(lin_or_log, config.z_min,config.z_max,config.z_bins);
+	auto m_lin_or_log = config.m_log ? brgastro::limit_vector<mass_type>::type::LOG : brgastro::limit_vector<mass_type>::type::LINEAR;
+	brgastro::limit_vector<mass_type> lens_m_limits(m_lin_or_log, config.m_min,config.m_max,config.m_bins);
 
-	lin_or_log = config.m_log ? brgastro::limit_vector<double>::type::LOG : brgastro::limit_vector<double>::type::LINEAR;
-	brgastro::limit_vector<double> lens_m_limits(lin_or_log, config.m_min,config.m_max,config.m_bins);
-
-	lin_or_log = config.mag_log ? brgastro::limit_vector<double>::type::LOG : brgastro::limit_vector<double>::type::LINEAR;
-	brgastro::limit_vector<double> lens_mag_limits(lin_or_log, config.mag_min,config.mag_max,config.mag_bins);
+	auto mag_lin_or_log = config.mag_log ? brgastro::limit_vector<flt_type>::type::LOG : brgastro::limit_vector<flt_type>::type::LINEAR;
+	brgastro::limit_vector<flt_type> lens_mag_limits(mag_lin_or_log, config.mag_min,config.mag_max,config.mag_bins);
 
 
 	// Open and read in the fields list
@@ -146,14 +146,14 @@ int main( const int argc, const char *argv[] )
 
 	#ifdef USE_FIELD_WEIGHTING
 	// Load the lens weight table
-	const brgastro::labeled_array<double> lens_weight_table(lens_weight_file);
-	auto lens_weight_z_limits_builder = brgastro::coerce<std::vector<double>>(lens_weight_table.at_label("z_bin_min"));
+	const brgastro::labeled_array<flt_type> lens_weight_table(lens_weight_file);
+	auto lens_weight_z_limits_builder = brgastro::coerce<std::vector<flt_type>>(lens_weight_table.at_label("z_bin_min"));
 	lens_weight_z_limits_builder.push_back(2*lens_weight_z_limits_builder.back()-
 										   lens_weight_z_limits_builder.at(lens_weight_z_limits_builder.size()-2));
-	const brgastro::limit_vector<double> lens_weight_z_limits(std::move(lens_weight_z_limits_builder));
+	const brgastro::limit_vector<flt_type> lens_weight_z_limits(std::move(lens_weight_z_limits_builder));
 	#endif
 
-	typedef std::vector<std::tuple<double,double,double,double>> pos_vec;
+	typedef std::vector<std::tuple<angle_type,angle_type,flt_type,flt_type>> pos_vec;
 
 	// Make the multi-vector of bin sums
 
@@ -210,7 +210,7 @@ int main( const int argc, const char *argv[] )
 		std::string lens_input_name = ss.str();
 
 		{
-			const brgastro::labeled_array<double> gals(lens_input_name);
+			const brgastro::labeled_array<flt_type> gals(lens_input_name);
 
 			int z_col = gals.get_index_for_label("Z_B");
 			int mag_col = gals.get_index_for_label("MAG_r");
@@ -220,14 +220,14 @@ int main( const int argc, const char *argv[] )
 
 			for(const auto & gal : gals.rows())
 			{
-				const double & z = gal.at(z_col);
+				const flt_type & z = gal.at(z_col);
 				if(lens_z_limits.outside_limits(z)) continue;
-				const double & m = gal.at(m_col);
+				const mass_type m = gal.at(m_col)*kg;
 				if(lens_m_limits.outside_limits(m)) continue;
-				const double & mag = gal.at(mag_col);
+				const flt_type & mag = gal.at(mag_col);
 				if(lens_mag_limits.outside_limits(mag)) continue;
 
-				auto pos = std::make_tuple(gal.at(ra_col),gal.at(dec_col),z,mag);
+				auto pos = std::make_tuple(gal.at(ra_col)*rad,gal.at(dec_col)*rad,z,mag);
 
 				corr_func_bins.at(lens_z_limits.get_bin_index(z)).at(lens_m_limits.get_bin_index(m)).at(
 					lens_mag_limits.get_bin_index(mag)).lens_positions->push_back(std::move(pos));
@@ -239,7 +239,7 @@ int main( const int argc, const char *argv[] )
 		std::string source_input_name = ss.str();
 
 		{
-			const brgastro::labeled_array<double> gals(source_input_name);
+			const brgastro::labeled_array<flt_type> gals(source_input_name);
 
 			int z_col = gals.get_index_for_label("Z_B");
 			int mag_col = gals.get_index_for_label("MAG_r");
@@ -248,12 +248,12 @@ int main( const int argc, const char *argv[] )
 
 			for(const auto & gal : gals.rows())
 			{
-				const double & z = gal.at(z_col);
+				const flt_type & z = gal.at(z_col);
 				if((z<source_z_min)||(z>source_z_max)) continue;
-				const double & mag = gal.at(mag_col);
+				const flt_type & mag = gal.at(mag_col);
 				if((mag<brgastro::mag_m_min)||(mag>brgastro::mag_m_max)) continue;
 
-				auto pos = std::make_tuple(gal.at(ra_col),gal.at(dec_col),z,mag);
+				auto pos = std::make_tuple(gal.at(ra_col)*rad,gal.at(dec_col)*rad,z,mag);
 
 				if(lensing_style)
 				{
@@ -272,7 +272,7 @@ int main( const int argc, const char *argv[] )
 		std::string mock_lens_input_name = ss.str();
 
 		{
-			const brgastro::labeled_array<double> gals(mock_lens_input_name);
+			const brgastro::labeled_array<flt_type> gals(mock_lens_input_name);
 
 			int z_col = gals.get_index_for_label("Z_B");
 			int mag_col = gals.get_index_for_label("MAG_r");
@@ -281,11 +281,11 @@ int main( const int argc, const char *argv[] )
 
 			for(const auto & gal : gals.rows())
 			{
-				const double & z = gal.at(z_col);
+				const flt_type & z = gal.at(z_col);
 				if(lens_z_limits.outside_limits(z)) continue;
-				const double & mag = gal.at(mag_col);
+				const flt_type & mag = gal.at(mag_col);
 
-				auto pos = std::make_tuple(gal.at(ra_col),gal.at(dec_col),z,mag);
+				auto pos = std::make_tuple(gal.at(ra_col)*rad,gal.at(dec_col)*rad,z,mag);
 				mock_lens_positions[lens_z_limits.get_bin_index(z)].push_back(std::move(pos));
 			}
 		}
@@ -295,7 +295,7 @@ int main( const int argc, const char *argv[] )
 		std::string mock_source_input_name = ss.str();
 
 		{
-			const brgastro::labeled_array<double> gals(mock_source_input_name);
+			const brgastro::labeled_array<flt_type> gals(mock_source_input_name);
 
 			int z_col = gals.get_index_for_label("Z_B");
 			int mag_col = gals.get_index_for_label("MAG_r");
@@ -304,12 +304,12 @@ int main( const int argc, const char *argv[] )
 
 			for(const auto & gal : gals.rows())
 			{
-				const double & z = gal.at(z_col);
+				const flt_type & z = gal.at(z_col);
 				if((z<source_z_min)||(z>source_z_max)) continue;
-				const double & mag = gal.at(mag_col);
+				const flt_type & mag = gal.at(mag_col);
 				if((mag<brgastro::mag_m_min)||(mag>brgastro::mag_m_max)) continue;
 
-				auto pos = std::make_tuple(gal.at(ra_col),gal.at(dec_col),z,mag);
+				auto pos = std::make_tuple(gal.at(ra_col)*rad,gal.at(dec_col)*rad,z,mag);
 
 				if(lensing_style)
 				{
@@ -329,9 +329,9 @@ int main( const int argc, const char *argv[] )
 
 			#ifdef USE_FIELD_WEIGHTING
 			const auto & z_weights = lens_weight_table.at_label(field_name_root).raw();
-			double field_weight = z_weights(lens_weight_z_limits.get_bin_index((lens_z_limits.lower_limit(z_i)+lens_z_limits.upper_limit(z_i))/2));
+			flt_type field_weight = z_weights(lens_weight_z_limits.get_bin_index((lens_z_limits.lower_limit(z_i)+lens_z_limits.upper_limit(z_i))/2));
 			#else
-			constexpr double field_weight = 1.;
+			constexpr flt_type field_weight = 1.;
 			#endif
 
 			for(int m_i = 0; m_i < lens_m_limits.num_bins(); ++m_i)
@@ -354,7 +354,7 @@ int main( const int argc, const char *argv[] )
 					}
 					bin.mock_lens_positions = &(mock_lens_positions[z_i]);
 
-					double z_mid = (lens_z_limits.lower_limit(z_i) + lens_z_limits.upper_limit(z_i))/2;
+					flt_type z_mid = (lens_z_limits.lower_limit(z_i) + lens_z_limits.upper_limit(z_i))/2;
 
 					#ifdef LIMIT_TO_MONOPOLE
 					bin.add_monopole(R_limits,z_mid,field_weight);
@@ -399,7 +399,7 @@ int main( const int argc, const char *argv[] )
 
 
 	// Set up the output table
-	brgastro::labeled_array<double> output_table;
+	brgastro::labeled_array<flt_type> output_table;
 	#ifdef LIMIT_TO_MONOPOLE
 	std::vector<std::string> labels = {"R_bin_mid_kpc", "z_bin_mid", "m_bin_mid_Msun", "mag_bin_mid", "xi_mp"};
 	#else
@@ -414,28 +414,28 @@ int main( const int argc, const char *argv[] )
 
 	for(int z_i = 0; z_i < lens_z_limits.num_bins(); ++z_i)
 	{
-		double z_mid = lens_z_limits.bin_mid(z_i);
+		flt_type z_mid = lens_z_limits.bin_mid(z_i);
 
 		for(int m_i = 0; m_i < lens_m_limits.num_bins(); ++m_i)
 		{
-			double m_mid = lens_m_limits.bin_mid(m_i);
+			mass_type m_mid = lens_m_limits.bin_mid(m_i);
 
 			for(int mag_i = 0; mag_i < lens_mag_limits.num_bins(); ++mag_i)
 			{
-				double mag_mid = lens_mag_limits.bin_mid(mag_i);
+				flt_type mag_mid = lens_mag_limits.bin_mid(mag_i);
 
 				// Normalize the bin sum by the total weights
 				corr_func_bin_sums[z_i][m_i][mag_i].normalize();
 
 				for(int R_i = 0; R_i < R_limits.num_bins(); ++R_i)
 				{
-					double R_mid = R_limits.bin_mid(R_i);
+					distance_type R_mid = R_limits.bin_mid(R_i);
 
 					#ifdef LIMIT_TO_MONOPOLE
-					std::vector<double> new_row = {R_mid, z_mid, m_mid, mag_mid,
+					std::vector<flt_type> new_row = {value_of(R_mid), z_mid, value_of(m_mid), mag_mid,
 						corr_func_bin_sums[z_i][m_i][mag_i].monopole_corr_func_sum[R_i]};
 					#else
-					std::vector<double> new_row = {R_mid, z_mid, m_mid, mag_mid,
+					std::vector<flt_type> new_row = {R_mid, z_mid, m_mid, mag_mid,
 						corr_func_bin_sums[z_i][m_i][mag_i].monopole_corr_func_sum[R_i],
 						corr_func_bin_sums[z_i][m_i][mag_i].dipole_1_corr_func_sum[R_i],
 						corr_func_bin_sums[z_i][m_i][mag_i].dipole_2_corr_func_sum[R_i],

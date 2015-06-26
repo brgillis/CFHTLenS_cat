@@ -24,6 +24,7 @@
 \**********************************************************************/
 
 
+#include <brg/units/unit_conversions.hpp>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -37,7 +38,6 @@
 #include "brg/math/misc_math.hpp"
 #include "brg/vector/limit_vector.hpp"
 
-#include "brg_physics/units/unit_conversions.hpp"
 
 #define MAKE_WEIGHT_TABLE
 

@@ -28,6 +28,9 @@ def main(argv):
     
     z_shift = 0.01
     
+    chi_2_threshold = 30
+    overall_chi_2_threshold = 50
+    
     fitting_results_table_name = "/home/brg/git/CFHTLenS_cat/Data/gg_lensing_signal_20_bins_fitting_results.dat"
     
     paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/Magnification_Method/"
@@ -44,6 +47,10 @@ def main(argv):
     m_bins_max = 1e12
     num_m_bins = 3
     m_bins_log = True
+    
+    shear_chi_squared_col_name = "shear_Chi_squared"
+    shear_chi_squared_offset = 0
+    shear_chi_squared_factor = 1
     
     shear_sat_m_best_col_name = "shear_sat_m_best"
     shear_sat_m_best_offset = -np.log10(m_sun)
@@ -68,6 +75,10 @@ def main(argv):
     shear_sat_frac_err_col_name = "shear_sat_frac_err"
     shear_sat_frac_err_offset = 0
     shear_sat_frac_err_factor = 1
+    
+    magf_chi_squared_col_name = "magf_Chi_squared"
+    magf_chi_squared_offset = 0
+    magf_chi_squared_factor = 1
     
     magf_sat_m_best_col_name = "magf_sat_m_best"
     magf_sat_m_best_offset = -np.log10(m_sun)
@@ -100,6 +111,10 @@ def main(argv):
     magf_Sigma_offset_err_col_name = "magf_Sigma_offset_err"
     magf_Sigma_offset_err_offset = 0
     magf_Sigma_offset_err_factor = pc*pc/m_sun
+    
+    overall_chi_squared_col_name = "overall_Chi_squared"
+    overall_chi_squared_offset = 0
+    overall_chi_squared_factor = 0.5
     
     overall_sat_m_best_col_name = "overall_sat_m_best"
     overall_sat_m_best_offset = -np.log10(m_sun)
@@ -154,6 +169,10 @@ def main(argv):
     ms = np.array(ms)
     ms = (ms + m_mid_offset)*m_mid_factor
     
+    shear_chi_squareds = fitting_results_table[shear_chi_squared_col_name]
+    shear_chi_squareds = np.array(shear_chi_squareds)
+    shear_chi_squareds = (shear_chi_squareds + shear_chi_squared_offset)*shear_chi_squared_factor
+    
     shear_sat_m_bests = fitting_results_table[shear_sat_m_best_col_name]
     shear_sat_m_bests = np.array(shear_sat_m_bests)
     shear_sat_m_bests = (shear_sat_m_bests + shear_sat_m_best_offset)*shear_sat_m_best_factor
@@ -177,6 +196,10 @@ def main(argv):
     shear_sat_frac_errs = fitting_results_table[shear_sat_frac_err_col_name]
     shear_sat_frac_errs = np.array(shear_sat_frac_errs)
     shear_sat_frac_errs = (shear_sat_frac_errs + shear_sat_frac_err_offset)*shear_sat_frac_err_factor
+    
+    magf_chi_squareds = fitting_results_table[magf_chi_squared_col_name]
+    magf_chi_squareds = np.array(magf_chi_squareds)
+    magf_chi_squareds = (magf_chi_squareds + magf_chi_squared_offset)*magf_chi_squared_factor
     
     magf_sat_m_bests = fitting_results_table[magf_sat_m_best_col_name]
     magf_sat_m_bests = np.array(magf_sat_m_bests)
@@ -209,6 +232,10 @@ def main(argv):
     magf_Sigma_offset_errs = fitting_results_table[magf_Sigma_offset_err_col_name]
     magf_Sigma_offset_errs = np.array(magf_Sigma_offset_errs)
     magf_Sigma_offset_errs = (magf_Sigma_offset_errs + magf_Sigma_offset_err_offset)*magf_Sigma_offset_err_factor
+    
+    overall_chi_squareds = fitting_results_table[overall_chi_squared_col_name]
+    overall_chi_squareds = np.array(overall_chi_squareds)
+    overall_chi_squareds = (overall_chi_squareds + overall_chi_squared_offset)*overall_chi_squared_factor
     
     overall_sat_m_bests = fitting_results_table[overall_sat_m_best_col_name]
     overall_sat_m_bests = np.array(overall_sat_m_bests)
@@ -254,12 +281,14 @@ def main(argv):
     
     # Bin all values in the table
     binned_zs = []
+    binned_shear_chi_squareds = []
     binned_shear_sat_m_bests = []
     binned_shear_sat_m_errs = []
     binned_shear_group_m_bests = []
     binned_shear_group_m_errs = []
     binned_shear_sat_frac_bests = []
     binned_shear_sat_frac_errs = []
+    binned_magf_chi_squareds = []
     binned_magf_sat_m_bests = []
     binned_magf_sat_m_errs = []
     binned_magf_group_m_bests = []
@@ -268,6 +297,7 @@ def main(argv):
     binned_magf_sat_frac_errs = []
     binned_magf_Sigma_offset_bests = []
     binned_magf_Sigma_offset_errs = []
+    binned_overall_chi_squareds = []
     binned_overall_sat_m_bests = []
     binned_overall_sat_m_errs = []
     binned_overall_group_m_bests = []
@@ -280,12 +310,14 @@ def main(argv):
     
     for m_i in xrange(num_m_bins):
         binned_zs.append([])
+        binned_shear_chi_squareds.append([])
         binned_shear_sat_m_bests.append([])
         binned_shear_sat_m_errs.append([])
         binned_shear_group_m_bests.append([])
         binned_shear_group_m_errs.append([])
         binned_shear_sat_frac_bests.append([])
         binned_shear_sat_frac_errs.append([])
+        binned_magf_chi_squareds.append([])
         binned_magf_sat_m_bests.append([])
         binned_magf_sat_m_errs.append([])
         binned_magf_group_m_bests.append([])
@@ -294,6 +326,7 @@ def main(argv):
         binned_magf_sat_frac_errs.append([])
         binned_magf_Sigma_offset_bests.append([])
         binned_magf_Sigma_offset_errs.append([])
+        binned_overall_chi_squareds.append([])
         binned_overall_sat_m_bests.append([])
         binned_overall_sat_m_errs.append([])
         binned_overall_group_m_bests.append([])
@@ -305,25 +338,27 @@ def main(argv):
         binned_Sigma_crits.append([])
 
     
-    for z, m, shear_sat_m_best, shear_sat_m_err, shear_group_m_best, shear_group_m_err, shear_sat_frac_best, shear_sat_frac_err, \
-        magf_sat_m_best, magf_sat_m_err, magf_group_m_best, magf_group_m_err, magf_sat_frac_best, magf_sat_frac_err, magf_Sigma_offset_best, magf_Sigma_offset_err, \
-        overall_sat_m_best, overall_sat_m_err, overall_group_m_best, overall_group_m_err, overall_sat_frac_best, overall_sat_frac_err, overall_Sigma_offset_best, overall_Sigma_offset_err, \
+    for z, m, shear_chi_squared, shear_sat_m_best, shear_sat_m_err, shear_group_m_best, shear_group_m_err, shear_sat_frac_best, shear_sat_frac_err, \
+        magf_chi_squared, magf_sat_m_best, magf_sat_m_err, magf_group_m_best, magf_group_m_err, magf_sat_frac_best, magf_sat_frac_err, magf_Sigma_offset_best, magf_Sigma_offset_err, \
+        overall_chi_squared, overall_sat_m_best, overall_sat_m_err, overall_group_m_best, overall_group_m_err, overall_sat_frac_best, overall_sat_frac_err, overall_Sigma_offset_best, overall_Sigma_offset_err, \
         Sigma_crit \
-         in zip(zs, ms, shear_sat_m_bests, shear_sat_m_errs, shear_group_m_bests, shear_group_m_errs, shear_sat_frac_bests, shear_sat_frac_errs, \
-                magf_sat_m_bests, magf_sat_m_errs, magf_group_m_bests, magf_group_m_errs, magf_sat_frac_bests, magf_sat_frac_errs, magf_Sigma_offset_bests, magf_Sigma_offset_errs, \
-                overall_sat_m_bests, overall_sat_m_errs, overall_group_m_bests, overall_group_m_errs, overall_sat_frac_bests, overall_sat_frac_errs, overall_Sigma_offset_bests, overall_Sigma_offset_errs, \
+         in zip(zs, ms, shear_chi_squareds, shear_sat_m_bests, shear_sat_m_errs, shear_group_m_bests, shear_group_m_errs, shear_sat_frac_bests, shear_sat_frac_errs, \
+                magf_chi_squareds, magf_sat_m_bests, magf_sat_m_errs, magf_group_m_bests, magf_group_m_errs, magf_sat_frac_bests, magf_sat_frac_errs, magf_Sigma_offset_bests, magf_Sigma_offset_errs, \
+                overall_chi_squareds, overall_sat_m_bests, overall_sat_m_errs, overall_group_m_bests, overall_group_m_errs, overall_sat_frac_bests, overall_sat_frac_errs, overall_Sigma_offset_bests, overall_Sigma_offset_errs, \
                 Sigma_crits):
         
         m_i = bf.get_bin_index(m, m_bins)
         if(m_i<0): continue
         
         binned_zs[m_i].append(z)
+        binned_shear_chi_squareds[m_i].append(shear_chi_squared)
         binned_shear_sat_m_bests[m_i].append(shear_sat_m_best)
         binned_shear_sat_m_errs[m_i].append(shear_sat_m_err)
         binned_shear_group_m_bests[m_i].append(shear_group_m_best)
         binned_shear_group_m_errs[m_i].append(shear_group_m_err)
         binned_shear_sat_frac_bests[m_i].append(shear_sat_frac_best)
         binned_shear_sat_frac_errs[m_i].append(shear_sat_frac_err)
+        binned_magf_chi_squareds[m_i].append(magf_chi_squared)
         binned_magf_sat_m_bests[m_i].append(magf_sat_m_best)
         binned_magf_sat_m_errs[m_i].append(magf_sat_m_err)
         binned_magf_group_m_bests[m_i].append(magf_group_m_best)
@@ -332,6 +367,7 @@ def main(argv):
         binned_magf_sat_frac_errs[m_i].append(magf_sat_frac_err)
         binned_magf_Sigma_offset_bests[m_i].append(magf_Sigma_offset_best)
         binned_magf_Sigma_offset_errs[m_i].append(magf_Sigma_offset_err)
+        binned_overall_chi_squareds[m_i].append(overall_chi_squared)
         binned_overall_sat_m_bests[m_i].append(overall_sat_m_best)
         binned_overall_sat_m_errs[m_i].append(overall_sat_m_err)
         binned_overall_group_m_bests[m_i].append(overall_group_m_best)
@@ -345,12 +381,14 @@ def main(argv):
     # Convert all lists to arrays      
     for m_i in xrange(num_m_bins):
         binned_zs= np.array(binned_zs)
+        binned_shear_chi_squareds= np.array(binned_shear_chi_squareds)
         binned_shear_sat_m_bests= np.array(binned_shear_sat_m_bests)
         binned_shear_sat_m_errs= np.array(binned_shear_sat_m_errs)
         binned_shear_group_m_bests= np.array(binned_shear_group_m_bests)
         binned_shear_group_m_errs= np.array(binned_shear_group_m_errs)
         binned_shear_sat_frac_bests= np.array(binned_shear_sat_frac_bests)
         binned_shear_sat_frac_errs= np.array(binned_shear_sat_frac_errs)
+        binned_magf_chi_squareds= np.array(binned_magf_chi_squareds)
         binned_magf_sat_m_bests= np.array(binned_magf_sat_m_bests)
         binned_magf_sat_m_errs= np.array(binned_magf_sat_m_errs)
         binned_magf_group_m_bests= np.array(binned_magf_group_m_bests)
@@ -359,6 +397,7 @@ def main(argv):
         binned_magf_sat_frac_errs= np.array(binned_magf_sat_frac_errs)
         binned_magf_Sigma_offset_bests= np.array(binned_magf_Sigma_offset_bests)
         binned_magf_Sigma_offset_errs= np.array(binned_magf_Sigma_offset_errs)
+        binned_overall_chi_squareds= np.array(binned_overall_chi_squareds)
         binned_overall_sat_m_bests= np.array(binned_overall_sat_m_bests)
         binned_overall_sat_m_errs= np.array(binned_overall_sat_m_errs)
         binned_overall_group_m_bests= np.array(binned_overall_group_m_bests)
@@ -369,7 +408,7 @@ def main(argv):
         binned_overall_Sigma_offset_errs= np.array(binned_overall_Sigma_offset_errs)
         binned_Sigma_crits= np.array(binned_Sigma_crits)
         
-    # Do the shear plot now
+    # Do the plot now
     fig = pyplot.figure(figsize=figsize)
     fig.subplots_adjust(wspace=0.5, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
     
@@ -389,59 +428,63 @@ def main(argv):
     
         m = m_bins_mids[m_i]
         
+        shear_good = binned_shear_chi_squareds[m_i] < chi_2_threshold
+        magf_good = binned_magf_chi_squareds[m_i] < chi_2_threshold
+        overall_good = binned_overall_chi_squareds[m_i] < overall_chi_2_threshold
+        
         for p_i in xrange(num_p_bins):
         
             if(p_i==0):
                 # Plot sat_m
                 ax = fig.add_subplot( num_m_bins, num_p_bins, p_i + num_p_bins*m_i + 1)
-                ax.errorbar( binned_zs[m_i]-z_shift, binned_shear_sat_m_bests[m_i],
+                ax.errorbar( binned_zs[m_i][shear_good]-z_shift, binned_shear_sat_m_bests[m_i][shear_good],
                              color='b', linestyle='None', label="Shear fit",
-                             marker='.',yerr=binned_shear_sat_m_errs[m_i] )
-                ax.errorbar( binned_zs[m_i], binned_magf_sat_m_bests[m_i],
+                             marker='.', yerr=binned_shear_sat_m_errs[m_i][shear_good] )
+                ax.errorbar( binned_zs[m_i][magf_good], binned_magf_sat_m_bests[m_i][magf_good],
                              color='r', linestyle='None', label="Magnification fit",
-                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_sat_m_errs[m_i] )
-                ax.errorbar( binned_zs[m_i]+z_shift, binned_overall_sat_m_bests[m_i],
+                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_sat_m_errs[m_i][magf_good] )
+                ax.errorbar( binned_zs[m_i][overall_good]+z_shift, binned_overall_sat_m_bests[m_i][overall_good],
                              color='k', linestyle='None', label="Overall fit",
-                             marker='*',yerr=binned_overall_sat_m_errs[m_i] )
+                             marker='*',yerr=binned_overall_sat_m_errs[m_i][overall_good] )
                 ax.set_ylim(9.1,13.9)
                 ax.set_ylabel(r"$\log_{10}(M_{\rm 1h}/M_{\rm sun})$",labelpad=5)
             elif(p_i==1):
                 # Plot group_m
                 ax = fig.add_subplot( num_m_bins, num_p_bins, p_i + num_p_bins*m_i + 1)
-                ax.errorbar( binned_zs[m_i]-z_shift, binned_shear_group_m_bests[m_i],
+                ax.errorbar( binned_zs[m_i][shear_good]-z_shift, binned_shear_group_m_bests[m_i][shear_good],
                              color='b', linestyle='None', label="Shear fit",
-                             marker='.',yerr=binned_shear_group_m_errs[m_i] )
-                ax.errorbar( binned_zs[m_i], binned_magf_group_m_bests[m_i],
+                             marker='.',yerr=binned_shear_group_m_errs[m_i][shear_good] )
+                ax.errorbar( binned_zs[m_i][magf_good], binned_magf_group_m_bests[m_i][magf_good],
                              color='r', linestyle='None', label="Magnification fit",
-                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_group_m_errs[m_i] )
-                ax.errorbar( binned_zs[m_i]+z_shift, binned_overall_group_m_bests[m_i],
+                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_group_m_errs[m_i][magf_good] )
+                ax.errorbar( binned_zs[m_i][overall_good]+z_shift, binned_overall_group_m_bests[m_i][overall_good],
                              color='k', linestyle='None', label="Overall fit",
-                             marker='*',yerr=binned_overall_group_m_errs[m_i] )
+                             marker='*',yerr=binned_overall_group_m_errs[m_i][overall_good] )
                 ax.set_ylim(13.1,15.9)
                 ax.set_ylabel(r"$\log_{10}(M_{\rm gr}/M_{\rm sun})$",labelpad=5)
             elif(p_i==2):
                 # Plot sat_frac
                 ax = fig.add_subplot( num_m_bins, num_p_bins, p_i + num_p_bins*m_i + 1)
-                ax.errorbar( binned_zs[m_i]-z_shift, binned_shear_sat_frac_bests[m_i],
+                ax.errorbar( binned_zs[m_i][shear_good]-z_shift, binned_shear_sat_frac_bests[m_i][shear_good],
                              color='b', linestyle='None', label="Shear fit",
-                             marker='.',yerr=binned_shear_sat_frac_errs[m_i] )
-                ax.errorbar( binned_zs[m_i], binned_magf_sat_frac_bests[m_i],
+                             marker='.',yerr=binned_shear_sat_frac_errs[m_i][shear_good] )
+                ax.errorbar( binned_zs[m_i][magf_good], binned_magf_sat_frac_bests[m_i][magf_good],
                              color='r', linestyle='None', label="Magnification fit",
-                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_sat_frac_errs[m_i] )
-                ax.errorbar( binned_zs[m_i]+z_shift, binned_overall_sat_frac_bests[m_i],
+                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_sat_frac_errs[m_i][magf_good] )
+                ax.errorbar( binned_zs[m_i][overall_good]+z_shift, binned_overall_sat_frac_bests[m_i][overall_good],
                              color='k', linestyle='None', label="Overall fit",
-                             marker='*',yerr=binned_overall_sat_frac_errs[m_i] )
+                             marker='*',yerr=binned_overall_sat_frac_errs[m_i][overall_good] )
                 ax.set_ylim(0.01,0.49)
                 ax.set_ylabel(r"$f_{\rm sat}$",labelpad=5)
             elif(p_i==3):
                 # Plot sat_frac
                 ax = fig.add_subplot( num_m_bins, num_p_bins, p_i + num_p_bins*m_i + 1)
-                ax.errorbar( binned_zs[m_i], binned_magf_Sigma_offset_bests[m_i]/binned_Sigma_crits[m_i],
+                ax.errorbar( binned_zs[m_i][magf_good], binned_magf_Sigma_offset_bests[m_i][magf_good]/binned_Sigma_crits[m_i][magf_good],
                              color='r', linestyle='None', label="Magnification fit",
-                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_Sigma_offset_errs[m_i]/binned_Sigma_crits[m_i] )
-                ax.errorbar( binned_zs[m_i]+z_shift, binned_overall_Sigma_offset_bests[m_i]/binned_Sigma_crits[m_i],
+                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_Sigma_offset_errs[m_i][magf_good]/binned_Sigma_crits[m_i][magf_good] )
+                ax.errorbar( binned_zs[m_i][overall_good]+z_shift, binned_overall_Sigma_offset_bests[m_i][overall_good]/binned_Sigma_crits[m_i][overall_good],
                              color='k', linestyle='None', label="Overall fit",
-                             marker='*',yerr=binned_overall_Sigma_offset_errs[m_i]/binned_Sigma_crits[m_i] )
+                             marker='*',yerr=binned_overall_Sigma_offset_errs[m_i][overall_good]/binned_Sigma_crits[m_i][overall_good] )
                 ax.set_ylim(-0.00549,0.00549)
                 ax.set_ylabel(r"$\kappa_{\rm offset}$",labelpad=5)
                 

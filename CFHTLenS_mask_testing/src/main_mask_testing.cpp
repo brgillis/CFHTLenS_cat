@@ -50,7 +50,8 @@
 #include "brg/vector/limit_vector.hpp"
 
 #include "brg_physics/astro.h"
-#include "brg_physics/units/unit_conversions.hpp"
+#include "brg/units/units.hpp"
+#include "brg/units/unit_conversions.hpp"
 
 #include "get_good_positions.hpp"
 #include "load_pixel_table.h"
@@ -241,7 +242,7 @@ int main( const int argc, const char *argv[] )
 		};
 
 		// We'll use that table for possible source positions (since we care about where
-		// they could be, and not just where they are). For lenses, we can save time
+		// they could be, and not just where they are). For lenses, we can save time_type
 		// by using only the actual positions of galaxies.
 
 		// Get the lens table file name
@@ -298,7 +299,7 @@ int main( const int argc, const char *argv[] )
 			for(auto & elem : lens_good_px_per_bin) elem = 0;
 			for(auto & elem : lens_total_px_per_bin) elem = 0;
 
-			const double pxfd_fact = brgastro::afd(brgastro::unitconv::kpctom,lens_z)/rad_per_px;
+			const double pxfd_fact = brgastro::value_of(brgastro::afd(lens_z))/rad_per_px;
 
 			const int lens_max_px_sep = pxfd_fact*max_kpc_sep+1;
 
@@ -363,7 +364,7 @@ int main( const int argc, const char *argv[] )
 					lens_res[i] = static_cast<float>(lens_good_px_per_bin[i])/
 						static_cast<float>(lens_total_px_per_bin[i]);
 
-//				std::cout << "Annulus unmasked area: " << lens_res[i] * pi *
+//				std::cout << "Annulus unmasked area_type: " << lens_res[i] * pi *
 //					(brgastro::square(sep_limits.upper_limit(i)*pxfd_fact*rad_per_px)-
 //						brgastro::square(sep_limits.lower_limit(i))*pxfd_fact*rad_per_px) << std::endl;
 			}

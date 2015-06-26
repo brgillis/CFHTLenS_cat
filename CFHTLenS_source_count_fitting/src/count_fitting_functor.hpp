@@ -28,18 +28,27 @@
 #ifndef _BRG_COUNT_FITTING_FUNCTOR_H_INCLUDED_
 #define _BRG_COUNT_FITTING_FUNCTOR_H_INCLUDED_
 
-#include "brg/global.h"
+#include "brg/common.h"
 
 #include "brg/math/functor/functor.hpp"
-#include "brg/physics/units/unit_conversions.hpp"
-#include "brg/physics/units/unit_obj.h"
+#include "brg/units/unit_conversions.hpp"
+#include "brg/units/units.hpp"
+
+namespace brgastro {
 
 /**
  *
  */
-class count_fitting_functor: public brgastro::functor<std::vector<BRG_UNITS>,BRG_UNITS> {
+template< typename Tf >
+class count_fitting_functor {
+public:
+
+	typedef Tf functor_type;
+
 private:
-	brgastro::functor<double,std::vector<BRG_UNITS>> *_f_;
+
+	square_angle_type _field_size_;
+	functor_type *_f_;
 	std::string _filename_;
 	double _z_bin_size_;
 
@@ -47,11 +56,33 @@ private:
 	mutable std::vector<double> _mag_bin_counts_;
 	mutable bool _loaded_;
 
-	void _load() const;
+	void _load() const
+	{
+		if(_loaded_) return;
+		auto map = load_table_map<double>(_filename_);
+
+		const auto count_label = "count";
+		const auto bin_lower_label = "mag_bin_lower";
+
+		size_t num_bins = map[count_label].size();
+		_mag_bin_counts_.reserve(num_bins-2);
+		_mag_bin_limits_.reserve(num_bins-1);
+
+		// Fill in all but the overflow bins
+
+		for(size_t i=1; i<num_bins-1; ++i)
+		{
+			_mag_bin_counts_.push_back(map[count_label][i]);
+			_mag_bin_limits_.push_back(map[bin_lower_label][i]);
+		}
+		_mag_bin_limits_.push_back(map[bin_lower_label][num_bins-1]);
+
+		_loaded_ = true;
+	}
 
 public:
 	count_fitting_functor()
-	: functor(1),
+	: _field_size_(1*radian*radian),
 	  _f_(NULL),
 	  _filename_(""),
 	  _z_bin_size_(1),
@@ -59,11 +90,11 @@ public:
 
 	{
 	}
-	count_fitting_functor(brgastro::functor<double,std::vector<BRG_UNITS>> *init_f,
+	count_fitting_functor(functor_type *init_f = nullptr,
 			std::string init_filename="",
-			BRG_UNITS init_field_size=1,
+			square_angle_type init_field_size=1*radian*radian,
 			double init_z_bin_size=1)
-	: functor(init_field_size),
+	: _field_size_(init_field_size),
 	  _f_(init_f),
 	  _filename_(init_filename),
 	  _z_bin_size_(init_z_bin_size),
@@ -77,7 +108,7 @@ public:
 	// Setters
 #if (1)
 
-	void set_function(brgastro::functor<double,std::vector<BRG_UNITS>> *new_f)
+	void set_function(functor_type *new_f)
 	{
 		_f_ = new_f;
 	}
@@ -85,9 +116,10 @@ public:
 	{
 		_filename_ = new_filename;
 	}
-	void set_field_size(CONST_BRG_UNITS_REF new_field_size)
+	void set_field_size(const square_angle_type & new_field_size)
 	{
-		set_params(new_field_size);
+		assert(new_field_size>0.*rad*rad);
+		_field_size_ = new_field_size;
 	}
 	void set_z_bin_size_size(double new_z_bin_size)
 	{
@@ -98,7 +130,7 @@ public:
 
 	// Accessors
 #if (1)
-	const brgastro::functor<double,std::vector<BRG_UNITS>> *function()
+	const functor_type *function()
 	{
 		return _f_;
 	}
@@ -106,9 +138,9 @@ public:
 	{
 		return _filename_;
 	}
-	CONST_BRG_UNITS_REF field_size() const
+	const square_angle_type & field_size() const
 	{
-		return params();
+		return _field_size_;
 	}
 	double z_bin_size() const
 	{
@@ -118,8 +150,31 @@ public:
 
 	// Function method
 
-	std::vector<BRG_UNITS> operator()( const std::vector<BRG_UNITS> & in_params,
-			const bool silent = false ) const;
+	double operator()( const typename functor_type::params_type & in_params ) const
+	{
+		assert(_f_!=nullptr);
+
+		_load();
+
+		_f_->set_params(in_params);
+
+		double chi_sq = 0;
+		for(size_t i=0; i<_mag_bin_counts_.size(); ++i)
+		{
+			if(_mag_bin_counts_[i]<=0) continue;
+			double mid = (_mag_bin_limits_[i]+_mag_bin_limits_[i+1])/2;
+			square_angle_type size = _z_bin_size_*field_size()*(_mag_bin_limits_[i+1]-_mag_bin_limits_[i]);
+			double estimate = (*_f_)(mid)*size;
+			double error = std::sqrt(estimate);
+			chi_sq += square( (estimate-_mag_bin_counts_[i]) / error);
+		}
+
+		if(chi_sq<=0) throw std::runtime_error("No observed galaxies in this redshift bin.");
+
+		return chi_sq;
+	}
 };
+
+} // namespace brgastro
 
 #endif // _BRG_COUNT_FITTING_FUNCTOR_H_INCLUDED_

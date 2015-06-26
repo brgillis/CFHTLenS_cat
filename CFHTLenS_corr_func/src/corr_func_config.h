@@ -27,14 +27,14 @@
 
 #ifndef _BRG_CORR_FUNC_CONFIG_H_INCLUDED_
 #define _BRG_CORR_FUNC_CONFIG_H_INCLUDED_
-
 #include <cassert>
 #include <cstdlib>
 
-#include "brg/global.h"
+#include "brg/common.h"
 
-#include "brg_physics/units/unit_conversions.hpp"
-#include "brg_physics/units/unit_obj.h"
+#include "brg/units/unit_conversions.hpp"
+#include "brg/units/units.hpp"
+
 
 /**
  *
@@ -43,8 +43,8 @@ struct corr_func_config {
 
 	static constexpr size_t num_config_params = 18;
 
-	BRG_DISTANCE R_min, R_max;
-	BRG_MASS m_min, m_max;
+	brgastro::distance_type R_min, R_max;
+	brgastro::mass_type m_min, m_max;
 	double z_min, z_max;
 	double mag_min, mag_max;
 

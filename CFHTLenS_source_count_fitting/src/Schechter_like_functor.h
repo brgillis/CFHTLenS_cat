@@ -29,23 +29,40 @@
 #define _BRG_SCHECHTER_LIKE_FUNCTOR_H_INCLUDED_
 
 #include <cassert>
-#include <vector>
+#include <utility>
 
+#include "brg/container/tuple.hpp"
 #include "brg/math/functor/functor.hpp"
+#include "brg/units/units.hpp"
+
+namespace brgastro {
+
+typedef custom_unit_type<0,0,0,-2,0> inverse_square_angle;
 
 /**
  *
  */
-class Schechter_like_functor: public brgastro::functor<double,std::vector<BRG_UNITS>> {
+class Schechter_like_functor: public functor<flt_type,
+	inverse_square_angle,
+	tuple<inverse_square_angle,flt_type,flt_type,flt_type,
+			inverse_square_angle,flt_type,flt_type>> {
 private:
 	const size_t _num_params_ = 7;
 
 public:
+	typedef flt_type fin_type;
+	typedef inverse_square_angle fout_type;
+	typedef tuple<inverse_square_angle,flt_type,flt_type,flt_type,
+			inverse_square_angle,flt_type,flt_type> params_type;
+
+	typedef functor<flt_type, inverse_square_angle, params_type> base_type;
+
 	Schechter_like_functor()
 	{
 	}
-	Schechter_like_functor(const std::vector<BRG_UNITS> & init_params )
-	: functor(init_params)
+	template< typename T >
+	Schechter_like_functor(T && init_params )
+	: base_type(std::forward<T>(init_params))
 	{
 	}
 	virtual ~Schechter_like_functor()
@@ -55,49 +72,43 @@ public:
 	// Params accessors
 #if (1)
 
-	CONST_BRG_UNITS_REF N_scale() const
+	inverse_square_angle N_scale() const
 	{
-		assert(params().size()==_num_params_);
-		return params()[0];
+		return params().get<0>();
 	}
-	CONST_BRG_UNITS_REF m_star() const
+	flt_type m_star() const
 	{
-		assert(params().size()==_num_params_);
-		return params()[1];
+		return params().get<1>();
 	}
-	CONST_BRG_UNITS_REF alpha() const
+	flt_type alpha() const
 	{
-		assert(params().size()==_num_params_);
-		return params()[2];
+		return params().get<2>();
 	}
-	CONST_BRG_UNITS_REF mag_lower_lim_sharpness() const
+	flt_type mag_lower_lim_sharpness() const
 	{
-		assert(params().size()==_num_params_);
-		return params()[3];
+		return params().get<3>();
 	}
-	CONST_BRG_UNITS_REF mag23_jump() const
+	inverse_square_angle mag23_jump() const
 	{
-		assert(params().size()==_num_params_);
-		return params()[4];
+		return params().get<4>();
 	}
-	CONST_BRG_UNITS_REF mag_upper_lim() const
+	flt_type mag_upper_lim() const
 	{
-		assert(params().size()==_num_params_);
-		return params()[5];
+		return params().get<5>();
 	}
-	CONST_BRG_UNITS_REF mag_upper_lim_sharpness() const
+	flt_type mag_upper_lim_sharpness() const
 	{
-		assert(params().size()==_num_params_);
-		return params()[6];
+		return params().get<6>();
 	}
 
 #endif
 
 	// Function method
 
-	double operator()( const double & in_params,
-			const bool silent = false ) const;
+	fout_type operator()( const fin_type & in_params ) const;
 
 };
+
+} // namespace brgastro
 
 #endif // _BRG_SCHECHTER_LIKE_FUNCTOR_H_INCLUDED_

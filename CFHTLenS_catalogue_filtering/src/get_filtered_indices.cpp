@@ -39,6 +39,10 @@
 
 #undef WARN_MASK_MISMATCH
 
+#ifdef WARN_MASK_MISMATCH
+#include "brg/error_handling.h"
+#endif
+
 void move_y_column_to_i(brgastro::labeled_array<double> & map)
 {
 	// Check if the i columns exist, and if not, move in y columns
@@ -79,8 +83,8 @@ std::vector<size_t> get_good_lenses(const brgastro::labeled_array<double> & map,
 			// Check that the mask value in the table agrees
 			if(galaxy.at_label("MASK"))<=1)
 			{
-				std::cerr << "WARNING: Mask value mismatch for lens index " << i << " at position (" << xp << ", " << yp << ")." << std::endl;
-				std::cerr << "Table's mask value is " << galaxy.at_label("MASK") << ", but saved value is 'false'.\n";
+				handle_notification(std::string("Mask value mismatch for lens index ") + i + " at position (" + xp + ", " + yp + ").\n"
+				+ "Table's mask value is " + galaxy.at_label("MASK") + ", but saved value is 'false'.");
 			}
 #endif
 
@@ -92,8 +96,8 @@ std::vector<size_t> get_good_lenses(const brgastro::labeled_array<double> & map,
 			// Check that the mask value in the table agrees
 			if(galaxy.at_label("MASK")>1)
 			{
-				std::cerr << "WARNING: Mask value mismatch for lens index " << i << " at position (" << xp << ", " << yp << ")." << std::endl;
-				std::cerr << "Table's mask value is " << galaxy.at_label("MASK") << ", but saved value is 'true'.\n";
+				handle_notification(std::string("Mask value mismatch for lens index ") + i + " at position (" + xp + ", " + yp + ").\n"
+				+ "Table's mask value is " + galaxy.at_label("MASK") + ", but saved value is 'true'.");
 			}
 #endif
 		}

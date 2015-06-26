@@ -26,22 +26,28 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "brg/units/units.hpp"
+
 #include "Schechter_like_functor.h"
 
-double Schechter_like_functor::operator()( const double & in_param,
-			const bool silent) const
-{
-	const double mag_jump_limit = 23.;
+namespace brgastro {
 
-	const double x = std::pow(10,0.4*(m_star()-in_param));
-	double result = 0.4*std::log(10.)*N_scale()*std::pow(x,alpha()+1)*
+Schechter_like_functor::fout_type Schechter_like_functor::operator()(
+		const Schechter_like_functor::fin_type & in_param ) const
+{
+	const flt_type mag_jump_limit = 23.;
+
+	const flt_type x = std::pow(10,0.4*(m_star()-in_param));
+	fout_type result = 0.4*std::log(10.)*N_scale()*std::pow(x,alpha()+1)*
 			std::exp(-std::pow(x,mag_lower_lim_sharpness()));
 
 	if(in_param>=mag_jump_limit) result += mag23_jump();
 
-	const double xh = std::pow(10,0.4*(in_param-mag_upper_lim()));
+	const flt_type xh = std::pow(10,0.4*(in_param-mag_upper_lim()));
 
 	result *= std::exp(-std::pow(xh,mag_upper_lim_sharpness()));
 
 	return result;
+}
+
 }

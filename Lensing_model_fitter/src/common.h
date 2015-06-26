@@ -24,8 +24,8 @@
 \**********************************************************************/
 
 
-#ifndef _BRG_COMMON_H_INCLUDED_
-#define _BRG_COMMON_H_INCLUDED_
+#ifndef _LMF_COMMON_H_INCLUDED_
+#define _LMF_COMMON_H_INCLUDED_
 
 typedef double flt_type;
 typedef int int_type;
@@ -75,10 +75,12 @@ constexpr const char * best_fit_shear_model_dS_t_label = "bf_shear_model_dS_t";
 constexpr const char * best_fit_shear_model_Sigma_label = "bf_shear_model_Sigma";
 constexpr const char * best_fit_magf_model_dS_t_label = "bf_magf_model_dS_t";
 constexpr const char * best_fit_magf_model_Sigma_label = "bf_magf_model_Sigma";
+constexpr const char * best_fit_magf_Sigma_offset_label = "bf_magf_Sigma_offset";
 constexpr const char * best_fit_overall_model_dS_t_label = "bf_overall_model_dS_t";
 constexpr const char * best_fit_overall_model_Sigma_label = "bf_overall_model_Sigma";
+constexpr const char * best_fit_overall_Sigma_offset_label = "bf_overall_Sigma_offset";
 
 
 
 
-#endif // _BRG_COMMON_H_INCLUDED_
+#endif // _LMF_COMMON_H_INCLUDED_

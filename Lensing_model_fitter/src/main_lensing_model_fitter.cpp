@@ -32,23 +32,25 @@
 
 #include "brg/container/labeled_array.hpp"
 #include "brg/math/solvers/solver_classes.hpp"
+#include "brg/units/unit_conversions.hpp"
+#include "brg/units/unitconv_map.hpp"
 
 #include "brg_lensing/lensing_tNFW_profile.h"
-
-#include "brg_physics/units/unit_conversions.hpp"
-#include "brg_physics/units/unitconv_map.hpp"
+#include "brg_lensing/lensing_tNFW_caches.h"
 
 #include "common.h"
 
 #include "get_errors_on_fit.hpp"
 #include "lensing_fitting_bin.hpp"
 
+#define SKIP_CACHE_OUTPUT
+
 // Magic values
 constexpr flt_type init_frac_in_groups = 0.1;
 constexpr flt_type min_frac_in_groups = 0.;
 constexpr flt_type max_frac_in_groups = 1.;
 
-constexpr flt_type max_group_mass = 1e16*brgastro::unitconv::Msuntokg;
+const brgastro::mass_type max_group_mass = 1e16*brgastro::unitconv::Msuntokg*brgastro::kg;
 
 constexpr flt_type max_Sigma_offset = 50 * brgastro::unitconv::Msuntokg/(brgastro::unitconv::pctom*brgastro::unitconv::pctom);
 constexpr flt_type min_Sigma_offset = -max_Sigma_offset;
@@ -60,6 +62,13 @@ constexpr int_type MCMC_skip_factor = 10;
 
 constexpr int_type num_params = 4;
 
+#ifndef SKIP_CACHE_OUTPUT
+constexpr const char * offset_Sigma_cache_name = "tNFW_offset_Sigma_cache.dat";
+constexpr const char * group_Sigma_cache_name = "tNFW_group_Sigma_cache.dat";
+constexpr const char * offset_sig_cache_name = "tNFW_offset_Delta_Sigma_cache.dat";
+constexpr const char * group_sig_cache_name = "tNFW_group_Delta_Sigma_cache.dat";
+#endif
+
 typedef Eigen::Array<flt_type,num_params,1> array_type;
 typedef brgastro::MCMC_solver<flt_type,num_params> solver_type;
 
@@ -69,8 +78,10 @@ typedef brgastro::MCMC_solver<flt_type,num_params> solver_type;
  * @param TODO (params to be passed at command-line)
  * @return
  */
-int main( const int argc, const char *argv[] )
+int_type main( const int_type argc, const char *argv[] )
 {
+	using namespace brgastro;
+
 	// Check that we got a filename in the command line
 	if(argc<=2)
 	{
@@ -80,7 +91,7 @@ int main( const int argc, const char *argv[] )
 
 	// Load in the lensing data
 	const std::string input_filename = argv[1];
-	brgastro::labeled_array<flt_type> lensing_data(input_filename);
+	labeled_array<flt_type> lensing_data(input_filename);
 
 	std::string fitting_results_filename = argv[2];
 
@@ -92,19 +103,33 @@ int main( const int argc, const char *argv[] )
 		output_filename = argv[3];
 	}
 
+	flt_type fitting_R_min = 0;
+	if(argc>=5)
+	{
+		fitting_R_min = boost::lexical_cast<flt_type>(argv[4])*brgastro::unitconv::kpctom;
+	}
+
+	// Output caches
+	#ifndef SKIP_CACHE_OUTPUT
+	tNFW_offset_Sigma_cache().print(offset_Sigma_cache_name);
+	tNFW_group_Sigma_cache().print(group_Sigma_cache_name);
+	tNFW_offset_sig_cache().print(offset_sig_cache_name);
+	tNFW_group_sig_cache().print(group_sig_cache_name);
+	#endif
+
 	// Convert the units of the array to standard set
-	brgastro::unitconv_map u_map;
+	unitconv_map u_map;
 
 	u_map[R_min_label] = u_map[R_max_label] = u_map[shear_R_mean_label] = u_map[magf_R_mean_label] =
-		brgastro::unitconv::kpctom;
+		unitconv::kpctom;
 	u_map[m_min_label] = u_map[m_max_label] = u_map[shear_lens_m_mean_label] = u_map[magf_lens_m_mean_label] =
-		brgastro::unitconv::Msuntokg;
+		unitconv::Msuntokg;
 	u_map[dS_t_mean_label] = u_map[dS_t_std_label] = u_map[dS_t_stderr_label] =
 		u_map[dS_x_mean_label] = u_map[dS_x_std_label] = u_map[dS_x_stderr_label] =
 		u_map[model_dS_t_label] = u_map[Sigma_mean_label] = u_map[Sigma_stderr_label] =
 		u_map[model_Sigma_label] = u_map[shear_Sigma_crit_label] = u_map[magf_Sigma_crit_label] =
-			brgastro::unitconv::Msuntokg/brgastro::square(brgastro::unitconv::pctom);
-	u_map[magf_area_label] = brgastro::square(brgastro::unitconv::asectorad);
+			unitconv::Msuntokg/square(unitconv::pctom);
+	u_map[magf_area_label] = square(unitconv::asectorad);
 
 	lensing_data.apply_inverse_unitconvs(u_map);
 
@@ -124,20 +149,20 @@ int main( const int argc, const char *argv[] )
 		m_bounds.left.insert(map_type::left_value_type(bound_type(bin.at_label(m_min_label),bin.at_label(m_max_label)),m_bounds.size()));
 	}
 
-	int num_z_bins = z_bounds.size();
-	int num_m_bins = m_bounds.size();
+	int_type num_z_bins = z_bounds.size();
+	int_type num_m_bins = m_bounds.size();
 
 	// Output the number of z and m bins we've found
-	std::cout << "Found " << num_z_bins << " redshift bins and " << num_m_bins << " mass bins, for "
+	std::cout << "Found " << num_z_bins << " redshift bins and " << num_m_bins << " mass_type bins, for "
 		<< "a total of " << num_z_bins*num_m_bins << " bins.\n";
 
 	std::vector<std::vector<lensing_fitting_bin>> fitting_bins(num_z_bins,std::vector<lensing_fitting_bin>(num_m_bins));
 
 	// Set the proper bounds for each bin
-	for(int z_i=0; z_i<num_z_bins; ++z_i)
+	for(int_type z_i=0; z_i<num_z_bins; ++z_i)
 	{
 		const auto & zb = z_bounds.right.at(z_i);
-		for(int m_i=0; m_i<num_m_bins; ++m_i)
+		for(int_type m_i=0; m_i<num_m_bins; ++m_i)
 		{
 			const auto & mb = m_bounds.right.at(m_i);
 			fitting_bins.at(z_i).at(m_i).set_bounds(zb.first,zb.second,mb.first,mb.second);
@@ -153,7 +178,9 @@ int main( const int argc, const char *argv[] )
 		const int_type & z_i = z_bounds.left.at(zb);
 		const int_type & m_i = m_bounds.left.at(mb);
 
-		fitting_bins.at(z_i).at(m_i).insert(row);
+		// Check that the row meets the minimum R requirement, and if so, add it to the bin
+		if(row.at_label(R_min_label)>fitting_R_min)
+			fitting_bins.at(z_i).at(m_i).insert(row);
 	}
 
 	// Set up the labels for the results labeled_array
@@ -198,15 +225,15 @@ int main( const int argc, const char *argv[] )
 	// Set up the models we'll use
 	const auto dS_t_model = [] (const flt_type & sat_m, const flt_type & z, const flt_type & group_m, const flt_type & sat_frac,
 		const flt_type & R) {
-		flt_type one_halo_term = brgastro::lensing_tNFW_profile(sat_m,z).WLsig(R);
-		flt_type offset_halo_term = sat_frac*brgastro::lensing_tNFW_profile(group_m,z).quick_group_WLsig(R);
+		flt_type one_halo_term = value_of(brgastro::lensing_tNFW_profile(sat_m*kg,z).Delta_Sigma(R*m));
+		flt_type offset_halo_term = value_of(sat_frac*brgastro::lensing_tNFW_profile(group_m*kg,z).quick_group_Delta_Sigma(R*m));
 
 		return one_halo_term+offset_halo_term;
 	};
 	const auto Sigma_model = [] (const flt_type & sat_m, const flt_type & z, const flt_type & group_m, const flt_type & sat_frac,
 		const flt_type & Sigma_offset, const flt_type & R) {
-		flt_type one_halo_term = brgastro::lensing_tNFW_profile(sat_m,z).Sigma(R);
-		flt_type offset_halo_term = sat_frac*brgastro::lensing_tNFW_profile(group_m,z).quick_group_Sigma(R);
+		flt_type one_halo_term = value_of(brgastro::lensing_tNFW_profile(sat_m*kg,z).Sigma(R*m));
+		flt_type offset_halo_term = value_of(sat_frac*brgastro::lensing_tNFW_profile(group_m*kg,z).quick_group_Sigma(R*m));
 
 		return one_halo_term+offset_halo_term+Sigma_offset;
 	};
@@ -229,13 +256,6 @@ int main( const int argc, const char *argv[] )
 				return fitting_bin.get_shear_chi_squared(shear_chi_squared_func);
 			};
 
-			// Vector version wrapper
-			const auto shear_fitting_vector_function = [&shear_fitting_function] (const std::vector<flt_type> & in)
-			{
-				assert(in.size()>=3);
-				return std::vector<flt_type>(1,shear_fitting_function(std::pow(10.,in[0]),std::pow(10.,in[1]),in[2]));
-			};
-
 			// Array version wrapper
 			const auto shear_fitting_array_function = [&shear_fitting_function] (const array_type & in)
 			{
@@ -253,14 +273,7 @@ int main( const int argc, const char *argv[] )
 				return fitting_bin.get_magf_chi_squared(magf_chi_squared_func);
 			};
 
-			// Vector version wrapper
-			const auto magf_fitting_vector_function = [&magf_fitting_function] (const std::vector<flt_type> & in)
-			{
-				assert(in.size()>=4);
-				return std::vector<flt_type>(1,magf_fitting_function(std::pow(10.,in[0]),std::pow(10.,in[1]),in[2],in[3]));
-			};
-
-			// Vector version wrapper
+			// Array version wrapper
 			const auto magf_fitting_array_function = [&magf_fitting_function] (const array_type & in)
 			{
 				return magf_fitting_function(std::pow(10.,in[0]),std::pow(10.,in[1]),in[2],in[3]);
@@ -275,14 +288,6 @@ int main( const int argc, const char *argv[] )
 				flt_type magf_chi_squared = magf_fitting_function(sat_m,group_m,sat_frac,Sigma_offset);
 
 				return shear_chi_squared+magf_chi_squared;
-			};
-
-			// Vector version wrapper
-			const auto fitting_vector_function = [&fitting_function]
-												  (const std::vector<flt_type> & in)
-			{
-				assert(in.size()>=4);
-				return std::vector<flt_type>(1,fitting_function(std::pow(10.,in[0]),std::pow(10.,in[1]),in[2],in[3]));
 			};
 
 			// Array version wrapper
@@ -303,7 +308,7 @@ int main( const int argc, const char *argv[] )
 				min_frac_in_groups,
 				min_Sigma_offset };
 			array_type max_in = { std::log10(200*fitting_bin.m_mid()),
-				std::log10(max_group_mass),
+				std::log10(value_of(max_group_mass)),
 				max_frac_in_groups,
 				max_Sigma_offset };
 			array_type in_step = {  0.1,
@@ -392,8 +397,10 @@ int main( const int argc, const char *argv[] )
 		lensing_data[best_fit_shear_model_Sigma_label];
 		lensing_data[best_fit_magf_model_dS_t_label];
 		lensing_data[best_fit_magf_model_Sigma_label];
+		lensing_data[best_fit_magf_Sigma_offset_label];
 		lensing_data[best_fit_overall_model_dS_t_label];
 		lensing_data[best_fit_overall_model_Sigma_label];
+		lensing_data[best_fit_overall_Sigma_offset_label];
 
 		// Loop through rows of the table now
 		for(auto row : lensing_data.rows())
@@ -432,6 +439,7 @@ int main( const int argc, const char *argv[] )
 																		 best_magf_fit_params.at(2),
 																	     best_magf_fit_params.at(3),
 																		 row.at_label(magf_R_mean_label));
+			row.at_label(best_fit_magf_Sigma_offset_label) = best_magf_fit_params.at(3);
 
 			row.at_label(best_fit_overall_model_dS_t_label) = dS_t_model(std::pow(10.,best_overall_fit_params.at(0)),
 																	   (zb.first+zb.second)/2.,
@@ -444,6 +452,7 @@ int main( const int argc, const char *argv[] )
 																		 best_overall_fit_params.at(2),
 																	     best_overall_fit_params.at(3),
 																		 row.at_label(magf_R_mean_label));
+			row.at_label(best_fit_overall_Sigma_offset_label) = best_overall_fit_params.at(3);
 
 		}
 

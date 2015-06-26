@@ -68,7 +68,7 @@ constexpr double z_buffer = 0.2;
 
 #undef USE_MOCK_SOURCES
 
-#define USE_FIELD_WEIGHTING
+#undef USE_FIELD_WEIGHTING
 
 #ifdef USE_MOCK_SOURCES
 const std::string source_root = "_small_mock_source.dat";
@@ -150,7 +150,7 @@ int main( const int argc, const char *argv[] )
 
 
 	// Load each field in turn and process it
-	// num_fields = 2;
+	//num_fields = 2;
 
 	#ifdef _OPENMP
 	#pragma omp parallel for schedule(dynamic)
@@ -387,11 +387,11 @@ int main( const int argc, const char *argv[] )
 		Eigen::Map<Eigen::ArrayXd> smoothed_count(data["smoothed_count"].data(),data["smoothed_count"].size());
 
 		// Check for a systematic over or underestimation from smoothing and integration
-		auto smooth_count_func = [&] (const double & mag, const bool silent = true)
+		auto smooth_count_func = [&] (const double & mag = true)
 		{
 			return mag_bin_limits.interpolate_bins(mag,smoothed_count);
 		};
-		double integrated_count = brgastro::integrate_Romberg(&smooth_count_func,brgastro::mag_m_counting_min,
+		double integrated_count = brgastro::integrate_Romberg(smooth_count_func,brgastro::mag_m_counting_min,
 				brgastro::mag_m_counting_max,0.000001);
 		double smooth_correction_factor = brgastro::sum(data[count_column_to_use])*brgastro::mag_m_step/
 				integrated_count;
@@ -402,7 +402,7 @@ int main( const int argc, const char *argv[] )
 				brgastro::sg_derivative(smoothed_log,sg_window,sg_deg),
 				2.5/mag_step),0);
 
-//		auto unsmoothed_am1_count_func = [&] (const double & mag, const bool silent = true)
+//		auto unsmoothed_am1_count_func = [&] (const double & mag = true)
 //		{
 //			return data["count"][mag_bin_limits.get_bin_index(mag)] *
 //				(mag_bin_limits.interpolate_bins(mag,data["smoothed_alpha"])-1);
@@ -410,10 +410,10 @@ int main( const int argc, const char *argv[] )
 //		double summed_am1_count = brgastro::integrate_Romberg(&unsmoothed_am1_count_func,brgastro::mag_m_min,
 //				brgastro::mag_m_max,0.000001);
 //
-//		auto diff_minimizer_func = [&] (const double & mag_shift, const bool silent = true)
+//		auto diff_minimizer_func = [&] (const double & mag_shift = true)
 //		{
 //
-//			auto am1s_count_func = [&] (const double & mag, const bool silent = true)
+//			auto am1s_count_func = [&] (const double & mag = true)
 //			{
 //				return mag_bin_limits.interpolate_bins(mag-mag_shift,data["count"]) *
 //					brgastro::square(mag_bin_limits.interpolate_bins(mag,data["smoothed_alpha"])-1);
@@ -421,7 +421,7 @@ int main( const int argc, const char *argv[] )
 //			double integrated_am1s_count = brgastro::integrate_Romberg(&am1s_count_func,brgastro::mag_m_min,
 //					brgastro::mag_m_max,0.000001);
 //
-//			auto am1am2_count_func = [&] (const double & mag, const bool silent = true)
+//			auto am1am2_count_func = [&] (const double & mag = true)
 //			{
 //				return mag_bin_limits.interpolate_bins(mag-mag_shift,data["count"]) *
 //					(mag_bin_limits.interpolate_bins(mag,data["smoothed_alpha"])-1) *
