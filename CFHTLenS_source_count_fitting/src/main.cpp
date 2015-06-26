@@ -45,9 +45,9 @@ const std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
 const std::string count_table_root = fields_directory + "magnitude_hist_z";
 const std::string count_table_tail = ".dat";
 const std::string output_filename = fields_directory + "count_fitting_results.dat";
-const unsigned int zlo = 20;
-const unsigned int zstep = 4;
-const unsigned int zhi = 196;
+const unsigned int zlo = 200;
+const unsigned int zstep = 40;
+const unsigned int zhi = 1960;
 const double z_bin_size = zstep*0.01;
 
 using namespace brgastro;
@@ -98,18 +98,18 @@ int main( const int argc, const char *argv[] )
 	// Result map
 	table_map_t<double> result_map;
 
-	for(unsigned int z100=zlo; z100<=zhi; z100+=zstep)
+	for(unsigned int z1000=zlo; z1000<=zhi; z1000+=zstep)
 	{
-		std::string filename = count_table_root + boost::lexical_cast<std::string>(z100)
+		std::string filename = count_table_root + boost::lexical_cast<std::string>(z1000)
 				+ count_table_tail;
 		count_fitting_functor<decltype(estimator)> fitter(&estimator,filename,field_size,z_bin_size);
 
 		try
 		{
 			params_type result_in_params = solve_MCMC(fitter,
-					inits, mins, maxes, steps, 1000000, 25000);
+					inits, mins, maxes, steps, 100000, 2500);
 
-			std::cout << "Best params for z=" << z100/100. << ":\t"
+			std::cout << "Best params for z=" << z1000/1000. << ":\t"
 					<< value_of(result_in_params.get<0>()*square(unitconv::degtorad)) << " "
 					<< result_in_params.get<1>() << " "
 					<< result_in_params.get<2>() << " "
@@ -123,7 +123,7 @@ int main( const int argc, const char *argv[] )
 			inits = result_in_params; // For next bin
 
 			// Add this to the result map
-			result_map["z_mid"].push_back(0.01*(z100+zstep/2));
+			result_map["z_mid"].push_back(0.001*(z1000+zstep/2));
 			result_map["N_scale"].push_back(value_of(result_in_params.get<0>()));
 			result_map["m_star_lower"].push_back(result_in_params.get<1>());
 			result_map["alpha"].push_back(result_in_params.get<2>());
@@ -137,7 +137,7 @@ int main( const int argc, const char *argv[] )
 			// Most likely no counts in this bin, so use the inits (to match last good bin), but
 			// with N_scale and mag23_jump set to zero
 
-			result_map["z_mid"].push_back(0.01*(z100+zstep/2));
+			result_map["z_mid"].push_back(0.001*(z1000+zstep/2));
 			result_map["N_scale"].push_back(0.);
 			result_map["m_star_lower"].push_back(inits.get<1>());
 			result_map["alpha"].push_back(inits.get<2>());
