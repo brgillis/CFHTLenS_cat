@@ -57,16 +57,14 @@ const double z_bin_size = zstep*0.01;
 
 using namespace IceBRG;
 
-const square_angle_type field_size(130.98*square((M_PI/180 * radian)));
-
 int main( const int argc, const char *argv[] )
 {
 	// Get the desired location of the data directory
 	std::string data_directory = get_data_directory(argc,argv);
 
 	// Set up needed names with the data directory
-	const std::string count_table_base = join_path(data_directory,"magnitude_hist_z");
-	const std::string output_file = join_path(data_directory,"count_fitting_results.dat");
+	const std::string count_table_base = join_path(data_directory,mag_hist_table_name_base);
+	const std::string output_file = join_path(data_directory,count_fitting_results_filename);
 
 	// General set-up
 	typedef Schechter_like_functor estimator_type;

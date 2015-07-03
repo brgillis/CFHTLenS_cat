@@ -35,22 +35,27 @@
 #include "IceBRG_main/error_handling.h"
 #include "IceBRG_main/file_access/binary_archive.hpp"
 #include "IceBRG_main/file_access/open_file.hpp"
+#include "IceBRG_main/join_path.hpp"
+
+#include "get_data_directory.hpp"
+#include "magic_values.hpp"
 
 #include "correct_redshift_bias.h"
 #include "get_filtered_indices.h"
 #include "make_output_map.h"
 
 // Magic values
-const std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
-const std::string fields_list = fields_directory + "fields_list.txt";
-const std::string lens_pixel_map_root = "_lens_good_pixels.bin";
 
 int main( const int argc, const char *argv[] )
 {
+	using namespace IceBRG;
 
-	// Open and read in the fields list
+	// Open and read in the fields list and get the data directory
 	std::ifstream fi;
-	IceBRG::open_file_input(fi,fields_list);
+	const std::string data_directory = get_data_directory(argc,argv,fi);
+
+	const std::string unfiltered_field_directory = join_path(data_directory,unfiltered_field_subdirectory);
+	const std::string field_directory = join_path(data_directory,field_subdirectory);
 
 	std::vector<std::string> field_names;
 
@@ -79,20 +84,20 @@ int main( const int argc, const char *argv[] )
 
 		// Get the input file name
 		std::stringstream ss("");
-		ss << fields_directory << "full_tables/" << field_name << ".dat";
+		ss << unfiltered_field_directory << field_name << data_file_tail;
 		std::string input_file_name = ss.str();
 
 		// Get the name of the mask file for this table and load it
 #if(1)
 		ss.str("");
-		ss << fields_directory << "filtered_tables/" << field_name_root << lens_pixel_map_root;
+		ss << field_directory << field_name_root << pixel_map_tail;
 		const std::string lens_pixel_map_file_name = ss.str();
 
 		std::vector<std::vector<bool>> good_pixels;
 
 		try
 		{
-			good_pixels = IceBRG::binary_load<std::vector<std::vector<bool>>>(
+			good_pixels = binary_load<std::vector<std::vector<bool>>>(
 				lens_pixel_map_file_name);
 		}
 		catch( const std::exception &e )
@@ -105,23 +110,23 @@ int main( const int argc, const char *argv[] )
 		// Get the lens and source output file names
 #if(1)
 		ss.str("");
-		ss << fields_directory << "filtered_tables/" << field_name_root << "_lens.dat";
+		ss << field_directory << field_name_root << lens_tail;
 		const std::string lens_output_name = ss.str();
 
 		ss.str("");
-		ss << fields_directory << "filtered_tables/" << field_name_root << "_source.dat";
+		ss << field_directory << field_name_root << source_tail;
 		const std::string source_output_name = ss.str();
 #endif
 
 		// Load in the input file
-		IceBRG::labeled_array<double> table;
+		labeled_array<double> table;
 		try
 		{
 			table.load(input_file_name); // TODO Check we're properly loading
 		}
 		catch(const std::runtime_error &e)
 		{
-			IceBRG::handle_error_message(e.what());
+			handle_error_message(e.what());
 			continue;
 		}
 
@@ -132,7 +137,7 @@ int main( const int argc, const char *argv[] )
 		std::vector<size_t> good_indices(get_good_lenses(table,good_pixels));
 
 		// Set up the header columns vector for the ones we want to output
-		IceBRG::header_t lens_header_columns;
+		header_t lens_header_columns;
 		lens_header_columns.push_back("SeqNr");
 		lens_header_columns.push_back("ALPHA_J2000");
 		lens_header_columns.push_back("DELTA_J2000");
@@ -154,16 +159,16 @@ int main( const int argc, const char *argv[] )
 
 		// Set up a map of the conversions to apply
 		std::map<std::string,std::function<double(double)>> lens_conversions;
-		auto deg_to_rad = [] (double theta) {return theta*IceBRG::unitconv::degtorad;};
+		auto deg_to_rad = [] (double theta) {return theta*unitconv::degtorad;};
 		auto l10_Msun_to_kg = [] (double l10_Msun)
-				{return std::pow(10.,l10_Msun)*IceBRG::unitconv::Msuntokg;};
+				{return std::pow(10.,l10_Msun)*unitconv::Msuntokg;};
 		lens_conversions["ALPHA_J2000"] = deg_to_rad;
 		lens_conversions["DELTA_J2000"] = deg_to_rad;
 		lens_conversions["LP_log10_SM_MED"] = l10_Msun_to_kg;
 		lens_conversions["LP_log10_SM_INF"] = l10_Msun_to_kg;
 		lens_conversions["LP_log10_SM_SUP"] = l10_Msun_to_kg;
 
-		IceBRG::labeled_array<double> output_map(make_output_map(table,good_indices,lens_header_columns,
+		labeled_array<double> output_map(make_output_map(table,good_indices,lens_header_columns,
 				lens_conversions));
 
 		// Rename columns we've applied unit convesions to
@@ -182,7 +187,7 @@ int main( const int argc, const char *argv[] )
 		good_indices = get_good_sources(table, good_pixels);
 
 		// Set up the header columns vector for the ones we want to output
-		IceBRG::header_t source_header_columns;
+		header_t source_header_columns;
 		source_header_columns.push_back("SeqNr");
 		source_header_columns.push_back("ALPHA_J2000");
 		source_header_columns.push_back("DELTA_J2000");

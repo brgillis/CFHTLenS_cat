@@ -58,17 +58,9 @@
 #include "IceBRG_physics/sky_obj/galaxy.h"
 
 #include "get_data_directory.hpp"
+#include "magic_values.hpp"
 
 // Magic values
-
-const std::string fields_subdirectory = "filtered_tables/";
-const std::string lens_weight_filename = "field_lens_weights.dat";
-const std::string output_table_name_base = "magnitude_hist_z";
-const std::string g_output_table_name_base = "magnitude_hist_gz";
-const std::string output_table_tail = ".dat";
-const std::string field_size_filename = "masks/field_sizes.dat";
-
-constexpr double z_buffer = 0.2;
 
 #undef USE_MOCK_SOURCES
 
@@ -86,11 +78,11 @@ const std::string count_column_to_use = "weighted_count";
 const std::string count_column_to_use = "count";
 #endif
 
-using namespace IceBRG;
-
 constexpr double sg_mag_window = 0.4;
 constexpr short unsigned sg_window = sg_mag_window/mag_m_step;
 constexpr short unsigned sg_deg = 3;
+
+using namespace IceBRG;
 
 int main( const int argc, const char *argv[] )
 {
@@ -104,8 +96,8 @@ int main( const int argc, const char *argv[] )
 	// Set up the locations of relevant files and directories
 	const std::string fields_directory = join_path(data_directory,fields_subdirectory);
 	const std::string lens_weight_file = join_path(data_directory,lens_weight_filename);
-	const std::string output_table_base = join_path(data_directory,output_table_name_base);
-	const std::string g_output_table_base = join_path(data_directory,g_output_table_name_base);
+	const std::string mag_hist_table_base = join_path(data_directory,mag_hist_table_name_base);
+	const std::string g_mag_hist_table_base = join_path(data_directory,g_mag_hist_table_name_base);
 	const std::string field_size_file = join_path(data_directory,field_size_filename);
 
 	// Open and read in the fields list
@@ -309,7 +301,7 @@ int main( const int argc, const char *argv[] )
 	{
 		// Get the name for the table we'll output to
 		std::string z_label = boost::lexical_cast<std::string>(round_int(1000 * *z_it));
-		std::string output_file_name = output_table_base + z_label + output_table_tail;
+		std::string mag_hist_file_name = mag_hist_table_base + z_label + mag_hist_table_tail;
 
 		// Set up the data table, and make sure it has the needed columns
 		table_map_t<double> data;
@@ -351,7 +343,7 @@ int main( const int argc, const char *argv[] )
 				sg_derivative(smoothed_log,sg_window,sg_deg),
 				2.5/mag_step),0);
 
-		print_table_map(output_file_name,data);
+		print_table_map(mag_hist_file_name,data);
 
 	}
 
@@ -365,7 +357,7 @@ int main( const int argc, const char *argv[] )
 	{
 		// Get the name for the table we'll output to
 		std::string z_label = boost::lexical_cast<std::string>(round_int(1000 * *z_it));
-		std::string output_file_name = g_output_table_base + z_label + output_table_tail;
+		std::string mag_hist_file_name = g_mag_hist_table_base + z_label + mag_hist_table_tail;
 
 		// Set up the data table, and make sure it has the needed columns
 		table_map_t<double> data;
@@ -457,7 +449,7 @@ int main( const int argc, const char *argv[] )
 //
 //		data["shifted_mag_bin_lower"] = add(data["mag_bin_lower"],mag_shift);
 
-		print_table_map(output_file_name,data);
+		print_table_map(mag_hist_file_name,data);
 
 	}
 

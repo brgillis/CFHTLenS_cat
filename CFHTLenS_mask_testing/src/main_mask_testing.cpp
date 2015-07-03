@@ -55,6 +55,7 @@
 #include "IceBRG_main/units/unit_conversions.hpp"
 
 #include "get_data_directory.hpp"
+#include "magic_values.hpp"
 
 #include "get_good_positions.hpp"
 #include "load_pixel_table.h"
@@ -62,14 +63,6 @@
 using namespace IceBRG;
 
 // Magic values
-const std::string mask_subdirectory = "masks/";
-const std::string field_subdirectory = "filtered_tables/";
-const std::string lens_pixel_map_tail = "_lens_good_pixels.bin";
-
-constexpr double lens_z_min = 0.2;
-constexpr double lens_z_max = 1.3;
-constexpr mass_type lens_m_min = 1e9*unitconv::Msuntokg*kg;
-constexpr mass_type lens_m_max = 1e12*unitconv::Msuntokg*kg;
 
 #undef USE_CALIBRATION
 #undef USE_MOCKS
@@ -204,8 +197,8 @@ int main( const int argc, const char *argv[] )
 
 		// Get the lens pixel map file name
 		ss.str("");
-		ss << field_directory << field_name_root << lens_pixel_map_tail;
-		const std::string lens_pixel_map_file_name = ss.str();
+		ss << field_directory << field_name_root << pixel_map_tail;
+		const std::string pixel_map_file_name = ss.str();
 
 		std::vector<std::vector<bool>> good_pixels;
 
@@ -213,7 +206,7 @@ int main( const int argc, const char *argv[] )
 		{
 			#ifdef USE_SAVED_MASK
 			good_pixels = binary_load<std::vector<std::vector<bool>>>(
-					lens_pixel_map_file_name);
+					pixel_map_file_name);
 			#else
 			good_pixels = load_pixel_table(input_file_name);
 			#endif
@@ -423,7 +416,7 @@ int main( const int argc, const char *argv[] )
 
 			// Archive the good pixel map if we just calculated it
 			#ifndef USE_SAVED_MASK
-			binary_save(lens_pixel_map_file_name,good_pixels);
+			binary_save(pixel_map_file_name,good_pixels);
 			#endif
 
 			std::cout << "Finished processing field " << field_name_root << " (#" << ++num_finished_fields << "/" <<
