@@ -31,31 +31,43 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "brg/file_access/ascii_table_map.hpp"
-#include "brg/math/misc_math.hpp"
-#include "brg/math/solvers/solvers.hpp"
-#include "brg/units/units.hpp"
-#include "brg/vector/elementwise_functions.hpp"
+#include "IceBRG_main/file_access/ascii_table_map.hpp"
+
+#include "IceBRG_main/join_path.hpp"
+
+#include "IceBRG_main/math/misc_math.hpp"
+#include "IceBRG_main/math/solvers/solvers.hpp"
+
+#include "IceBRG_main/units/units.hpp"
+
+#include "IceBRG_main/vector/elementwise_functions.hpp"
+
+#include "get_data_directory.hpp"
+#include "magic_values.hpp"
 
 #include "count_fitting_functor.hpp"
 #include "Schechter_like_functor.h"
 
 // Magic values
-const std::string fields_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
-const std::string count_table_root = fields_directory + "magnitude_hist_z";
-const std::string count_table_tail = ".dat";
-const std::string output_filename = fields_directory + "count_fitting_results.dat";
+const std::string output_filename = "count_fitting_results.dat";
 const unsigned int zlo = 200;
 const unsigned int zstep = 40;
 const unsigned int zhi = 1960;
 const double z_bin_size = zstep*0.01;
 
-using namespace brgastro;
+using namespace IceBRG;
 
-const custom_unit_type<0,0,0,2,0> field_size(130.98*square((M_PI/180 * radian)));
+const square_angle_type field_size(130.98*square((M_PI/180 * radian)));
 
 int main( const int argc, const char *argv[] )
 {
+	// Get the desired location of the data directory
+	std::string data_directory = get_data_directory(argc,argv);
+
+	// Set up needed names with the data directory
+	const std::string count_table_base = join_path(data_directory,"magnitude_hist_z");
+	const std::string output_file = join_path(data_directory,"count_fitting_results.dat");
+
 	// General set-up
 	typedef Schechter_like_functor estimator_type;
 
@@ -100,7 +112,7 @@ int main( const int argc, const char *argv[] )
 
 	for(unsigned int z1000=zlo; z1000<=zhi; z1000+=zstep)
 	{
-		std::string filename = count_table_root + boost::lexical_cast<std::string>(z1000)
+		std::string filename = count_table_base + boost::lexical_cast<std::string>(z1000)
 				+ count_table_tail;
 		count_fitting_functor<decltype(estimator)> fitter(&estimator,filename,field_size,z_bin_size);
 
@@ -148,8 +160,9 @@ int main( const int argc, const char *argv[] )
 		}
 	}
 
-	print_table_map(output_filename,result_map);
-	print_table_map(std::cout,result_map);
+	print_table_map(output_file,result_map);
+
+	std::cout << "Done!\nResults output to " << output_file << "." << std::endl;
 
 	return 0;
 }

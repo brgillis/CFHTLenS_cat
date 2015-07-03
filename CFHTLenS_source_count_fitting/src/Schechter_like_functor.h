@@ -31,11 +31,11 @@
 #include <cassert>
 #include <utility>
 
-#include "brg/container/tuple.hpp"
-#include "brg/math/functor/functor.hpp"
-#include "brg/units/units.hpp"
+#include "IceBRG_main/container/tuple.hpp"
+#include "IceBRG_main/math/functor/functor.hpp"
+#include "IceBRG_main/units/units.hpp"
 
-namespace brgastro {
+namespace IceBRG {
 
 typedef custom_unit_type<0,0,0,-2,0> inverse_square_angle;
 
@@ -109,6 +109,6 @@ public:
 
 };
 
-} // namespace brgastro
+} // namespace IceBRG
 
 #endif // _BRG_SCHECHTER_LIKE_FUNCTOR_H_INCLUDED_

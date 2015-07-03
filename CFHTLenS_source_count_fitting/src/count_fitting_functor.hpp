@@ -28,13 +28,13 @@
 #ifndef _BRG_COUNT_FITTING_FUNCTOR_H_INCLUDED_
 #define _BRG_COUNT_FITTING_FUNCTOR_H_INCLUDED_
 
-#include "brg/common.h"
+#include "IceBRG_main/common.h"
 
-#include "brg/math/functor/functor.hpp"
-#include "brg/units/unit_conversions.hpp"
-#include "brg/units/units.hpp"
+#include "IceBRG_main/math/functor/functor.hpp"
+#include "IceBRG_main/units/unit_conversions.hpp"
+#include "IceBRG_main/units/units.hpp"
 
-namespace brgastro {
+namespace IceBRG {
 
 /**
  *
@@ -175,6 +175,6 @@ public:
 	}
 };
 
-} // namespace brgastro
+} // namespace IceBRG
 
 #endif // _BRG_COUNT_FITTING_FUNCTOR_H_INCLUDED_

@@ -33,9 +33,10 @@
 
 #include <CCfits/CCfits>
 
+#include "IceBRG_main/call_program.hpp"
+#include "IceBRG_main/math/random/random_functions.hpp"
+
 #include "load_pixel_table.h"
-#include <brg/call_program.hpp>
-#include <brg/math/random/random_functions.hpp>
 
 std::string unpack_fits(const std::string & filename)
 {
@@ -53,7 +54,7 @@ std::string unpack_fits(const std::string & filename)
 
 		const char *unpacker("/disk2/brg/bin/funpack");
 
-		brgastro::call_program(unpacker,200,filename.c_str());
+		IceBRG::call_program(unpacker,200,filename.c_str());
 
 		return unpacked_name;
 	}
@@ -68,7 +69,7 @@ void delete_file(const std::string & filename)
 {
 	const char *deleter("/bin/rm");
 
-	brgastro::call_program_noexcept(deleter,200,"-f",filename.c_str());
+	IceBRG::call_program_noexcept(deleter,200,"-f",filename.c_str());
 }
 
 std::vector<std::vector<bool>> load_pixel_table(const std::string & filename)

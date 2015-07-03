@@ -35,14 +35,14 @@
 
 #include <boost/serialization/vector.hpp>
 
-#include "brg/file_access/binary_archive.hpp"
-#include "brg/file_access/open_file.hpp"
-#include "brg/file_access/ascii_table_map.hpp"
-#include "brg/math/misc_math.hpp"
-#include "brg/math/random/random_functions.hpp"
+#include "IceBRG_main/file_access/binary_archive.hpp"
+#include "IceBRG_main/file_access/open_file.hpp"
+#include "IceBRG_main/file_access/ascii_table_map.hpp"
+#include "IceBRG_main/math/misc_math.hpp"
+#include "IceBRG_main/math/random/random_functions.hpp"
 
-#include <brg/units/unit_conversions.hpp>
-#include "brg_lensing/magnification/mag_global_values.h"
+#include "IceBRG_main/units/unit_conversions.hpp"
+#include "IceBRG_lensing/magnification/mag_global_values.h"
 
 #include "get_ra_dec.h"
 #include "num_good_pixels.hpp"
@@ -111,7 +111,7 @@ int main( const int argc, const char *argv[] )
 	
 	// Open and read in the fields list
 	std::ifstream fi;
-	brgastro::open_file_input(fi,fields_list);
+	IceBRG::open_file_input(fi,fields_list);
 
 	std::vector<std::string> field_names;
 	std::string temp_field_name;
@@ -141,7 +141,7 @@ int main( const int argc, const char *argv[] )
 		std::string lens_output_file_name = field_directory + field_name_root + lens_output_root;
 
 		const std::vector<std::vector<bool>> good_pixels =
-				brgastro::binary_load<std::vector<std::vector<bool>>>(pixel_map_name);
+				IceBRG::binary_load<std::vector<std::vector<bool>>>(pixel_map_name);
 
 		const size_t ncol = good_pixels.size();
 		assert(ncol>0);
@@ -161,11 +161,11 @@ int main( const int argc, const char *argv[] )
 
 		while((!good_point_found)&&(++counter<10000))
 		{
-			const double x = brgastro::drand(ncol/2-counter,ncol/2+counter);
-			const double y = brgastro::drand(nrow/2-counter,nrow/2+counter);
+			const double x = IceBRG::drand(ncol/2-counter,ncol/2+counter);
+			const double y = IceBRG::drand(nrow/2-counter,nrow/2+counter);
 
-			const unsigned xp = brgastro::round_int(x);
-			const unsigned yp = brgastro::round_int(y);
+			const unsigned xp = IceBRG::round_int(x);
+			const unsigned yp = IceBRG::round_int(y);
 
 			if(good_pixels[xp][yp])
 			{
@@ -186,11 +186,11 @@ int main( const int argc, const char *argv[] )
 		// For each galaxy we want to generate, get good random pixel positions for it
 		for(unsigned j=0; j<num_lenses_to_generate; ++j)
 		{
-			const double x = brgastro::drand(-0.5,ncol-0.5,gen);
-			const double y = brgastro::drand(-0.5,nrow-0.5,gen);
+			const double x = IceBRG::drand(-0.5,ncol-0.5,gen);
+			const double y = IceBRG::drand(-0.5,nrow-0.5,gen);
 
-			const unsigned xp = brgastro::round_int(x);
-			const unsigned yp = brgastro::round_int(y);
+			const unsigned xp = IceBRG::round_int(x);
+			const unsigned yp = IceBRG::round_int(y);
 
 			if(good_pixels[xp][yp])
 			{
@@ -206,7 +206,7 @@ int main( const int argc, const char *argv[] )
 				get_ra_dec(field_name,galaxy_positions);
 
 		// Create the output table, and then add each galaxy to it
-		brgastro::table_map_t<double> field_output_table;
+		IceBRG::table_map_t<double> field_output_table;
 
 
 #ifdef MAKE_CALIBRATION_LENSES
@@ -221,29 +221,29 @@ int main( const int argc, const char *argv[] )
 		for( size_t j=0; j<num_lenses_generated; ++j )
 		{
 			field_output_table["SeqNr"].push_back(j);
-			field_output_table["ra_radians"].push_back(galaxy_sky_positions[j].first.first*brgastro::unitconv::degtorad);
-			field_output_table["dec_radians"].push_back(galaxy_sky_positions[j].first.second*brgastro::unitconv::degtorad);
+			field_output_table["ra_radians"].push_back(galaxy_sky_positions[j].first.first*IceBRG::unitconv::degtorad);
+			field_output_table["dec_radians"].push_back(galaxy_sky_positions[j].first.second*IceBRG::unitconv::degtorad);
 			field_output_table["Xpos"].push_back(galaxy_sky_positions[j].second.first);
 			field_output_table["Ypos"].push_back(galaxy_sky_positions[j].second.second);
 #ifdef MAKE_CALIBRATION_LENSES
 			z100 += z100step;
 #else
-			z100 = 100*brgastro::drand(min_lens_z,max_lens_z);
+			z100 = 100*IceBRG::drand(min_lens_z,max_lens_z);
 #endif
 			field_output_table["Z_B"].push_back(z100/100.);
-			field_output_table["T_B"].push_back(brgastro::drand(min_T,max_T));
+			field_output_table["T_B"].push_back(IceBRG::drand(min_T,max_T));
 			field_output_table["ODDS"].push_back(1);
 			field_output_table["CHI_SQUARED_BPZ"].push_back(1);
 
-			double Mstel_kg = pow(10,brgastro::drand(min_lens_lmsun,max_lens_lmsun,gen))*brgastro::unitconv::Msuntokg;
+			double Mstel_kg = pow(10,IceBRG::drand(min_lens_lmsun,max_lens_lmsun,gen))*IceBRG::unitconv::Msuntokg;
 			field_output_table["Mstel_kg"].push_back(Mstel_kg);
 			field_output_table["Mstel_lo_kg"].push_back(Mstel_kg/2);
 			field_output_table["Mstel_hi_kg"].push_back(2*Mstel_kg);
 
-			field_output_table["MAG_i"].push_back(brgastro::drand(min_lens_mag,max_lens_mag,gen));
+			field_output_table["MAG_i"].push_back(IceBRG::drand(min_lens_mag,max_lens_mag,gen));
 			field_output_table["MAGERR_i"].push_back(1);
 			field_output_table["EXTINCTION_i"].push_back(0);
-			field_output_table["MAG_r"].push_back(brgastro::drand(min_lens_mag,max_lens_mag,gen));
+			field_output_table["MAG_r"].push_back(IceBRG::drand(min_lens_mag,max_lens_mag,gen));
 			field_output_table["MAGERR_r"].push_back(1);
 			field_output_table["EXTINCTION_r"].push_back(0);
 		}
@@ -253,7 +253,7 @@ int main( const int argc, const char *argv[] )
 		#pragma omp critical(output_mock_lenses)
 		#endif
 		{
-			brgastro::print_table_map(lens_output_file_name,field_output_table);
+			IceBRG::print_table_map(lens_output_file_name,field_output_table);
 			std::cout << "Finished generating " << lens_output_file_name << ".\n";
 		}
 
@@ -270,11 +270,11 @@ int main( const int argc, const char *argv[] )
 		for(unsigned j=0; j<num_sources_to_generate; ++j)
 		{
 			// Generate a random position and add it if it's inside the mask
-			const double x = brgastro::drand(-0.5,ncol-0.5,gen);
-			const double y = brgastro::drand(-0.5,nrow-0.5,gen);
+			const double x = IceBRG::drand(-0.5,ncol-0.5,gen);
+			const double y = IceBRG::drand(-0.5,nrow-0.5,gen);
 
-			const unsigned xp = brgastro::round_int(x);
-			const unsigned yp = brgastro::round_int(y);
+			const unsigned xp = IceBRG::round_int(x);
+			const unsigned yp = IceBRG::round_int(y);
 
 			if(good_pixels[xp][yp])
 			{
@@ -293,13 +293,13 @@ int main( const int argc, const char *argv[] )
 		for( size_t j=0; j<num_sources_generated; ++j )
 		{
 			field_output_table["SeqNr"].push_back(j);
-			field_output_table["ra_radians"].push_back(galaxy_sky_positions[j].first.first*brgastro::unitconv::degtorad);
-			field_output_table["dec_radians"].push_back(galaxy_sky_positions[j].first.second*brgastro::unitconv::degtorad);
+			field_output_table["ra_radians"].push_back(galaxy_sky_positions[j].first.first*IceBRG::unitconv::degtorad);
+			field_output_table["dec_radians"].push_back(galaxy_sky_positions[j].first.second*IceBRG::unitconv::degtorad);
 			field_output_table["Xpos"].push_back(galaxy_sky_positions[j].second.first);
 			field_output_table["Ypos"].push_back(galaxy_sky_positions[j].second.second);
-			unsigned z100 = 100*brgastro::drand(min_source_z,max_source_z,gen);
+			unsigned z100 = 100*IceBRG::drand(min_source_z,max_source_z,gen);
 			field_output_table["Z_B"].push_back(z100/100.);
-			field_output_table["T_B"].push_back(brgastro::drand(min_T,max_T,gen));
+			field_output_table["T_B"].push_back(IceBRG::drand(min_T,max_T,gen));
 			field_output_table["ODDS"].push_back(1);
 			field_output_table["e1"].push_back(0);
 			field_output_table["e2"].push_back(0);
@@ -307,15 +307,15 @@ int main( const int argc, const char *argv[] )
 			field_output_table["m"].push_back(0);
 			field_output_table["c2"].push_back(0);
 
-			double Mstel_kg = pow(10,brgastro::drand(min_lens_lmsun,max_lens_lmsun,gen))*brgastro::unitconv::Msuntokg;
+			double Mstel_kg = pow(10,IceBRG::drand(min_lens_lmsun,max_lens_lmsun,gen))*IceBRG::unitconv::Msuntokg;
 			field_output_table["Mstel_kg"].push_back(Mstel_kg);
 			field_output_table["Mstel_lo_kg"].push_back(Mstel_kg/2);
 			field_output_table["Mstel_hi_kg"].push_back(2*Mstel_kg);
 
-			field_output_table["MAG_i"].push_back(brgastro::drand(min_source_mag,max_source_mag,gen));
+			field_output_table["MAG_i"].push_back(IceBRG::drand(min_source_mag,max_source_mag,gen));
 			field_output_table["MAGERR_i"].push_back(1);
 			field_output_table["EXTINCTION_i"].push_back(0);
-			field_output_table["MAG_r"].push_back(brgastro::drand(min_source_mag,max_source_mag,gen));
+			field_output_table["MAG_r"].push_back(IceBRG::drand(min_source_mag,max_source_mag,gen));
 			field_output_table["MAGERR_r"].push_back(1);
 			field_output_table["EXTINCTION_r"].push_back(0);
 		}
@@ -325,7 +325,7 @@ int main( const int argc, const char *argv[] )
 		#pragma omp critical(output_mock_sources)
 		#endif
 		{
-			brgastro::print_table_map(source_output_file_name,field_output_table);
+			IceBRG::print_table_map(source_output_file_name,field_output_table);
 			std::cout << "Finished generating " << source_output_file_name << ".\n";
 		}
 

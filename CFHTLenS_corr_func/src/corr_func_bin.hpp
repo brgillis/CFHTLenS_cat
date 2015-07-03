@@ -28,21 +28,21 @@
 
 #include <boost/optional.hpp>
 
-#include "brg/vector/limit_vector.hpp"
-#include "brg/units/units.hpp"
+#include "IceBRG_main/vector/limit_vector.hpp"
+#include "IceBRG_main/units/units.hpp"
 
-#include "brg_physics/astro.h"
-#include "brg_physics/correlation_function_estimator.h"
-#include "brg_physics/lensing_correlation_function_estimator.h"
+#include "IceBRG_physics/astro.h"
+#include "IceBRG_physics/correlation_function_estimator.h"
+#include "IceBRG_physics/lensing_correlation_function_estimator.h"
 
-#include "brg_lensing/magnification/mag_correlation_function_estimator.h"
+#include "IceBRG_lensing/magnification/mag_correlation_function_estimator.h"
 
 /**
  *
  */
 struct corr_func_bin
 {
-	typedef std::vector<std::tuple<brgastro::angle_type,brgastro::angle_type,flt_type,flt_type>> pos_vec;
+	typedef std::vector<std::tuple<IceBRG::angle_type,IceBRG::angle_type,flt_type,flt_type>> pos_vec;
 	boost::optional<pos_vec> lens_positions;
 	const pos_vec * source_positions;
 	const pos_vec * mock_lens_positions;
@@ -73,20 +73,20 @@ struct corr_func_bin
 		octopole_2_corr_func_sum = array::Zero(size);
 	}
 
-	void initialize(const brgastro::limit_vector<brgastro::distance_type> & R_limits)
+	void initialize(const IceBRG::limit_vector<IceBRG::distance_type> & R_limits)
 	{
 		initialize(R_limits.num_bins());
 	}
 
-	void add_monopole(const brgastro::limit_vector<brgastro::distance_type> & phys_R_limits,
+	void add_monopole(const IceBRG::limit_vector<IceBRG::distance_type> & phys_R_limits,
 			const double & mean_z, const double & weight=1.)
 	{
-		brgastro::limit_vector<brgastro::angle_type> R_limits =
-				phys_R_limits.get_multiplied(brgastro::afd(mean_z));
+		IceBRG::limit_vector<IceBRG::angle_type> R_limits =
+				phys_R_limits.get_multiplied(IceBRG::afd(mean_z));
 
 		if(lensing_style==2)
 		{
-			brgastro::mag_correlation_function_estimator estimator(R_limits,*lens_positions,
+			IceBRG::mag_correlation_function_estimator estimator(R_limits,*lens_positions,
 				*source_positions,*mock_lens_positions,*mock_source_positions,z_buffer);
 
 			estimator.calculate();
@@ -100,7 +100,7 @@ struct corr_func_bin
 		}
 		else if(lensing_style==1)
 		{
-			brgastro::lensing_correlation_function_estimator estimator(R_limits,*lens_positions,
+			IceBRG::lensing_correlation_function_estimator estimator(R_limits,*lens_positions,
 				*source_positions,*mock_lens_positions,*mock_source_positions,z_buffer);
 
 			estimator.calculate();
@@ -114,7 +114,7 @@ struct corr_func_bin
 		}
 		else
 		{
-			brgastro::correlation_function_estimator estimator(R_limits,*lens_positions,
+			IceBRG::correlation_function_estimator estimator(R_limits,*lens_positions,
 				*source_positions,*mock_lens_positions,*mock_source_positions);
 
 			estimator.calculate();
@@ -128,14 +128,14 @@ struct corr_func_bin
 		}
 	}
 
-	void add_all(brgastro::limit_vector<brgastro::distance_type> phys_R_limits, const double & mean_z, const double & weight=1.)
+	void add_all(IceBRG::limit_vector<IceBRG::distance_type> phys_R_limits, const double & mean_z, const double & weight=1.)
 	{
-		brgastro::limit_vector<brgastro::angle_type> R_limits =
-				phys_R_limits.get_multiplied(brgastro::afd(mean_z));
+		IceBRG::limit_vector<IceBRG::angle_type> R_limits =
+				phys_R_limits.get_multiplied(IceBRG::afd(mean_z));
 
 		if(lensing_style==2)
 		{
-			brgastro::mag_correlation_function_estimator estimator(R_limits,*lens_positions,
+			IceBRG::mag_correlation_function_estimator estimator(R_limits,*lens_positions,
 				*source_positions,*mock_lens_positions,*mock_source_positions,z_buffer);
 
 			estimator.calculate();
@@ -157,7 +157,7 @@ struct corr_func_bin
 		}
 		else if(lensing_style==1)
 		{
-			brgastro::lensing_correlation_function_estimator estimator(R_limits,*lens_positions,
+			IceBRG::lensing_correlation_function_estimator estimator(R_limits,*lens_positions,
 				*source_positions,*mock_lens_positions,*mock_source_positions,z_buffer);
 
 			estimator.calculate();
@@ -179,7 +179,7 @@ struct corr_func_bin
 		}
 		else
 		{
-			brgastro::correlation_function_estimator estimator(R_limits,*lens_positions,
+			IceBRG::correlation_function_estimator estimator(R_limits,*lens_positions,
 				*source_positions,*mock_lens_positions,*mock_source_positions);
 
 			estimator.calculate();

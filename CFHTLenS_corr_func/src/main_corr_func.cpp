@@ -23,8 +23,6 @@
 
 \**********************************************************************/
 
-#include <brg/units/unit_conversions.hpp>
-#include <brg/units/unitconv_map.hpp>
 #include <fstream>
 #include <iostream>
 #include <tuple>
@@ -34,13 +32,15 @@
 
 #include <Eigen/Core>
 
-#include "brg/container/coerce.hpp"
-#include "brg/container/labeled_array.hpp"
-#include "brg/file_access/open_file.hpp"
-#include "brg/file_access/ascii_table_map.hpp"
-#include "brg/utility.hpp"
-#include "brg/vector/limit_vector.hpp"
-#include "brg_lensing/magnification/mag_global_values.h"
+#include "IceBRG_main/container/coerce.hpp"
+#include "IceBRG_main/container/labeled_array.hpp"
+#include "IceBRG_main/file_access/open_file.hpp"
+#include "IceBRG_main/file_access/ascii_table_map.hpp"
+#include "IceBRG_main/units/unit_conversions.hpp"
+#include "IceBRG_main/units/unitconv_map.hpp"
+#include "IceBRG_main/utility.hpp"
+#include "IceBRG_main/vector/limit_vector.hpp"
+#include "IceBRG_lensing/magnification/mag_global_values.h"
 
 #include "corr_func_bin.hpp"
 #include "corr_func_config.h"
@@ -51,8 +51,8 @@
 
 #define USE_FIELD_WEIGHTING
 
-#include "brg_physics/lensing_correlation_function_estimator.h"
-#include "brg_physics/correlation_function_estimator.h"
+#include "IceBRG_physics/lensing_correlation_function_estimator.h"
+#include "IceBRG_physics/correlation_function_estimator.h"
 
 // Magic values
 std::string data_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
@@ -69,15 +69,15 @@ const std::string lens_weight_file = data_directory + "field_lens_weights.dat";
 
 int main( const int argc, const char *argv[] )
 {
-	using namespace brgastro;
+	using namespace IceBRG;
 
 	// Get the configuration file from the command-line arguments
 	const corr_func_config config(argc,argv);
 
 	const short lensing_style = config.lensing_style;
 
-	flt_type source_z_min = brgastro::mag_z_min;
-	flt_type source_z_max = brgastro::mag_z_max;
+	flt_type source_z_min = IceBRG::mag_z_min;
+	flt_type source_z_max = IceBRG::mag_z_max;
 
 	if(!lensing_style)
 	{
@@ -117,22 +117,22 @@ int main( const int argc, const char *argv[] )
 
 	// Set up global data
 
-	auto R_lin_or_log = config.R_log ? brgastro::limit_vector<distance_type>::type::LOG : brgastro::limit_vector<distance_type>::type::LINEAR;
-	brgastro::limit_vector<distance_type> R_limits(R_lin_or_log, config.R_min,config.R_max,config.R_bins);
+	auto R_lin_or_log = config.R_log ? IceBRG::limit_vector<distance_type>::type::LOG : IceBRG::limit_vector<distance_type>::type::LINEAR;
+	IceBRG::limit_vector<distance_type> R_limits(R_lin_or_log, config.R_min,config.R_max,config.R_bins);
 
-	auto z_lin_or_log = config.z_log ? brgastro::limit_vector<flt_type>::type::LOG : brgastro::limit_vector<flt_type>::type::LINEAR;
-	brgastro::limit_vector<flt_type> lens_z_limits(z_lin_or_log, config.z_min,config.z_max,config.z_bins);
+	auto z_lin_or_log = config.z_log ? IceBRG::limit_vector<flt_type>::type::LOG : IceBRG::limit_vector<flt_type>::type::LINEAR;
+	IceBRG::limit_vector<flt_type> lens_z_limits(z_lin_or_log, config.z_min,config.z_max,config.z_bins);
 
-	auto m_lin_or_log = config.m_log ? brgastro::limit_vector<mass_type>::type::LOG : brgastro::limit_vector<mass_type>::type::LINEAR;
-	brgastro::limit_vector<mass_type> lens_m_limits(m_lin_or_log, config.m_min,config.m_max,config.m_bins);
+	auto m_lin_or_log = config.m_log ? IceBRG::limit_vector<mass_type>::type::LOG : IceBRG::limit_vector<mass_type>::type::LINEAR;
+	IceBRG::limit_vector<mass_type> lens_m_limits(m_lin_or_log, config.m_min,config.m_max,config.m_bins);
 
-	auto mag_lin_or_log = config.mag_log ? brgastro::limit_vector<flt_type>::type::LOG : brgastro::limit_vector<flt_type>::type::LINEAR;
-	brgastro::limit_vector<flt_type> lens_mag_limits(mag_lin_or_log, config.mag_min,config.mag_max,config.mag_bins);
+	auto mag_lin_or_log = config.mag_log ? IceBRG::limit_vector<flt_type>::type::LOG : IceBRG::limit_vector<flt_type>::type::LINEAR;
+	IceBRG::limit_vector<flt_type> lens_mag_limits(mag_lin_or_log, config.mag_min,config.mag_max,config.mag_bins);
 
 
 	// Open and read in the fields list
 	std::ifstream fi;
-	brgastro::open_file_input(fi,fields_list);
+	IceBRG::open_file_input(fi,fields_list);
 
 	std::vector<std::string> field_names;
 	std::string field_name;
@@ -146,11 +146,11 @@ int main( const int argc, const char *argv[] )
 
 	#ifdef USE_FIELD_WEIGHTING
 	// Load the lens weight table
-	const brgastro::labeled_array<flt_type> lens_weight_table(lens_weight_file);
-	auto lens_weight_z_limits_builder = brgastro::coerce<std::vector<flt_type>>(lens_weight_table.at_label("z_bin_min"));
+	const IceBRG::labeled_array<flt_type> lens_weight_table(lens_weight_file);
+	auto lens_weight_z_limits_builder = IceBRG::coerce<std::vector<flt_type>>(lens_weight_table.at_label("z_bin_min"));
 	lens_weight_z_limits_builder.push_back(2*lens_weight_z_limits_builder.back()-
 										   lens_weight_z_limits_builder.at(lens_weight_z_limits_builder.size()-2));
-	const brgastro::limit_vector<flt_type> lens_weight_z_limits(std::move(lens_weight_z_limits_builder));
+	const IceBRG::limit_vector<flt_type> lens_weight_z_limits(std::move(lens_weight_z_limits_builder));
 	#endif
 
 	typedef std::vector<std::tuple<angle_type,angle_type,flt_type,flt_type>> pos_vec;
@@ -164,7 +164,7 @@ int main( const int argc, const char *argv[] )
 
 	std::vector<std::vector<std::vector<corr_func_bin>>> corr_func_bin_sums;
 
-	brgastro::make_vector_value(corr_func_bin_sums,
+	IceBRG::make_vector_value(corr_func_bin_sums,
 								template_bin,
 								lens_z_limits.num_bins(),
 								lens_m_limits.num_bins(),
@@ -184,7 +184,7 @@ int main( const int argc, const char *argv[] )
 	{
 		std::vector<std::vector<std::vector<corr_func_bin>>> corr_func_bins;
 
-		brgastro::make_vector_value(corr_func_bins,
+		IceBRG::make_vector_value(corr_func_bins,
 									template_bin,
 									lens_z_limits.num_bins(),
 									lens_m_limits.num_bins(),
@@ -210,7 +210,7 @@ int main( const int argc, const char *argv[] )
 		std::string lens_input_name = ss.str();
 
 		{
-			const brgastro::labeled_array<flt_type> gals(lens_input_name);
+			const IceBRG::labeled_array<flt_type> gals(lens_input_name);
 
 			int z_col = gals.get_index_for_label("Z_B");
 			int mag_col = gals.get_index_for_label("MAG_r");
@@ -239,7 +239,7 @@ int main( const int argc, const char *argv[] )
 		std::string source_input_name = ss.str();
 
 		{
-			const brgastro::labeled_array<flt_type> gals(source_input_name);
+			const IceBRG::labeled_array<flt_type> gals(source_input_name);
 
 			int z_col = gals.get_index_for_label("Z_B");
 			int mag_col = gals.get_index_for_label("MAG_r");
@@ -251,7 +251,7 @@ int main( const int argc, const char *argv[] )
 				const flt_type & z = gal.at(z_col);
 				if((z<source_z_min)||(z>source_z_max)) continue;
 				const flt_type & mag = gal.at(mag_col);
-				if((mag<brgastro::mag_m_min)||(mag>brgastro::mag_m_max)) continue;
+				if((mag<IceBRG::mag_m_min)||(mag>IceBRG::mag_m_max)) continue;
 
 				auto pos = std::make_tuple(gal.at(ra_col)*rad,gal.at(dec_col)*rad,z,mag);
 
@@ -272,7 +272,7 @@ int main( const int argc, const char *argv[] )
 		std::string mock_lens_input_name = ss.str();
 
 		{
-			const brgastro::labeled_array<flt_type> gals(mock_lens_input_name);
+			const IceBRG::labeled_array<flt_type> gals(mock_lens_input_name);
 
 			int z_col = gals.get_index_for_label("Z_B");
 			int mag_col = gals.get_index_for_label("MAG_r");
@@ -295,7 +295,7 @@ int main( const int argc, const char *argv[] )
 		std::string mock_source_input_name = ss.str();
 
 		{
-			const brgastro::labeled_array<flt_type> gals(mock_source_input_name);
+			const IceBRG::labeled_array<flt_type> gals(mock_source_input_name);
 
 			int z_col = gals.get_index_for_label("Z_B");
 			int mag_col = gals.get_index_for_label("MAG_r");
@@ -307,7 +307,7 @@ int main( const int argc, const char *argv[] )
 				const flt_type & z = gal.at(z_col);
 				if((z<source_z_min)||(z>source_z_max)) continue;
 				const flt_type & mag = gal.at(mag_col);
-				if((mag<brgastro::mag_m_min)||(mag>brgastro::mag_m_max)) continue;
+				if((mag<IceBRG::mag_m_min)||(mag>IceBRG::mag_m_max)) continue;
 
 				auto pos = std::make_tuple(gal.at(ra_col)*rad,gal.at(dec_col)*rad,z,mag);
 
@@ -399,7 +399,7 @@ int main( const int argc, const char *argv[] )
 
 
 	// Set up the output table
-	brgastro::labeled_array<flt_type> output_table;
+	IceBRG::labeled_array<flt_type> output_table;
 	#ifdef LIMIT_TO_MONOPOLE
 	std::vector<std::string> labels = {"R_bin_mid_kpc", "z_bin_mid", "m_bin_mid_Msun", "mag_bin_mid", "xi_mp"};
 	#else
@@ -451,10 +451,10 @@ int main( const int argc, const char *argv[] )
 		}
 	}
 
-	brgastro::unitconv_map u_map;
+	IceBRG::unitconv_map u_map;
 
-	u_map["R_bin_mid_kpc"] = brgastro::unitconv::kpctom;
-	u_map["m_bin_mid_Msun"] = brgastro::unitconv::Msuntokg;
+	u_map["R_bin_mid_kpc"] = IceBRG::unitconv::kpctom;
+	u_map["m_bin_mid_Msun"] = IceBRG::unitconv::Msuntokg;
 
 	output_table.apply_unitconvs(u_map);
 

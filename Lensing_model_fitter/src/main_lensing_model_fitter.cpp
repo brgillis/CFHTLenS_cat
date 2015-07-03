@@ -30,13 +30,13 @@
 
 #include <boost/bimap.hpp>
 
-#include "brg/container/labeled_array.hpp"
-#include "brg/math/solvers/solver_classes.hpp"
-#include "brg/units/unit_conversions.hpp"
-#include "brg/units/unitconv_map.hpp"
+#include "IceBRG_main/container/labeled_array.hpp"
+#include "IceBRG_main/math/solvers/solver_classes.hpp"
+#include "IceBRG_main/units/unit_conversions.hpp"
+#include "IceBRG_main/units/unitconv_map.hpp"
 
-#include "brg_lensing/lensing_tNFW_profile.h"
-#include "brg_lensing/lensing_tNFW_caches.h"
+#include "IceBRG_lensing/lensing_tNFW_profile.h"
+#include "IceBRG_lensing/lensing_tNFW_caches.h"
 
 #include "common.h"
 
@@ -50,9 +50,9 @@ constexpr flt_type init_frac_in_groups = 0.1;
 constexpr flt_type min_frac_in_groups = 0.;
 constexpr flt_type max_frac_in_groups = 1.;
 
-const brgastro::mass_type max_group_mass = 1e16*brgastro::unitconv::Msuntokg*brgastro::kg;
+const IceBRG::mass_type max_group_mass = 1e16*IceBRG::unitconv::Msuntokg*IceBRG::kg;
 
-constexpr flt_type max_Sigma_offset = 50 * brgastro::unitconv::Msuntokg/(brgastro::unitconv::pctom*brgastro::unitconv::pctom);
+constexpr flt_type max_Sigma_offset = 50 * IceBRG::unitconv::Msuntokg/(IceBRG::unitconv::pctom*IceBRG::unitconv::pctom);
 constexpr flt_type min_Sigma_offset = -max_Sigma_offset;
 
 constexpr int_type MCMC_max_steps = 10000;
@@ -70,7 +70,7 @@ constexpr const char * group_sig_cache_name = "tNFW_group_Delta_Sigma_cache.dat"
 #endif
 
 typedef Eigen::Array<flt_type,num_params,1> array_type;
-typedef brgastro::MCMC_solver<flt_type,num_params> solver_type;
+typedef IceBRG::MCMC_solver<flt_type,num_params> solver_type;
 
 /**
  * TODO (description)
@@ -80,7 +80,7 @@ typedef brgastro::MCMC_solver<flt_type,num_params> solver_type;
  */
 int_type main( const int_type argc, const char *argv[] )
 {
-	using namespace brgastro;
+	using namespace IceBRG;
 
 	// Check that we got a filename in the command line
 	if(argc<=2)
@@ -106,7 +106,7 @@ int_type main( const int_type argc, const char *argv[] )
 	flt_type fitting_R_min = 0;
 	if(argc>=5)
 	{
-		fitting_R_min = boost::lexical_cast<flt_type>(argv[4])*brgastro::unitconv::kpctom;
+		fitting_R_min = boost::lexical_cast<flt_type>(argv[4])*IceBRG::unitconv::kpctom;
 	}
 
 	// Output caches
@@ -184,7 +184,7 @@ int_type main( const int_type argc, const char *argv[] )
 	}
 
 	// Set up the labels for the results labeled_array
-	brgastro::labeled_array<flt_type> results;
+	IceBRG::labeled_array<flt_type> results;
 
 	std::vector<std::string> result_header;
 	result_header.push_back("z_min");
@@ -225,15 +225,15 @@ int_type main( const int_type argc, const char *argv[] )
 	// Set up the models we'll use
 	const auto dS_t_model = [] (const flt_type & sat_m, const flt_type & z, const flt_type & group_m, const flt_type & sat_frac,
 		const flt_type & R) {
-		flt_type one_halo_term = value_of(brgastro::lensing_tNFW_profile(sat_m*kg,z).Delta_Sigma(R*m));
-		flt_type offset_halo_term = value_of(sat_frac*brgastro::lensing_tNFW_profile(group_m*kg,z).quick_group_Delta_Sigma(R*m));
+		flt_type one_halo_term = value_of(IceBRG::lensing_tNFW_profile(sat_m*kg,z).Delta_Sigma(R*m));
+		flt_type offset_halo_term = value_of(sat_frac*IceBRG::lensing_tNFW_profile(group_m*kg,z).quick_group_Delta_Sigma(R*m));
 
 		return one_halo_term+offset_halo_term;
 	};
 	const auto Sigma_model = [] (const flt_type & sat_m, const flt_type & z, const flt_type & group_m, const flt_type & sat_frac,
 		const flt_type & Sigma_offset, const flt_type & R) {
-		flt_type one_halo_term = value_of(brgastro::lensing_tNFW_profile(sat_m*kg,z).Sigma(R*m));
-		flt_type offset_halo_term = value_of(sat_frac*brgastro::lensing_tNFW_profile(group_m*kg,z).quick_group_Sigma(R*m));
+		flt_type one_halo_term = value_of(IceBRG::lensing_tNFW_profile(sat_m*kg,z).Sigma(R*m));
+		flt_type offset_halo_term = value_of(sat_frac*IceBRG::lensing_tNFW_profile(group_m*kg,z).quick_group_Sigma(R*m));
 
 		return one_halo_term+offset_halo_term+Sigma_offset;
 	};
@@ -379,9 +379,9 @@ int_type main( const int_type argc, const char *argv[] )
 				const int_type & m_i = m_bounds.left.at(mb);
 
 				best_fit_params.at(z_i).at(m_i).reserve(3);
-				best_fit_params.at(z_i).at(m_i).push_back(brgastro::coerce<std::vector<flt_type>>(best_shear_in_params));
-				best_fit_params.at(z_i).at(m_i).push_back(brgastro::coerce<std::vector<flt_type>>(best_magf_in_params));
-				best_fit_params.at(z_i).at(m_i).push_back(brgastro::coerce<std::vector<flt_type>>(best_overall_in_params));
+				best_fit_params.at(z_i).at(m_i).push_back(IceBRG::coerce<std::vector<flt_type>>(best_shear_in_params));
+				best_fit_params.at(z_i).at(m_i).push_back(IceBRG::coerce<std::vector<flt_type>>(best_magf_in_params));
+				best_fit_params.at(z_i).at(m_i).push_back(IceBRG::coerce<std::vector<flt_type>>(best_overall_in_params));
 			}
 		}
 	}

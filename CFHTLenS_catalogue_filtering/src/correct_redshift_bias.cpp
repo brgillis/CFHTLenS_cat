@@ -28,23 +28,23 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "brg/math/interpolator/interpolator.h"
-#include "brg/file_access/ascii_table_map.hpp"
+#include "IceBRG_main/math/interpolator/interpolator.h"
+#include "IceBRG_main/file_access/ascii_table_map.hpp"
 
 #include "correct_redshift_bias.h"
 
 const std::string z_cal_filename = "/disk2/brg/git/CFHTLenS_cat/Data/redshift_calibration_table.dat";
 
-brgastro::interpolator redshift_calibrator_wrapper::redshift_calibration_interpolator = brgastro::interpolator();
+IceBRG::interpolator redshift_calibrator_wrapper::redshift_calibration_interpolator = IceBRG::interpolator();
 
 void correct_redshift_bias( std::vector<std::string> & redshifts)
 {
 	// Check if we need to set up the interpolator
 	if(redshift_calibrator_wrapper::redshift_calibration_interpolator.empty())
 	{
-		redshift_calibrator_wrapper::redshift_calibration_interpolator.set_interpolation_type(brgastro::interpolator::SPLINE);
+		redshift_calibrator_wrapper::redshift_calibration_interpolator.set_interpolation_type(IceBRG::interpolator::SPLINE);
 
-		auto z_cal_map = brgastro::load_table_map<double>(z_cal_filename);
+		auto z_cal_map = IceBRG::load_table_map<double>(z_cal_filename);
 
 		for(unsigned i=0; i<z_cal_map.at("bin_mid").size(); ++i)
 		{

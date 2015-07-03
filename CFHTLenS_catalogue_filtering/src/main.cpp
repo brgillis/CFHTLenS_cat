@@ -23,7 +23,7 @@
 
 \**********************************************************************/
 
-#include <brg/units/unit_conversions.hpp>
+#include "IceBRG_main/units/unit_conversions.hpp"
 #include <cmath>
 #include <iostream>
 #include <fstream>
@@ -31,10 +31,10 @@
 #include <sstream>
 #include <string>
 
-#include "brg/container/labeled_array.hpp"
-#include "brg/error_handling.h"
-#include "brg/file_access/binary_archive.hpp"
-#include "brg/file_access/open_file.hpp"
+#include "IceBRG_main/container/labeled_array.hpp"
+#include "IceBRG_main/error_handling.h"
+#include "IceBRG_main/file_access/binary_archive.hpp"
+#include "IceBRG_main/file_access/open_file.hpp"
 
 #include "correct_redshift_bias.h"
 #include "get_filtered_indices.h"
@@ -50,7 +50,7 @@ int main( const int argc, const char *argv[] )
 
 	// Open and read in the fields list
 	std::ifstream fi;
-	brgastro::open_file_input(fi,fields_list);
+	IceBRG::open_file_input(fi,fields_list);
 
 	std::vector<std::string> field_names;
 
@@ -92,7 +92,7 @@ int main( const int argc, const char *argv[] )
 
 		try
 		{
-			good_pixels = brgastro::binary_load<std::vector<std::vector<bool>>>(
+			good_pixels = IceBRG::binary_load<std::vector<std::vector<bool>>>(
 				lens_pixel_map_file_name);
 		}
 		catch( const std::exception &e )
@@ -114,14 +114,14 @@ int main( const int argc, const char *argv[] )
 #endif
 
 		// Load in the input file
-		brgastro::labeled_array<double> table;
+		IceBRG::labeled_array<double> table;
 		try
 		{
 			table.load(input_file_name); // TODO Check we're properly loading
 		}
 		catch(const std::runtime_error &e)
 		{
-			brgastro::handle_error_message(e.what());
+			IceBRG::handle_error_message(e.what());
 			continue;
 		}
 
@@ -132,7 +132,7 @@ int main( const int argc, const char *argv[] )
 		std::vector<size_t> good_indices(get_good_lenses(table,good_pixels));
 
 		// Set up the header columns vector for the ones we want to output
-		brgastro::header_t lens_header_columns;
+		IceBRG::header_t lens_header_columns;
 		lens_header_columns.push_back("SeqNr");
 		lens_header_columns.push_back("ALPHA_J2000");
 		lens_header_columns.push_back("DELTA_J2000");
@@ -154,16 +154,16 @@ int main( const int argc, const char *argv[] )
 
 		// Set up a map of the conversions to apply
 		std::map<std::string,std::function<double(double)>> lens_conversions;
-		auto deg_to_rad = [] (double theta) {return theta*brgastro::unitconv::degtorad;};
+		auto deg_to_rad = [] (double theta) {return theta*IceBRG::unitconv::degtorad;};
 		auto l10_Msun_to_kg = [] (double l10_Msun)
-				{return std::pow(10.,l10_Msun)*brgastro::unitconv::Msuntokg;};
+				{return std::pow(10.,l10_Msun)*IceBRG::unitconv::Msuntokg;};
 		lens_conversions["ALPHA_J2000"] = deg_to_rad;
 		lens_conversions["DELTA_J2000"] = deg_to_rad;
 		lens_conversions["LP_log10_SM_MED"] = l10_Msun_to_kg;
 		lens_conversions["LP_log10_SM_INF"] = l10_Msun_to_kg;
 		lens_conversions["LP_log10_SM_SUP"] = l10_Msun_to_kg;
 
-		brgastro::labeled_array<double> output_map(make_output_map(table,good_indices,lens_header_columns,
+		IceBRG::labeled_array<double> output_map(make_output_map(table,good_indices,lens_header_columns,
 				lens_conversions));
 
 		// Rename columns we've applied unit convesions to
@@ -182,7 +182,7 @@ int main( const int argc, const char *argv[] )
 		good_indices = get_good_sources(table, good_pixels);
 
 		// Set up the header columns vector for the ones we want to output
-		brgastro::header_t source_header_columns;
+		IceBRG::header_t source_header_columns;
 		source_header_columns.push_back("SeqNr");
 		source_header_columns.push_back("ALPHA_J2000");
 		source_header_columns.push_back("DELTA_J2000");

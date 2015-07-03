@@ -27,9 +27,6 @@
 #ifndef _LMF_COMMON_H_INCLUDED_
 #define _LMF_COMMON_H_INCLUDED_
 
-typedef double flt_type;
-typedef int int_type;
-
 constexpr const char * R_min_label = "R_min";
 constexpr const char * R_max_label = "R_max";
 constexpr const char * m_min_label = "m_min";

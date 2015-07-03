@@ -35,11 +35,11 @@
 #include <string>
 #include <vector>
 
-#include "brg/container/labeled_array.hpp"
-#include "brg/container/table_typedefs.hpp"
+#include "IceBRG_main/container/labeled_array.hpp"
+#include "IceBRG_main/container/table_typedefs.hpp"
 
-brgastro::labeled_array<double> make_output_map(const brgastro::labeled_array<double> & map,
-		const std::vector<size_t> & good_indices, const brgastro::header_t & header_labels,
+IceBRG::labeled_array<double> make_output_map(const IceBRG::labeled_array<double> & map,
+		const std::vector<size_t> & good_indices, const IceBRG::header_t & header_labels,
 		const std::map<std::string,std::function<double(double)>> & conversions);
 
 

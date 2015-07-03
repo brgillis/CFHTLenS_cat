@@ -31,17 +31,17 @@
 
 #include <vector>
 
-#include "brg/container/labeled_array.hpp"
-#include "brg/container/table_typedefs.hpp"
+#include "IceBRG_main/container/labeled_array.hpp"
+#include "IceBRG_main/container/table_typedefs.hpp"
 
-void move_y_column_to_i(brgastro::labeled_array<double> & map);
+void move_y_column_to_i(IceBRG::labeled_array<double> & map);
 
-std::vector<size_t> get_good_lenses(const brgastro::labeled_array<double> & map, const std::vector<std::vector<bool>> good_pixels);
-std::vector<size_t> get_good_sources(const brgastro::labeled_array<double> & map, const std::vector<std::vector<bool>> good_pixels);
+std::vector<size_t> get_good_lenses(const IceBRG::labeled_array<double> & map, const std::vector<std::vector<bool>> good_pixels);
+std::vector<size_t> get_good_sources(const IceBRG::labeled_array<double> & map, const std::vector<std::vector<bool>> good_pixels);
 
-bool galaxy_passes_lens_filter(const brgastro::labeled_array<double>::const_row_reference & galaxy);
-bool galaxy_passes_source_filter(const brgastro::labeled_array<double>::const_row_reference & galaxy);
-bool galaxy_passes_global_filter(const brgastro::labeled_array<double>::const_row_reference & galaxy);
+bool galaxy_passes_lens_filter(const IceBRG::labeled_array<double>::const_row_reference & galaxy);
+bool galaxy_passes_source_filter(const IceBRG::labeled_array<double>::const_row_reference & galaxy);
+bool galaxy_passes_global_filter(const IceBRG::labeled_array<double>::const_row_reference & galaxy);
 
 
 

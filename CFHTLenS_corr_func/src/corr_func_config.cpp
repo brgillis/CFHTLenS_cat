@@ -30,16 +30,16 @@
 #include <string>
 #include <vector>
 
-#include "brg/file_access/open_file.hpp"
-#include "brg/file_access/trim_comments.hpp"
-#include "brg/lexical_cast.hpp"
+#include "IceBRG_main/file_access/open_file.hpp"
+#include "IceBRG_main/file_access/trim_comments.hpp"
+#include "IceBRG_main/lexical_cast.hpp"
 
 #include "corr_func_config.h"
 
 corr_func_config::corr_func_config( const int argc, const char *argv[] )
 {
-	using namespace brgastro;
-	using namespace brgastro::unitconv;
+	using namespace IceBRG;
+	using namespace IceBRG::unitconv;
 
 	if(argc<=1)
 	{
@@ -73,7 +73,7 @@ corr_func_config::corr_func_config( const int argc, const char *argv[] )
 		// Open the config file
 		std::string filename(argv[1]);
 		std::ifstream fi;
-		brgastro::open_file_input(fi,filename);
+		IceBRG::open_file_input(fi,filename);
 
 		// Set up a vector to store config values in
 		std::vector<std::string> config_value_strings(num_config_params);
@@ -83,7 +83,7 @@ corr_func_config::corr_func_config( const int argc, const char *argv[] )
 			std::string line_buffer, word_buffer;
 			std::istringstream line_data_stream;
 
-			brgastro::trim_comments_all_at_top(fi);
+			IceBRG::trim_comments_all_at_top(fi);
 
 			do
 			{
@@ -106,25 +106,25 @@ corr_func_config::corr_func_config( const int argc, const char *argv[] )
 
 		// Load in the values
 		size_t i=0;
-		R_min = brgastro::min_cast<double>(config_value_strings.at(i++))*kpctom*m;
-		R_max = brgastro::max_cast<double>(config_value_strings.at(i++))*kpctom*m;
+		R_min = IceBRG::min_cast<double>(config_value_strings.at(i++))*kpctom*m;
+		R_max = IceBRG::max_cast<double>(config_value_strings.at(i++))*kpctom*m;
 		R_bins = boost::lexical_cast<size_t>(config_value_strings.at(i++));
-		R_log = brgastro::bool_cast(config_value_strings.at(i++));
+		R_log = IceBRG::bool_cast(config_value_strings.at(i++));
 
-		m_min = brgastro::min_cast<double>(config_value_strings.at(i++))*Msuntokg*kg;
-		m_max = brgastro::max_cast<double>(config_value_strings.at(i++))*Msuntokg*kg;
+		m_min = IceBRG::min_cast<double>(config_value_strings.at(i++))*Msuntokg*kg;
+		m_max = IceBRG::max_cast<double>(config_value_strings.at(i++))*Msuntokg*kg;
 		m_bins = boost::lexical_cast<size_t>(config_value_strings.at(i++));
-		m_log = brgastro::bool_cast(config_value_strings.at(i++));
+		m_log = IceBRG::bool_cast(config_value_strings.at(i++));
 
-		z_min = brgastro::min_cast<double>(config_value_strings.at(i++));
-		z_max = brgastro::max_cast<double>(config_value_strings.at(i++));
+		z_min = IceBRG::min_cast<double>(config_value_strings.at(i++));
+		z_max = IceBRG::max_cast<double>(config_value_strings.at(i++));
 		z_bins = boost::lexical_cast<size_t>(config_value_strings.at(i++));
-		z_log = brgastro::bool_cast(config_value_strings.at(i++));
+		z_log = IceBRG::bool_cast(config_value_strings.at(i++));
 
-		mag_min = brgastro::min_cast<double>(config_value_strings.at(i++));
-		mag_max = brgastro::max_cast<double>(config_value_strings.at(i++));
+		mag_min = IceBRG::min_cast<double>(config_value_strings.at(i++));
+		mag_max = IceBRG::max_cast<double>(config_value_strings.at(i++));
 		mag_bins = boost::lexical_cast<size_t>(config_value_strings.at(i++));
-		mag_log = brgastro::bool_cast(config_value_strings.at(i++));
+		mag_log = IceBRG::bool_cast(config_value_strings.at(i++));
 
 		z_buffer = boost::lexical_cast<double>(config_value_strings.at(i++));
 

@@ -30,8 +30,8 @@
 #include <cassert>
 #include <vector>
 
-#include "brg/container/labeled_array.hpp"
-#include "brg/math/misc_math.hpp"
+#include "IceBRG_main/container/labeled_array.hpp"
+#include "IceBRG_main/math/misc_math.hpp"
 
 #include "common.h"
 #include "fitting_bin.hpp"
@@ -61,7 +61,7 @@ public:
 	lensing_fitting_bin()
 	{
 	}
-	lensing_fitting_bin(const brgastro::labeled_array<flt_type>::row_reference & row)
+	lensing_fitting_bin(const IceBRG::labeled_array<flt_type>::row_reference & row)
 	:	_z_min_(row.at_label(z_min_label)),
 		_z_max_(row.at_label(z_max_label)),
 		_m_min_(row.at_label(m_min_label)),
@@ -78,7 +78,7 @@ public:
 
 	// Set/insert data and bounds
 #if(1)
-	void set_bounds(const brgastro::labeled_array<flt_type>::row_reference & row)
+	void set_bounds(const IceBRG::labeled_array<flt_type>::row_reference & row)
 	{
 		_z_min_ = row.at_label(z_min_label);
 		_z_max_ = row.at_label(z_max_label);
@@ -98,7 +98,7 @@ public:
 		return;
 	}
 
-	void insert(const brgastro::labeled_array<flt_type>::row_reference & row)
+	void insert(const IceBRG::labeled_array<flt_type>::row_reference & row)
 	{
 		assert(_z_min_==row.at_label(z_min_label));
 		assert(_z_max_==row.at_label(z_max_label));
@@ -128,8 +128,8 @@ public:
 
 	const flt_type & Sigma_crit() const { return _Sigma_crit_; }
 
-	const flt_type z_mid() const { return (_z_min_+_z_max_)/2;}
-	const flt_type m_mid() const { return (_m_min_+_m_max_)/2;}
+	flt_type z_mid() const { return (_z_min_+_z_max_)/2;}
+	flt_type m_mid() const { return (_m_min_+_m_max_)/2;}
 
 #endif
 
@@ -151,7 +151,7 @@ public:
 
 		for( const auto & bin : shear_fitting_bins )
 		{
-			chi_squared += brgastro::square( (bin.y_mean-f(bin.x))/bin.y_stderr );
+			chi_squared += IceBRG::square( (bin.y_mean-f(bin.x))/bin.y_stderr );
 		}
 
 		return chi_squared;
@@ -164,7 +164,7 @@ public:
 
 		for( const auto & bin : magf_fitting_bins )
 		{
-			chi_squared += brgastro::square( (bin.y_mean-f(bin.x))/bin.y_stderr );
+			chi_squared += IceBRG::square( (bin.y_mean-f(bin.x))/bin.y_stderr );
 		}
 
 		return chi_squared;

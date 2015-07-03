@@ -31,15 +31,15 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "brg/container/table_typedefs.hpp"
+#include "IceBRG_main/container/table_typedefs.hpp"
 
 #include "make_output_map.h"
 
-brgastro::labeled_array<double> make_output_map(const brgastro::labeled_array<double> & map,
-													const std::vector<size_t> & good_indices, const brgastro::header_t & header_labels,
+IceBRG::labeled_array<double> make_output_map(const IceBRG::labeled_array<double> & map,
+													const std::vector<size_t> & good_indices, const IceBRG::header_t & header_labels,
 													const std::map<std::string,std::function<double(double)>> & conversions)
 {
-	brgastro::labeled_array<double> result_map;
+	IceBRG::labeled_array<double> result_map;
 	result_map.set_labels(header_labels);
 
 	size_t num_new_cols = header_labels.size();

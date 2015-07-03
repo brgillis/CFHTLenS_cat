@@ -31,11 +31,11 @@
 #include <string>
 #include <vector>
 
-#include "brg/math/interpolator/interpolator.h"
+#include "IceBRG_main/math/interpolator/interpolator.h"
 
 struct redshift_calibrator_wrapper
 {
-	static brgastro::interpolator redshift_calibration_interpolator;
+	static IceBRG::interpolator redshift_calibration_interpolator;
 };
 
 void correct_redshift_bias( std::vector<std::string> & redshifts);

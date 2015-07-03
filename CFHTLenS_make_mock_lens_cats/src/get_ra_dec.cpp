@@ -30,10 +30,10 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "brg/call_program.hpp"
+#include "IceBRG_main/call_program.hpp"
 
 #include "get_ra_dec.h"
-#include <brg/file_access/ascii_table.hpp>
+#include "IceBRG_main/file_access/ascii_table.hpp"
 
 const std::string data_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
 const std::string mask_directory = data_directory + "masks/";
@@ -54,7 +54,7 @@ std::vector<std::pair<std::pair<double,double>,std::pair<double,double>>>
 
 	// Set up the list of pairs
 	std::ofstream out;
-	brgastro::open_file(out,list_file_name);
+	IceBRG::open_file(out,list_file_name);
 	out.precision(10);
 	for(const auto & pair : xp_yp)
 	{
@@ -67,12 +67,12 @@ std::vector<std::pair<std::pair<double,double>,std::pair<double,double>>>
 			" @" + list_file_name;
 
 	// Call the program
-	std::stringstream output(brgastro::exec((get_ra_dec_command + " " + args).c_str()));
+	std::stringstream output(IceBRG::exec((get_ra_dec_command + " " + args).c_str()));
 
-	const auto result_table = brgastro::load_table<std::string>(output);
+	const auto result_table = IceBRG::load_table<std::string>(output);
 
 	// Delete the temp files
-	brgastro::call_program("/bin/rm", 1, "-f",list_file_name.c_str());
+	IceBRG::call_program("/bin/rm", 1, "-f",list_file_name.c_str());
 
 	std::vector<std::pair<std::pair<double,double>,std::pair<double,double>>> result;
 
