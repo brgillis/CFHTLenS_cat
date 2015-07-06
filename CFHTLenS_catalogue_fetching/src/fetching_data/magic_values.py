@@ -23,6 +23,8 @@
     
 """
 
+full_tables_path = "full_tables/"
+
 base_good_fields_filename = "good_fields_list.txt"
 base_bad_fields_filename = "bad_fields_list.txt"
 base_all_fields_filename = "fields_list.txt"

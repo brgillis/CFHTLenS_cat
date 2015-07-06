@@ -49,6 +49,7 @@
 #include "IceBRG_lensing/source_galaxy.h"
 
 #include "IceBRG_physics/astro.h"
+#include "IceBRG_physics/astro_caches.h"
 #include "IceBRG_physics/sky_obj/galaxy.h"
 
 #include "get_data_directory.hpp"
@@ -141,6 +142,7 @@ int main( const int argc, const char *argv[] )
 	IceBRG::mag_weight_integral_cache().get(0.);
 	IceBRG::mag_signal_integral_cache().get(0.);
 	#endif
+	IceBRG::add_cache().get(0.,0.);
 
 	#ifdef USE_CALIBRATION_LENSES
 	// Load the lens weight table

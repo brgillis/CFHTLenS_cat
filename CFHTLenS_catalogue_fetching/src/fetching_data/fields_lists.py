@@ -68,4 +68,4 @@ def get_bad_fields(use_all_fields=False):
         
     
 def get_all_fields(use_all_fields=False):
-    return get_good_fields(use_all_fields) + get_bad_fields(use_all_fields)
+    return get_good_fields(use_all_fields) + "\n" + get_bad_fields(use_all_fields)
