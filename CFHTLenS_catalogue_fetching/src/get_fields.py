@@ -6,7 +6,7 @@
 
 	---------------------------------------------------------------------
 
-	Copyright (C) 2014  Bryan R. Gillis
+	Copyright (C) 2014, 2015  Bryan R. Gillis
 
 	This program is free software: you can redistribute it and/or modify
  	it under the terms of the GNU General Public License as published by
@@ -32,9 +32,10 @@ from fetching_data.query import *
 
 import fetching_data.magic_values as mv
 
-data_table_path = "/disk2/brg/git/CFHTLenS_cat/Data/full_tables/"
-
 def main(argv):
+    """ TODO Docstring for main.
+    
+    """
     
     # Check if we've passed an argument. If so, this will be the data directory to use
     if(len(argv)>=2):
@@ -73,7 +74,17 @@ def main(argv):
     print("Wrote bad fields list to " + bad_fields_filename + ".")
     with open(all_fields_filename,'w') as fgood:
         fgood.write(get_all_fields(use_all_fields=use_all_fields))
-    print("Wrote full fields list to " + all_fields_filename + ".")
+    print("Wrote full fields list to " + all_fields_filename + ".\n")
+    
+    # Check if there's a third command-line argument, which might tell us to stop here
+    if(len(argv)>=4):
+        if((argv[3]=="False") or (argv[3]=="false") or (argv[2]=="0")):
+            print("Done!")
+            print("To also fetch fields, pass True (or nothing) as the third command-line argument.")
+            return
+        else:
+            print("Fetching fields now. To only regenerate fields lists, pass False as the third")
+            print("command-line argument.\n")
     
     # Initialize dictionary
     fields = {};
@@ -110,16 +121,15 @@ def main(argv):
         my_filter = field_and_filter[1]
         
         # Set up the query
-        query = query_base.replace(mv.query_field_replace_tag,field).replace(mv.query_i_or_y_replace_tag,filter).replace("=","%3D").replace("'","%27")
+        query = query_base.replace(mv.query_field_replace_tag,field).replace(mv.query_i_or_y_replace_tag,my_filter).replace("=","%3D").replace("'","%27")
         
         # Set up the output file name
-        output_name = data_table_path + field + "_" + my_filter + ".dat"
+        output_name = join(data_dir,mv.full_tables_path,
+                           field + "_" + my_filter + ".dat")
         temp_name = output_name + ".tmp"
         
         # Set up the command
         cmd = command_base.replace(mv.command_output_replace_tag,temp_name).replace(mv.command_query_replace_tag,query)
-        # Print the command (for testing)
-        print(cmd)
         # Execute the command
         sbp.call(cmd,shell=True)
         
@@ -129,8 +139,11 @@ def main(argv):
         # It's easiest to do this using the bash shell
         cmd = "echo -n '# ' > " + output_name + "; cat " + temp_name + " >> " + output_name + \
             "; rm " + temp_name
-        print(cmd)
         sbp.call(cmd,shell=True)
+        
+    print("Done!")
+    print("The next step is catalogue filtering.")
+    print("Run CFHTLenS_Mag_filter_catalogues " + data_dir + " next.")
 
 if __name__ == "__main__":
     main(sys.argv)

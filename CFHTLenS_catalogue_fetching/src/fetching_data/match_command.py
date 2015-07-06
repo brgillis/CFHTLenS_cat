@@ -1,8 +1,6 @@
-""" magic_values.py
+""" match_command.py
 
     Created on 6 Jul 2015 as part of project CFHTLenS_catalogue_fetching
-    
-    Contains various magic values used for this project.
 
     ---------------------------------------------------------------------
 
@@ -23,19 +21,9 @@
     
 """
 
-full_tables_path = "full_tables/"
-filtered_tables_path = "filtered_tables/"
-spec_matched_tables_path = "spec_matched_tables/"
-
-base_good_fields_filename = "good_fields_list.txt"
-base_bad_fields_filename = "bad_fields_list.txt"
-base_all_fields_filename = "fields_list.txt"
-spec_matched_output_file = "all_matched_galaxies.dat"
-
-query_field_replace_tag = "REPLACEME_FIELD"
-query_i_or_y_replace_tag = "REPLACEME_I_OR_Y"
-command_output_replace_tag = "REPLACEME_OUTPUT_NAME"
-command_query_replace_tag = "REPLACEME_QUERY"
-
-input_replace_tag = "REPLACEME_INPUT"
-output_replace_tag = "REPLACEME_OUTPUT"
+def get_match_command(data_dir):
+    return 'stilts tmatch2 in1=' + data_dir + \
+        '/spec_full_tables/all_good.fits ifmt2=ascii in2=REPLACEME_INPUT ' + \
+        'out=REPLACEME_OUTPUT matcher=sky values1="ALPHA DELTA" ' + \
+        'icmd2="addcol ra_deg 57.29577951*ra_radians; addcol dec_deg 57.29577951*dec_radians" ' + \
+        'values2="ra_deg dec_deg" params="1" ofmt=fits-plus'
