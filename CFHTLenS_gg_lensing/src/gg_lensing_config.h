@@ -31,10 +31,10 @@
 #include <cassert>
 #include <cstdlib>
 
-#include "brg/common.h"
+#include "IceBRG_main/common.h"
 
-#include "brg/units/unit_conversions.hpp"
-#include "brg/units/units.hpp"
+#include "IceBRG_main/units/unit_conversions.hpp"
+#include "IceBRG_main/units/units.hpp"
 
 
 /**
@@ -47,15 +47,13 @@ struct gg_lensing_config {
 	bool use_precalculated_data;
 	std::string precalculated_data_filename;
 
-	brgastro::distance_type R_min, R_max;
-	brgastro::mass_type m_min, m_max;
+	IceBRG::distance_type R_min, R_max;
+	IceBRG::mass_type m_min, m_max;
 	double z_min, z_max;
 	double mag_min, mag_max;
 
 	size_t R_bins, m_bins, z_bins, mag_bins;
 	bool R_log, m_log, z_log, mag_log;
-
-	double z_buffer;
 
 	gg_lensing_config( const int argc=0, const char *argv[]=nullptr );
 	virtual ~gg_lensing_config()

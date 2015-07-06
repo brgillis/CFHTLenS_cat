@@ -715,7 +715,7 @@ def main(argv):
                          marker='.', yerr=binned_Sigma_errs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i] )
             ax.errorbar( binned_Rs[z_i][m_i], binned_neg_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
                          color='r', linestyle='None', label="Negative Measured values",
-                         marker='o', markerfacecolor='none', markeredgecolor='r',
+                         marker='o', markerfacecolor='none', markeredgecolor='r', markersize=3,
                          yerr=binned_Sigma_errs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i] )
             ax.plot( binned_Rs[z_i][m_i], binned_bf_shear_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
                      'b', linestyle='--',  linewidth=2,
@@ -724,10 +724,10 @@ def main(argv):
                      'b', linestyle='--', linewidth=1,
                      label="Best fit to shear only")
             ax.plot( binned_Rs[z_i][m_i], binned_bf_magf_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
-                     'r', linestyle=':', linewidth=2,
+                     'r', linestyle='-', linewidth=1,
                      label="Best fit to mag. only")
             ax.plot( binned_Rs[z_i][m_i], binned_neg_bf_magf_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
-                     'r', linestyle=':', linewidth=1,
+                     'r', linestyle='-', linewidth=0.5,
                      label="Best fit to mag. only")
             ax.plot( binned_Rs[z_i][m_i], binned_bf_overall_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
                      'k', linestyle='-.', linewidth=2,

@@ -30,26 +30,30 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "brg/container/labeled_array.hpp"
-#include "brg/file_access/ascii_table_map.hpp"
-#include "brg/file_access/open_file.hpp"
-#include "brg/units/unitconv_map.hpp"
-#include "brg/units/units.hpp"
-#include "brg/vector/elementwise_functions.hpp"
-#include "brg/vector/limit_vector.hpp"
+#include "IceBRG_main/container/labeled_array.hpp"
+#include "IceBRG_main/file_access/ascii_table_map.hpp"
+#include "IceBRG_main/file_access/open_file.hpp"
+#include "IceBRG_main/units/unitconv_map.hpp"
+#include "IceBRG_main/units/units.hpp"
+#include "IceBRG_main/vector/elementwise_functions.hpp"
+#include "IceBRG_main/vector/limit_vector.hpp"
 
-#include "brg_lensing/magnification/expected_count_cache.h"
-#include "brg_lensing/magnification/expected_count_derivative_cache.h"
-#include "brg_lensing/magnification/mag_calibration_cache.h"
-#include "brg_lensing/magnification/mag_signal_integral_cache.h"
-#include "brg_lensing/magnification/mag_weight_integral_cache.h"
-#include "brg_lensing/magnification/mag_global_values.h"
-#include "brg_lensing/pair_binner.h"
-#include "brg_lensing/pair_bins_summary.h"
-#include "brg_lensing/source_galaxy.h"
+#include "IceBRG_lensing/magnification/expected_count_cache.h"
+#include "IceBRG_lensing/magnification/expected_count_derivative_cache.h"
+#include "IceBRG_lensing/magnification/mag_calibration_cache.h"
+#include "IceBRG_lensing/magnification/mag_signal_integral_cache.h"
+#include "IceBRG_lensing/magnification/mag_weight_integral_cache.h"
+#include "IceBRG_lensing/magnification/mag_global_values.h"
+#include "IceBRG_lensing/pair_binner.h"
+#include "IceBRG_lensing/pair_bins_summary.h"
+#include "IceBRG_lensing/source_galaxy.h"
 
-#include "brg_physics/astro.h"
-#include "brg_physics/sky_obj/galaxy.h"
+#include "IceBRG_physics/astro.h"
+#include "IceBRG_physics/sky_obj/galaxy.h"
+
+#include "get_data_directory.hpp"
+#include "magic_values.hpp"
+
 #include "gg_lensing_config.h"
 #include "pass_configs_to_binner.h"
 
@@ -58,9 +62,9 @@
 #undef USE_MOCK_LENSES
 #undef USE_MOCK_SOURCES
 
+#undef PRINT_CACHES
+
 // Magic values
-const std::string data_directory = "/disk2/brg/git/CFHTLenS_cat/Data/";
-const std::string fields_list = data_directory + "fields_list.txt";
 
 #ifdef USE_CALIBRATION_LENSES
 
@@ -86,9 +90,6 @@ const std::string lens_weight_file = data_directory + "field_lens_weights.dat";
 
 #else // #ifdef USE_MOCK_LENSES
 
-const std::string output_table = data_directory + "gg_lensing_signal.dat";
-const std::string output_data = data_directory + "gg_lensing_data.dat";
-
 const std::string lens_root = "_lens.dat";
 const std::string lens_unmasked_frac_root = "_lens_mask_frac.dat";
 
@@ -102,49 +103,69 @@ const std::string source_root = "_small_mock_source.dat";
 const std::string source_root = "_source.dat";
 #endif
 
-const std::string expected_count_cache_output_file = data_directory + "ex_count_cache.dat";
-const std::string expected_count_derivative_cache_output_file = data_directory + "alpha_cache.dat";
-const std::string mag_signal_integral_cache_output_file = data_directory + "mag_sig_integral_cache.dat";
-const std::string mag_weight_integral_cache_output_file = data_directory + "mag_W_integral_cache.dat";
-const std::string mag_calibration_cache_output_file = data_directory + "mag_calibration_cache.dat";
-
 int main( const int argc, const char *argv[] )
 {
-	using namespace brgastro;
+	using namespace IceBRG;
+
+	std::ifstream fi;
+	const std::string data_directory = get_data_directory(argc,argv,fi);
+
+	const std::string fields_directory = join_path(data_directory,field_subdirectory);
+
+	const std::string output_table = join_path(data_directory,gg_lensing_signal_filename);
+	const std::string output_data = join_path(data_directory,gg_lensing_data_filename);
+
+	const std::string expected_count_cache_output_file = join_path(data_directory,
+			expected_count_cache_output_filename);
+	const std::string expected_count_derivative_cache_output_file = join_path(data_directory,
+			expected_count_derivative_cache_output_filename);
+	const std::string mag_signal_integral_cache_output_file = join_path(data_directory,
+			mag_signal_integral_cache_output_filename);
+	const std::string mag_weight_integral_cache_output_file = join_path(data_directory,
+			mag_weight_integral_cache_output_filename);
+	const std::string mag_calibration_cache_output_file = join_path(data_directory,
+			mag_calibration_cache_output_filename);
 
 	// Get the configuration file from the command-line arguments
 	const gg_lensing_config config(argc,argv);
 
 	// Set up the caches before we get to the parallel section, so they can be calculated in parallel
-	brgastro::expected_count_cache().print(expected_count_cache_output_file);
-	brgastro::expected_count_derivative_cache().print(expected_count_derivative_cache_output_file);
-	brgastro::mag_weight_integral_cache().print(mag_weight_integral_cache_output_file);
-	brgastro::mag_signal_integral_cache().print(mag_signal_integral_cache_output_file);
+	#ifdef PRINT_CACHES
+	IceBRG::expected_count_cache().print(expected_count_cache_output_file);
+	IceBRG::expected_count_derivative_cache().print(expected_count_derivative_cache_output_file);
+	IceBRG::mag_weight_integral_cache().print(mag_weight_integral_cache_output_file);
+	IceBRG::mag_signal_integral_cache().print(mag_signal_integral_cache_output_file);
+	#else
+	IceBRG::expected_count_cache().get(0.,0.);
+	IceBRG::expected_count_derivative_cache().get(0.,0.);
+	IceBRG::mag_weight_integral_cache().get(0.);
+	IceBRG::mag_signal_integral_cache().get(0.);
+	#endif
 
 	#ifdef USE_CALIBRATION_LENSES
 	// Load the lens weight table
-	const brgastro::labeled_array<double> lens_weight_table(lens_weight_file);
-	auto lens_weight_z_limits_builder = brgastro::coerce<std::vector<double>>(lens_weight_table.at_label("z_bin_min"));
+	const IceBRG::labeled_array<double> lens_weight_table(lens_weight_file);
+	auto lens_weight_z_limits_builder = IceBRG::coerce<std::vector<double>>(lens_weight_table.at_label("z_bin_min"));
 	lens_weight_z_limits_builder.push_back(2*lens_weight_z_limits_builder.back()-
 										   lens_weight_z_limits_builder.at(lens_weight_z_limits_builder.size()-2));
-	const brgastro::limit_vector<double> lens_weight_z_limits(std::move(lens_weight_z_limits_builder));
+	const IceBRG::limit_vector<double> lens_weight_z_limits(std::move(lens_weight_z_limits_builder));
 	#else
 	#ifdef USE_MOCK_LENSES
 	// Load the lens weight table
-	const brgastro::labeled_array<double> lens_weight_table(lens_weight_file);
-	auto lens_weight_z_limits_builder = brgastro::coerce<std::vector<double>>(lens_weight_table.at_label("z_bin_min"));
+	const IceBRG::labeled_array<double> lens_weight_table(lens_weight_file);
+	auto lens_weight_z_limits_builder = IceBRG::coerce<std::vector<double>>(lens_weight_table.at_label("z_bin_min"));
 	lens_weight_z_limits_builder.push_back(2*lens_weight_z_limits_builder.back()-
 										   lens_weight_z_limits_builder.at(lens_weight_z_limits_builder.size()-2));
-	const brgastro::limit_vector<double> lens_weight_z_limits(std::move(lens_weight_z_limits_builder));
+	const IceBRG::limit_vector<double> lens_weight_z_limits(std::move(lens_weight_z_limits_builder));
 	#endif
 	// Set up the calibration cache
-	//brgastro::mag_calibration_cache().print(mag_calibration_cache_output_file);
+	//IceBRG::mag_calibration_cache().print(mag_calibration_cache_output_file);
 	#endif // #ifndef USE_CALIBRATION_LENSES
 
 	constexpr size_t batch_size = 1000000; // Max number of lenses that can be added to the binner before forcing a flush
 
 	// Set up the bins summary
-	brgastro::pair_bins_summary bins_summary(pass_configs_to_binner(config));
+	IceBRG::pair_bins_summary bins_summary(pass_configs_to_binner(config));
 
 	// Check if we're using preloaded or saved data
 	if(config.use_precalculated_data)
@@ -155,9 +176,6 @@ int main( const int argc, const char *argv[] )
 	{
 
 		// Open and read in the fields list
-		std::ifstream fi;
-		brgastro::open_file_input(fi,fields_list);
-
 		std::vector<std::string> field_names;
 		std::string field_name;
 
@@ -180,8 +198,8 @@ int main( const int argc, const char *argv[] )
 		#endif
 		for(size_t field_i=0;field_i<num_fields;++field_i)
 		{
-			brgastro::pair_bins_summary field_bins_summary(pass_configs_to_binner(config));
-			brgastro::pair_binner lens_binner(pass_configs_to_binner(config));
+			IceBRG::pair_bins_summary field_bins_summary(pass_configs_to_binner(config));
+			IceBRG::pair_binner lens_binner(pass_configs_to_binner(config));
 			std::string field_name_root = field_names[field_i].substr(0,6);
 
 			#ifdef USE_CALIBRATION_LENSES
@@ -193,32 +211,34 @@ int main( const int argc, const char *argv[] )
 			#endif // #ifdef USE_MOCK_LENSES
 			#endif // #ifdef USE_CALIBRATION_LENSES
 
+#ifdef _OPENMP
 			try
+#endif
 			{
 				// Get the lens and source file names
 				std::stringstream ss("");
-				ss << data_directory << "filtered_tables/" << field_name_root << lens_root;
+				ss << fields_directory << field_name_root << lens_root;
 				std::string lens_input_name = ss.str();
 
 				ss.str("");
-				ss << data_directory << "filtered_tables/" << field_name_root << lens_unmasked_frac_root;
+				ss << fields_directory << field_name_root << lens_unmasked_frac_root;
 				std::string lens_unmasked_name = ss.str();
 
 				ss.str("");
-				ss << data_directory << "filtered_tables/" << field_name_root << source_root;
+				ss << fields_directory << field_name_root << source_root;
 				std::string source_input_name = ss.str();
 
 				// Set up vectors
-				std::vector<brgastro::galaxy> lens_galaxies;
-				std::vector<brgastro::source_galaxy> source_galaxies;
+				std::vector<IceBRG::galaxy> lens_galaxies;
+				std::vector<IceBRG::source_galaxy> source_galaxies;
 
 				// Load in lenses
-				const brgastro::table_map_t<double> lens_map(brgastro::load_table_map<double>(lens_input_name));
+				const IceBRG::table_map_t<double> lens_map(IceBRG::load_table_map<double>(lens_input_name));
 				size_t num_lenses = lens_map.begin()->second.size();
 
 				for(size_t i=0; i<num_lenses; ++i)
 				{
-					brgastro::galaxy lens;
+					IceBRG::galaxy lens;
 					double z = lens_map.at("Z_B").at(i);
 					lens.set_z(z);
 					lens.set_ra(lens_map.at("ra_radians").at(i) * rad);
@@ -232,12 +252,12 @@ int main( const int argc, const char *argv[] )
 
 					#ifdef USE_CALIBRATION_LENSES
 					// Get the weight for this lens
-					double weight = z_weights(lens_weight_z_limits.get_bin_index(z-config.z_buffer));
+					double weight = z_weights(lens_weight_z_limits.get_bin_index(z-z_buffer));
 					lens.set_weight(weight);
 					#else
 					#ifdef USE_MOCK_LENSES
 					// Get the weight for this lens
-					double weight = z_weights(lens_weight_z_limits.get_bin_index(z-config.z_buffer));
+					double weight = z_weights(lens_weight_z_limits.get_bin_index(z-z_buffer));
 					//lens.set_weight(weight);
 					#endif
 					#endif // #ifdef USE_CALIBRATION_LENSES
@@ -246,20 +266,20 @@ int main( const int argc, const char *argv[] )
 				}
 
 				// Load the masked fraction table
-				const brgastro::table_map_t<double> lens_unmasked_frac_map(
-						brgastro::load_table_map<double>(lens_unmasked_name));
-				brgastro::limit_vector<distance_type> unmasked_frac_bin_limits;
+				const IceBRG::table_map_t<double> lens_unmasked_frac_map(
+						IceBRG::load_table_map<double>(lens_unmasked_name));
+				IceBRG::limit_vector<distance_type> unmasked_frac_bin_limits;
 
-				unmasked_frac_bin_limits.reconstruct_from_bin_mids(brgastro::multiply(lens_unmasked_frac_map.at("bin_mid_kpc"),
-																						brgastro::unitconv::kpctom*m));
+				unmasked_frac_bin_limits.reconstruct_from_bin_mids(IceBRG::multiply(lens_unmasked_frac_map.at("bin_mid_kpc"),
+																						IceBRG::unitconv::kpctom*m));
 
 				// Load in sources
-				const brgastro::table_map_t<double> source_map(brgastro::load_table_map<double>(source_input_name));
+				const IceBRG::table_map_t<double> source_map(IceBRG::load_table_map<double>(source_input_name));
 				size_t num_sources = source_map.begin()->second.size();
 
 				for(size_t i=0; i<num_sources; ++i)
 				{
-					brgastro::source_galaxy source(source_map.at("ra_radians").at(i)*rad,
+					IceBRG::source_galaxy source(source_map.at("ra_radians").at(i)*rad,
 										source_map.at("dec_radians").at(i)*rad,
 										source_map.at("Z_B").at(i),
 										source_map.at("e1").at(i),
@@ -278,8 +298,8 @@ int main( const int argc, const char *argv[] )
 					const auto & shear_weight = source.weight();
 
 					if( (shear_weight > 0) || // If it's valid for shear
-						((mag>=brgastro::mag_m_min) && (mag<brgastro::mag_m_max) &&
-						 (z>=brgastro::mag_z_min) && (z<brgastro::mag_z_max)) ) // or it's valid for magnification
+						((mag>=IceBRG::mag_m_min) && (mag<IceBRG::mag_m_max) &&
+						 (z>=IceBRG::mag_z_min) && (z<IceBRG::mag_z_max)) ) // or it's valid for magnification
 					{
 						source_galaxies.push_back( std::move(source) ); // Add it to the list of sources
 					}
@@ -296,7 +316,7 @@ int main( const int argc, const char *argv[] )
 
 					lens_binner.add_lens_id(lens.index(),lens.m(),lens.z(),lens.mag());
 
-					const angle_type max_angle_sep = brgastro::afd(config.R_max,lens.z());
+					const angle_type max_angle_sep = IceBRG::afd(config.R_max,lens.z());
 
 					// And loop over all sources
 
@@ -306,10 +326,10 @@ int main( const int argc, const char *argv[] )
 					{
 
 						// Check that the lens is sufficiently in front of the source
-						if(lens.z() > source.z() - config.z_buffer + std::numeric_limits<double>::epsilon()) continue;
+						if(lens.z() > source.z() - z_buffer + std::numeric_limits<double>::epsilon()) continue;
 
-//						if(((source.mag()>=brgastro::mag_m_min) && (source.mag()<brgastro::mag_m_max) &&
-//						 (source.z()>=1.14) && (source.z()<brgastro::mag_z_max)) ) ++counter; //!!
+//						if(((source.mag()>=IceBRG::mag_m_min) && (source.mag()<IceBRG::mag_m_max) &&
+//						 (source.z()>=1.14) && (source.z()<IceBRG::mag_z_max)) ) ++counter; //!!
 
 						// Check against maximum angular separation in ra and dec simply first for speed
 						auto ddec = abs(lens.dec()-source.dec());
@@ -318,11 +338,11 @@ int main( const int argc, const char *argv[] )
 						auto dra = abs(lens.ra()-source.ra())*cosdec;
 						if(dra>max_angle_sep) continue;
 
-						angle_type da = brgastro::dist2d(dra,ddec);
+						angle_type da = IceBRG::dist2d(dra,ddec);
 
 						if(da <= max_angle_sep)
 						{
-							lens_binner.add_pair(brgastro::lens_source_pair(&lens,&source));
+							lens_binner.add_pair(IceBRG::lens_source_pair(&lens,&source));
 						}
 
 					}
@@ -337,22 +357,19 @@ int main( const int argc, const char *argv[] )
 				}
 				field_bins_summary += lens_binner;
 			}
+#ifdef _OPENMP
 			catch (const std::exception &e)
 			{
 
-#ifdef _OPENMP
 				#pragma omp critical(CFHTLenS_gg_lens_combine_fields)
 				{
 					std::cerr << "Error processing field " << field_name_root << " (#" <<
 							++num_processed << "/" << num_fields << ")!\n"
 							<< e.what() << std::endl;
 				}
-				continue;
-#else
-				throw;
-#endif
 
 			}
+#endif
 
 #ifdef _OPENMP
 			#pragma omp critical(CFHTLenS_gg_lens_combine_fields)
@@ -379,18 +396,18 @@ int main( const int argc, const char *argv[] )
 	} // if(config.use_precalculated_data) // else
 
 	// Set up the units we want data to be output in
-	brgastro::unitconv_map u_map;
+	IceBRG::unitconv_map u_map;
 
 	u_map["R_min"] = u_map["R_max"] = u_map["shear_R_mean"] = u_map["magf_R_mean"] =
-		brgastro::unitconv::kpctom;
+		IceBRG::unitconv::kpctom;
 	u_map["m_min"] = u_map["m_max"] = u_map["shear_lens_m_mean"] = u_map["magf_lens_m_mean"] =
-		brgastro::unitconv::Msuntokg;
+		IceBRG::unitconv::Msuntokg;
 	u_map["dS_t_mean"] = u_map["dS_t_stddev"] = u_map["dS_t_stderr"] =
 		u_map["dS_x_mean"] = u_map["dS_x_stddev"] = u_map["dS_x_stderr"] =
 		u_map["model_dS_t"] = u_map["Sigma"] = u_map["Sigma_stderr"] =
 		u_map["model_Sigma"] = u_map["shear_Sigma_crit"] = u_map["magf_Sigma_crit"] =
-			brgastro::unitconv::Msuntokg/brgastro::square(brgastro::unitconv::pctom);
-	u_map["magf_area"] = brgastro::square(brgastro::unitconv::asectorad);
+			IceBRG::unitconv::Msuntokg/IceBRG::square(IceBRG::unitconv::pctom);
+	u_map["magf_area"] = IceBRG::square(IceBRG::unitconv::asectorad);
 
 	bins_summary.print_bin_data(output_table,u_map);
 	bins_summary.print_bin_data(std::cout,u_map);

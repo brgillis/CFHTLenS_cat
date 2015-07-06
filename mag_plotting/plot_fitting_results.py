@@ -442,7 +442,8 @@ def main(argv):
                              marker='.', yerr=binned_shear_sat_m_errs[m_i][shear_good] )
                 ax.errorbar( binned_zs[m_i][magf_good], binned_magf_sat_m_bests[m_i][magf_good],
                              color='r', linestyle='None', label="Magnification fit",
-                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_sat_m_errs[m_i][magf_good] )
+                             marker='o', markerfacecolor='none', markeredgecolor='r', markersize=3,
+                             yerr=binned_magf_sat_m_errs[m_i][magf_good] )
                 ax.errorbar( binned_zs[m_i][overall_good]+z_shift, binned_overall_sat_m_bests[m_i][overall_good],
                              color='k', linestyle='None', label="Overall fit",
                              marker='*',yerr=binned_overall_sat_m_errs[m_i][overall_good] )
@@ -456,7 +457,8 @@ def main(argv):
                              marker='.',yerr=binned_shear_group_m_errs[m_i][shear_good] )
                 ax.errorbar( binned_zs[m_i][magf_good], binned_magf_group_m_bests[m_i][magf_good],
                              color='r', linestyle='None', label="Magnification fit",
-                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_group_m_errs[m_i][magf_good] )
+                             marker='o', markerfacecolor='none', markeredgecolor='r', markersize=3,
+                             yerr=binned_magf_group_m_errs[m_i][magf_good] )
                 ax.errorbar( binned_zs[m_i][overall_good]+z_shift, binned_overall_group_m_bests[m_i][overall_good],
                              color='k', linestyle='None', label="Overall fit",
                              marker='*',yerr=binned_overall_group_m_errs[m_i][overall_good] )
@@ -470,7 +472,8 @@ def main(argv):
                              marker='.',yerr=binned_shear_sat_frac_errs[m_i][shear_good] )
                 ax.errorbar( binned_zs[m_i][magf_good], binned_magf_sat_frac_bests[m_i][magf_good],
                              color='r', linestyle='None', label="Magnification fit",
-                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_sat_frac_errs[m_i][magf_good] )
+                             marker='o', markerfacecolor='none', markeredgecolor='r', markersize=3,
+                             yerr=binned_magf_sat_frac_errs[m_i][magf_good] )
                 ax.errorbar( binned_zs[m_i][overall_good]+z_shift, binned_overall_sat_frac_bests[m_i][overall_good],
                              color='k', linestyle='None', label="Overall fit",
                              marker='*',yerr=binned_overall_sat_frac_errs[m_i][overall_good] )
@@ -481,7 +484,8 @@ def main(argv):
                 ax = fig.add_subplot( num_m_bins, num_p_bins, p_i + num_p_bins*m_i + 1)
                 ax.errorbar( binned_zs[m_i][magf_good], binned_magf_Sigma_offset_bests[m_i][magf_good]/binned_Sigma_crits[m_i][magf_good],
                              color='r', linestyle='None', label="Magnification fit",
-                             marker='o', markerfacecolor='none', markeredgecolor='r',yerr=binned_magf_Sigma_offset_errs[m_i][magf_good]/binned_Sigma_crits[m_i][magf_good] )
+                             marker='o', markerfacecolor='none', markeredgecolor='r', markersize=3,
+                             yerr=binned_magf_Sigma_offset_errs[m_i][magf_good]/binned_Sigma_crits[m_i][magf_good] )
                 ax.errorbar( binned_zs[m_i][overall_good]+z_shift, binned_overall_Sigma_offset_bests[m_i][overall_good]/binned_Sigma_crits[m_i][overall_good],
                              color='k', linestyle='None', label="Overall fit",
                              marker='*',yerr=binned_overall_Sigma_offset_errs[m_i][overall_good]/binned_Sigma_crits[m_i][overall_good] )

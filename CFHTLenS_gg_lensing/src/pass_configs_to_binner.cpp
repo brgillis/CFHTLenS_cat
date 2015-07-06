@@ -24,15 +24,17 @@
 \**********************************************************************/
 
 
-#include "brg_lensing/pair_binner.h"
+#include "IceBRG_lensing/pair_binner.h"
+
+#include "magic_values.hpp"
 
 #include "gg_lensing_config.h"
 #include "pass_configs_to_binner.h"
 
 
-brgastro::pair_binner pass_configs_to_binner(const gg_lensing_config & config)
+IceBRG::pair_binner pass_configs_to_binner(const gg_lensing_config & config)
 {
-	brgastro::pair_binner binner(config.R_min,config.R_max,config.R_bins,
+	IceBRG::pair_binner binner(config.R_min,config.R_max,config.R_bins,
 			config.m_min, config.m_max, config.m_bins,
 			config.z_min, config.z_max, config.z_bins,
 			config.mag_min, config.mag_max, config.mag_bins);
@@ -54,7 +56,7 @@ brgastro::pair_binner pass_configs_to_binner(const gg_lensing_config & config)
 		binner.set_log_mag_limits(config.mag_min,config.mag_max,config.mag_bins);
 	}
 
-	binner.set_z_buffer(config.z_buffer);
+	binner.set_z_buffer(z_buffer);
 
 	return binner;
 }

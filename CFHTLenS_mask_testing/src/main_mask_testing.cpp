@@ -109,8 +109,6 @@ constexpr float num_sep_steps = 40;
 
 #endif
 
-constexpr double rad_per_px = 0.185965*unitconv::asectorad;
-
 constexpr unsigned short sampling_factor=4;
 
 static_assert(sampling_factor>0,"Subsample must be positive.");

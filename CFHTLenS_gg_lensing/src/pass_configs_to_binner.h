@@ -31,10 +31,10 @@
 #ifndef _BRG_PASS_CONFIGURATIONS_TO_BINNER_H_INCLUDED_
 #define _BRG_PASS_CONFIGURATIONS_TO_BINNER_H_INCLUDED_
 
-#include "brg_lensing/pair_binner.h"
+#include "IceBRG_lensing/pair_binner.h"
 
 #include "gg_lensing_config.h"
 
-brgastro::pair_binner pass_configs_to_binner(const gg_lensing_config & config);
+IceBRG::pair_binner pass_configs_to_binner(const gg_lensing_config & config);
 
 #endif // _BRG_PASS_CONFIGURATIONS_TO_BINNER_H_INCLUDED_

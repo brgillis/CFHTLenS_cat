@@ -78,11 +78,11 @@ const std::string count_column_to_use = "weighted_count";
 const std::string count_column_to_use = "count";
 #endif
 
+using namespace IceBRG;
+
 constexpr double sg_mag_window = 0.4;
 constexpr short unsigned sg_window = sg_mag_window/mag_m_step;
 constexpr short unsigned sg_deg = 3;
-
-using namespace IceBRG;
 
 int main( const int argc, const char *argv[] )
 {
@@ -94,7 +94,7 @@ int main( const int argc, const char *argv[] )
 	std::string data_directory = get_data_directory(argc,argv,fi);
 
 	// Set up the locations of relevant files and directories
-	const std::string fields_directory = join_path(data_directory,fields_subdirectory);
+	const std::string field_directory = join_path(data_directory,field_subdirectory);
 	const std::string lens_weight_file = join_path(data_directory,lens_weight_filename);
 	const std::string mag_hist_table_base = join_path(data_directory,mag_hist_table_name_base);
 	const std::string g_mag_hist_table_base = join_path(data_directory,g_mag_hist_table_name_base);
@@ -203,7 +203,7 @@ int main( const int argc, const char *argv[] )
 
 			// Get the source file names
 			std::stringstream ss("");
-			ss << fields_directory << field_name_base << source_base;
+			ss << field_directory << field_name_base << source_base;
 			std::string source_input_name = ss.str();
 
 			// Load in sources
