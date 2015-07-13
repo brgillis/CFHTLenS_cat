@@ -322,16 +322,11 @@ int main( const int argc, const char *argv[] )
 
 					// And loop over all sources
 
-					//unsigned counter = 0; //!!
-
 					for(const auto & source : source_galaxies)
 					{
 
 						// Check that the lens is sufficiently in front of the source
 						if(lens.z() > source.z() - z_buffer + std::numeric_limits<double>::epsilon()) continue;
-
-//						if(((source.mag()>=IceBRG::mag_m_min) && (source.mag()<IceBRG::mag_m_max) &&
-//						 (source.z()>=1.14) && (source.z()<IceBRG::mag_z_max)) ) ++counter; //!!
 
 						// Check against maximum angular separation in ra and dec simply first for speed
 						auto ddec = abs(lens.dec()-source.dec());
@@ -348,7 +343,6 @@ int main( const int argc, const char *argv[] )
 						}
 
 					}
-					//std::cout << counter << std::endl; //!!
 
 					if((++lens_i) % batch_size == 0)
 					{
@@ -412,7 +406,6 @@ int main( const int argc, const char *argv[] )
 	u_map["magf_area"] = IceBRG::square(IceBRG::unitconv::asectorad);
 
 	bins_summary.print_bin_data(output_table,u_map);
-	bins_summary.print_bin_data(std::cout,u_map);
 
 	return 0;
 }

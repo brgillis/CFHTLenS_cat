@@ -27,10 +27,10 @@ import sys
 import subprocess as sbp
 from os.path import join
 
-from fetching_data.fields_lists import *
-from fetching_data.query import *
+from CFHTLenS_Mag_fetching_data.fields_lists import *
+from CFHTLenS_Mag_fetching_data.query import *
 
-import fetching_data.magic_values as mv
+import CFHTLenS_Mag_fetching_data.magic_values as mv
 
 def main(argv):
     """ TODO Docstring for main.
@@ -143,7 +143,7 @@ def main(argv):
         
     print("Done!")
     print("The next step is catalogue filtering.")
-    print("Run CFHTLenS_Mag_filter_catalogues " + data_dir + " next.")
+    print("Run 'CFHTLenS_Mag_filter_catalogues " + data_dir + "' next.")
 
 if __name__ == "__main__":
     main(sys.argv)

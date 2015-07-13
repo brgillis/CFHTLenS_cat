@@ -101,7 +101,7 @@ def main(argv):
             label = None
         else:
             lstyle = '-'
-            label = "z="+str(z)
+            label = r"z$\geq$"+str(z)
         
         ax.plot(binned_cols[reader.index("mag")][z_i],binned_cols[reader.index("count")][z_i]*scale,
                 lstyle,label=label)
