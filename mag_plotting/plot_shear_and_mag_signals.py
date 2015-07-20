@@ -4,8 +4,6 @@ import os
 import subprocess as sbp
 import sys
 
-import astropy.io.ascii as ascii
-
 import numpy as np
 
 import matplotlib
