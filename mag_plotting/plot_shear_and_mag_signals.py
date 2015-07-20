@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 
+import matplotlib
 import os
-import subprocess as sbp
 import sys
 
-import numpy as np
-
-import matplotlib
+import icebrgpy.bins_funcs as bf
+import icebrgpy.columns_reader as cr
 import matplotlib.pyplot as pyplot
+import numpy as np
+import subprocess as sbp
+
+
 matplotlib.rcParams['ps.useafm'] = True
 matplotlib.rcParams['pdf.use14corefonts'] = True
 matplotlib.rcParams['text.usetex'] = True
 
-import bins_funcs as bf
-import columns_reader as cr
 
 def main(argv):
     
