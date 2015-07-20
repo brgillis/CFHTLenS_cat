@@ -15,6 +15,7 @@ matplotlib.rcParams['pdf.use14corefonts'] = True
 matplotlib.rcParams['text.usetex'] = True
 
 import bins_funcs as bf
+import columns_reader as cr
 
 def main(argv):
     
@@ -83,6 +84,8 @@ def main(argv):
     
     # Load in values from command line if provided, otherwise use defaults
     
+    reader = cr.columns_reader()
+    
     num_args = len(argv)
     cur_arg = 2
     
@@ -90,13 +93,6 @@ def main(argv):
         lensing_signal_table_name = default_lensing_signal_table
     else:
         lensing_signal_table_name = argv[cur_arg]
-    
-    # Load in the redshift table
-    try:
-        lensing_signal_table = ascii.read(lensing_signal_table_name)
-    except:
-        print("ERROR: Corr funcs table " + lensing_signal_table + " cannot be read.")
-        return
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -104,12 +100,7 @@ def main(argv):
     else:
         R_col_name = argv[cur_arg]
         
-    # Try to load in the redshift column
-    try:
-        Rs = lensing_signal_table[R_col_name]
-    except:
-        print("ERROR: Cannot read column " + R_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("R",R_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -117,12 +108,7 @@ def main(argv):
     else:
         z_col_name = argv[cur_arg]
         
-    # Try to load in the redshift column
-    try:
-        redshifts = lensing_signal_table[z_col_name]
-    except:
-        print("ERROR: Cannot read column " + z_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("z",z_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -154,12 +140,7 @@ def main(argv):
     else:
         m_col_name = argv[cur_arg]
         
-    # Try to load in the redshift column
-    try:
-        masses = lensing_signal_table[m_col_name]
-    except:
-        print("ERROR: Cannot read column " + m_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("m",m_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -191,12 +172,7 @@ def main(argv):
     else:
         mag_col_name = argv[cur_arg]
         
-    # Try to load in the redshift column
-    try:
-        _mags = lensing_signal_table[mag_col_name]
-    except:
-        print("ERROR: Cannot read column " + mag_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("mag",mag_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -228,12 +204,7 @@ def main(argv):
     else:
         dS_col_name = argv[cur_arg]
         
-    # Try to load in the dS column
-    try:
-        dSs = lensing_signal_table[dS_col_name]
-    except:
-        print("ERROR: Cannot read column " + dS_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("dS",dS_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -241,12 +212,8 @@ def main(argv):
     else:
         dS_err_col_name = argv[cur_arg]
         
-    # Try to load in the dS_err column
-    try:
-        dS_errs = lensing_signal_table[dS_err_col_name]
-    except:
-        print("ERROR: Cannot read column " + dS_err_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("dS_err",dS_err_col_name)
+
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -254,12 +221,7 @@ def main(argv):
     else:
         Sigma_col_name = argv[cur_arg]
         
-    # Try to load in the dS column
-    try:
-        Sigmas = lensing_signal_table[Sigma_col_name]
-    except:
-        print("ERROR: Cannot read column " + Sigma_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("Sigma",Sigma_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -267,12 +229,7 @@ def main(argv):
     else:
         Sigma_err_col_name = argv[cur_arg]
         
-    # Try to load in the dS_err column
-    try:
-        Sigma_errs = lensing_signal_table[Sigma_err_col_name]
-    except:
-        print("ERROR: Cannot read column " + Sigma_err_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("Sigma_err",Sigma_err_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -280,12 +237,7 @@ def main(argv):
     else:
         bf_shear_model_dS_col_name = argv[cur_arg]
         
-    # Try to load in the bf_shear_model_dS column
-    try:
-        bf_shear_model_dSs = lensing_signal_table[bf_shear_model_dS_col_name]
-    except:
-        print("ERROR: Cannot read column " + bf_shear_model_dS_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("bf_shear_model_dS",bf_shear_model_dS_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -293,12 +245,7 @@ def main(argv):
     else:
         bf_shear_model_Sigma_col_name = argv[cur_arg]
         
-    # Try to load in the bf_shear_model_Sigma column
-    try:
-        bf_shear_model_Sigmas = lensing_signal_table[bf_shear_model_Sigma_col_name]
-    except:
-        print("ERROR: Cannot read column " + bf_shear_model_Sigma_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("bf_shear_model_Sigma",bf_shear_model_Sigma_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -306,12 +253,7 @@ def main(argv):
     else:
         bf_magf_model_dS_col_name = argv[cur_arg]
         
-    # Try to load in the bf_magf_model_dS column
-    try:
-        bf_magf_model_dSs = lensing_signal_table[bf_magf_model_dS_col_name]
-    except:
-        print("ERROR: Cannot read column " + bf_magf_model_dS_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("bf_magf_model_dS",bf_magf_model_dS_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -319,12 +261,7 @@ def main(argv):
     else:
         bf_magf_model_Sigma_col_name = argv[cur_arg]
         
-    # Try to load in the bf_magf_model_Sigma column
-    try:
-        bf_magf_model_Sigmas = lensing_signal_table[bf_magf_model_Sigma_col_name]
-    except:
-        print("ERROR: Cannot read column " + bf_magf_model_Sigma_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("bf_magf_model_Sigma",bf_magf_model_Sigma_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -332,12 +269,7 @@ def main(argv):
     else:
         bf_overall_model_dS_col_name = argv[cur_arg]
         
-    # Try to load in the bf_overall_model_dS column
-    try:
-        bf_overall_model_dSs = lensing_signal_table[bf_overall_model_dS_col_name]
-    except:
-        print("ERROR: Cannot read column " + bf_overall_model_dS_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("bf_overall_model_dS",bf_overall_model_dS_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -345,12 +277,7 @@ def main(argv):
     else:
         bf_overall_model_Sigma_col_name = argv[cur_arg]
         
-    # Try to load in the bf_overall_model_Sigma column
-    try:
-        bf_overall_model_Sigmas = lensing_signal_table[bf_overall_model_Sigma_col_name]
-    except:
-        print("ERROR: Cannot read column " + bf_overall_model_Sigma_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("bf_overall_model_Sigma",bf_overall_model_Sigma_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -358,12 +285,7 @@ def main(argv):
     else:
         shear_sigma_crit_col_name = argv[cur_arg]
         
-    # Try to load in the bf_overall_model_Sigma column
-    try:
-        shear_sigma_crits = lensing_signal_table[shear_sigma_crit_col_name]
-    except:
-        print("ERROR: Cannot read column " + shear_sigma_crit_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("shear_sigma_crit",shear_sigma_crit_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -371,12 +293,7 @@ def main(argv):
     else:
         magf_sigma_crit_col_name = argv[cur_arg]
         
-    # Try to load in the bf_overall_model_Sigma column
-    try:
-        magf_sigma_crits = lensing_signal_table[magf_sigma_crit_col_name]
-    except:
-        print("ERROR: Cannot read column " + magf_sigma_crit_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("magf_sigma_crit",magf_sigma_crit_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -384,12 +301,7 @@ def main(argv):
     else:
         magf_sigma_offset_col_name = argv[cur_arg]
         
-    # Try to load in the bf_overall_model_Sigma column
-    try:
-        magf_sigma_offsets = lensing_signal_table[magf_sigma_offset_col_name]
-    except:
-        print("ERROR: Cannot read column " + magf_sigma_offset_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("magf_sigma_offset",magf_sigma_offset_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
@@ -397,18 +309,20 @@ def main(argv):
     else:
         overall_sigma_offset_col_name = argv[cur_arg]
         
-    # Try to load in the bf_overall_model_Sigma column
-    try:
-        overall_sigma_offsets = lensing_signal_table[overall_sigma_offset_col_name]
-    except:
-        print("ERROR: Cannot read column " + overall_sigma_offset_col_name + " from table " + lensing_signal_table_name + ".")
-        return
+    reader.add("overall_sigma_offset",overall_sigma_offset_col_name)
         
     cur_arg += 1
     if(num_args) <= cur_arg:
         paper_location = default_paper_location
     else:
         paper_location = argv[cur_arg]
+        
+    cols = reader.read(lensing_signal_table_name)
+    
+    binned_cols = []
+           
+    for _col_i in xrange(reader.num_cols()):
+        binned_cols.append([])
     
     # Set up bins
     if(z_bins_log):
@@ -427,142 +341,31 @@ def main(argv):
         _mag_bins, _mag_bins_mids = bf.setup_lin_bins(mag_bins_min, mag_bins_max, num_mag_bins)
     
     # Bin all values in the table
-    binned_Rs = []
-    binned_dSs = []
-    binned_dS_errs = []
-    binned_Sigmas = []
-    binned_neg_Sigmas = []
-    binned_Sigma_errs = []
-    binned_bf_shear_model_dSs = []
-    binned_bf_shear_model_Sigmas = []
-    binned_neg_bf_shear_model_Sigmas = []
-    binned_bf_magf_model_dSs = []
-    binned_bf_magf_model_Sigmas = []
-    binned_neg_bf_magf_model_Sigmas = []
-    binned_bf_overall_model_dSs = []
-    binned_bf_overall_model_Sigmas = []
-    binned_neg_bf_overall_model_Sigmas = []
-    binned_shear_sigma_crits = []
-    binned_magf_sigma_crits = []
-    binned_magf_sigma_offsets = []
-    binned_overall_sigma_offsets = []
     
-    for z_i in xrange(num_z_bins):
-        zR_list = []
-        zdS_list = []
-        zdS_err_list = []
-        zSigma_list = []
-        zneg_Sigma_list = []
-        zSigma_err_list = []
-        zbf_shear_model_dS_list = []
-        zbf_shear_model_Sigma_list = []
-        zneg_bf_shear_model_Sigma_list = []
-        zbf_magf_model_dS_list = []
-        zbf_magf_model_Sigma_list = []
-        zneg_bf_magf_model_Sigma_list = []
-        zbf_overall_model_dS_list = []
-        zbf_overall_model_Sigma_list = []
-        zneg_bf_overall_model_Sigma_list = []
-        zshear_sigma_crits = []
-        zmagf_sigma_crits = []
-        zmagf_sigma_offsets = []
-        zoverall_sigma_offsets = []
-        for m_i in xrange(num_m_bins):
-            zR_list.append([])
-            zdS_list.append([])
-            zdS_err_list.append([])
-            zSigma_list.append([])
-            zneg_Sigma_list.append([])
-            zSigma_err_list.append([])
-            zbf_shear_model_dS_list.append([])
-            zbf_shear_model_Sigma_list.append([])
-            zneg_bf_shear_model_Sigma_list.append([])
-            zbf_magf_model_dS_list.append([])
-            zbf_magf_model_Sigma_list.append([])
-            zneg_bf_magf_model_Sigma_list.append([])
-            zbf_overall_model_dS_list.append([])
-            zbf_overall_model_Sigma_list.append([])
-            zneg_bf_overall_model_Sigma_list.append([])
-            zshear_sigma_crits.append([])
-            zmagf_sigma_crits.append([])
-            zmagf_sigma_offsets.append([])
-            zoverall_sigma_offsets.append([])
-        binned_Rs.append(zR_list)
-        binned_dSs.append(zdS_list)
-        binned_dS_errs.append(zdS_err_list)
-        binned_Sigmas.append(zSigma_list)
-        binned_neg_Sigmas.append(zneg_Sigma_list)
-        binned_Sigma_errs.append(zSigma_err_list)
-        binned_bf_shear_model_dSs.append(zbf_shear_model_dS_list)
-        binned_bf_shear_model_Sigmas.append(zbf_shear_model_Sigma_list)
-        binned_neg_bf_shear_model_Sigmas.append(zneg_bf_shear_model_Sigma_list)
-        binned_bf_magf_model_dSs.append(zbf_magf_model_dS_list)
-        binned_bf_magf_model_Sigmas.append(zbf_magf_model_Sigma_list)
-        binned_neg_bf_magf_model_Sigmas.append(zneg_bf_magf_model_Sigma_list)
-        binned_bf_overall_model_dSs.append(zbf_overall_model_dS_list)
-        binned_bf_overall_model_Sigmas.append(zbf_overall_model_Sigma_list)
-        binned_neg_bf_overall_model_Sigmas.append(zneg_bf_overall_model_Sigma_list)
-        binned_shear_sigma_crits.append(zshear_sigma_crits)
-        binned_magf_sigma_crits.append(zmagf_sigma_crits)
-        binned_magf_sigma_offsets.append(zmagf_sigma_offsets)
-        binned_overall_sigma_offsets.append(zoverall_sigma_offsets)
-    
-    for z, m, R, dS, dS_err, Sigma, Sigma_err, bf_shear_model_dS, bf_shear_model_Sigma, \
-        bf_magf_model_dS, bf_magf_model_Sigma, bf_overall_model_dS, bf_overall_model_Sigma, \
-        shear_sigma_crit, magf_sigma_crit, magf_sigma_offset, overall_sigma_offset in \
-            zip(redshifts, masses, Rs, dSs, dS_errs, Sigmas, Sigma_errs, bf_shear_model_dSs, bf_shear_model_Sigmas, \
-            bf_magf_model_dSs, bf_magf_model_Sigmas,bf_overall_model_dSs, bf_overall_model_Sigmas, \
-            shear_sigma_crits, magf_sigma_crits, magf_sigma_offsets, overall_sigma_offsets):
+    for col_i in xrange(reader.num_cols()):
+        for _z_i in xrange(num_z_bins):
+            new_list = []
+            for _m_i in xrange(num_m_bins):
+                new_list.append([])
+            binned_cols[col_i].append(new_list)
+
+    for elems in zip(*cols):
         
-        z_i = bf.get_bin_index(z, z_bins)
+        z = elems[reader.index("z")]
+        m = elems[reader.index("m")]
+        
+        z_i = bf.get_bin_index(z+0.001, z_bins)
         if(z_i<0): continue
-        
-        m_i = bf.get_bin_index(m, m_bins)
+        m_i = bf.get_bin_index(m+0.001, m_bins)
         if(m_i<0): continue
         
-        binned_Rs[z_i][m_i].append(R)
-        binned_dSs[z_i][m_i].append(dS)
-        binned_dS_errs[z_i][m_i].append(dS_err)
-        binned_Sigmas[z_i][m_i].append(Sigma)
-        binned_neg_Sigmas[z_i][m_i].append(-Sigma)
-        binned_Sigma_errs[z_i][m_i].append(Sigma_err)
-        binned_bf_shear_model_dSs[z_i][m_i].append(bf_shear_model_dS)
-        binned_bf_shear_model_Sigmas[z_i][m_i].append(bf_shear_model_Sigma)
-        binned_neg_bf_shear_model_Sigmas[z_i][m_i].append(-bf_shear_model_Sigma)
-        binned_bf_magf_model_dSs[z_i][m_i].append(bf_magf_model_dS)
-        binned_bf_magf_model_Sigmas[z_i][m_i].append(bf_magf_model_Sigma)
-        binned_neg_bf_magf_model_Sigmas[z_i][m_i].append(-bf_magf_model_Sigma)
-        binned_bf_overall_model_dSs[z_i][m_i].append(bf_overall_model_dS)
-        binned_bf_overall_model_Sigmas[z_i][m_i].append(bf_overall_model_Sigma)
-        binned_neg_bf_overall_model_Sigmas[z_i][m_i].append(-bf_overall_model_Sigma)
-        binned_shear_sigma_crits[z_i][m_i].append(shear_sigma_crit)
-        binned_magf_sigma_crits[z_i][m_i].append(magf_sigma_crit)
-        binned_magf_sigma_offsets[z_i][m_i].append(magf_sigma_offset)
-        binned_overall_sigma_offsets[z_i][m_i].append(overall_sigma_offset)
+        for col_i in xrange(reader.num_cols()):
+            binned_cols[col_i][z_i][m_i].append(elems[col_i])
         
     # Convert all lists to arrays
-    
-    for z_i in xrange(num_z_bins):        
-        for m_i in xrange(num_m_bins):
-            binned_Rs[z_i][m_i] = np.array(binned_Rs[z_i][m_i])
-            binned_dSs[z_i][m_i] = np.array(binned_dSs[z_i][m_i])
-            binned_dS_errs[z_i][m_i] = np.array(binned_dS_errs[z_i][m_i])
-            binned_Sigmas[z_i][m_i] = np.array(binned_Sigmas[z_i][m_i])
-            binned_neg_Sigmas[z_i][m_i] = np.array(binned_neg_Sigmas[z_i][m_i])
-            binned_Sigma_errs[z_i][m_i] = np.array(binned_Sigma_errs[z_i][m_i])
-            binned_bf_shear_model_dSs[z_i][m_i] = np.array(binned_bf_shear_model_dSs[z_i][m_i])
-            binned_bf_shear_model_Sigmas[z_i][m_i] = np.array(binned_bf_shear_model_Sigmas[z_i][m_i])
-            binned_neg_bf_shear_model_Sigmas[z_i][m_i] = np.array(binned_neg_bf_shear_model_Sigmas[z_i][m_i])
-            binned_bf_magf_model_dSs[z_i][m_i] = np.array(binned_bf_magf_model_dSs[z_i][m_i])
-            binned_bf_magf_model_Sigmas[z_i][m_i] = np.array(binned_bf_magf_model_Sigmas[z_i][m_i])
-            binned_neg_bf_magf_model_Sigmas[z_i][m_i] = np.array(binned_neg_bf_magf_model_Sigmas[z_i][m_i])
-            binned_bf_overall_model_dSs[z_i][m_i] = np.array(binned_bf_overall_model_dSs[z_i][m_i])
-            binned_bf_overall_model_Sigmas[z_i][m_i] = np.array(binned_bf_overall_model_Sigmas[z_i][m_i])
-            binned_neg_bf_overall_model_Sigmas[z_i][m_i] = np.array(binned_neg_bf_overall_model_Sigmas[z_i][m_i])
-            binned_shear_sigma_crits[z_i][m_i] = np.array(binned_shear_sigma_crits[z_i][m_i])
-            binned_magf_sigma_crits[z_i][m_i] = np.array(binned_magf_sigma_crits[z_i][m_i])
-            binned_magf_sigma_offsets[z_i][m_i] = np.array(binned_magf_sigma_offsets[z_i][m_i])
-            binned_overall_sigma_offsets[z_i][m_i] = np.array(binned_overall_sigma_offsets[z_i][m_i])
+    for col_i in xrange(reader.num_cols()):
+        for z_i in xrange(num_z_bins):
+            binned_cols[col_i][z_i] = np.array(binned_cols[col_i][z_i])
             
     # Set up chi-squared storage arrays
     shear_dS_chi2s = np.empty((num_z_bins,num_m_bins))
@@ -589,11 +392,16 @@ def main(argv):
         for m_i in xrange(num_m_bins):
         
             m = m_bins_mids[m_i]
-            
             # Calculate the chi-squared values for this bin            
-            shear_chi2s = np.square((binned_dSs[z_i][m_i] - binned_bf_shear_model_dSs[z_i][m_i])/binned_dS_errs[z_i][m_i])
-            magf_chi2s = np.square((binned_dSs[z_i][m_i] - binned_bf_magf_model_dSs[z_i][m_i])/binned_dS_errs[z_i][m_i])
-            overall_chi2s = np.square((binned_dSs[z_i][m_i] - binned_bf_overall_model_dSs[z_i][m_i])/binned_dS_errs[z_i][m_i])
+            shear_chi2s = np.square((binned_cols[reader.index("dS")][z_i][m_i] - \
+                                      binned_cols[reader.index("bf_shear_model_dS")][z_i][m_i])/ \
+                                        binned_cols[reader.index("dS_err")][z_i][m_i])
+            magf_chi2s = np.square((binned_cols[reader.index("dS")][z_i][m_i] - \
+                                     binned_cols[reader.index("bf_magf_model_dS")][z_i][m_i])/ \
+                                        binned_cols[reader.index("dS_err")][z_i][m_i])
+            overall_chi2s = np.square((binned_cols[reader.index("dS")][z_i][m_i] - \
+                                       binned_cols[reader.index("bf_overall_model_dS")][z_i][m_i])/ \
+                                        binned_cols[reader.index("dS_err")][z_i][m_i])
             
             shear_dS_chi2s[z_i,m_i] = np.sum(shear_chi2s[chi_2_i_min:])
             magf_dS_chi2s[z_i,m_i] = np.sum(magf_chi2s[chi_2_i_min:])
@@ -602,17 +410,17 @@ def main(argv):
             # Plot this bin
             ax = fig.add_subplot( num_m_bins, num_z_bins, z_i + num_z_bins*m_i + 1)
             ax.set_yscale("log", nonposy='clip')
-            ax.errorbar( binned_Rs[z_i][m_i], binned_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
+            ax.errorbar( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("dS")][z_i][m_i]/binned_cols[reader.index("shear_sigma_crit")][z_i][m_i],
                          color='b', linestyle='None', label="Measured values",
-                         marker='.',yerr=binned_dS_errs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i] )
-            ax.plot( binned_Rs[z_i][m_i], binned_bf_shear_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
+                         marker='.',yerr=binned_cols[reader.index("dS_err")][z_i][m_i]/binned_cols[reader.index("shear_sigma_crit")][z_i][m_i] )
+            ax.plot( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("bf_shear_model_dS")][z_i][m_i]/binned_cols[reader.index("shear_sigma_crit")][z_i][m_i],
                      'b', linestyle='--', linewidth=2,
                      label="Best fit to shear only")
 #             if(high_z):
-#                 ax.plot( binned_Rs[z_i][m_i], binned_bf_magf_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
+#                 ax.plot( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("bf_magf_model_dS")][z_i][m_i]/binned_cols[reader.index("shear_sigma_crit")][z_i][m_i],
 #                          'r', linestyle=':', linewidth=2,
 #                          label="Best fit to mag. only")
-#                 ax.plot( binned_Rs[z_i][m_i], binned_bf_overall_model_dSs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i],
+#                 ax.plot( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("bf_overall_model_dS")][z_i][m_i]/binned_cols[reader.index("shear_sigma_crit")][z_i][m_i],
 #                          'k', linestyle='-.', linewidth=2,
 #                          label="Best fit to both")
             #ax.legend( [emptiness,emptiness] , [r"$z_{mid}$="+ str(z) ,r"$M_{mid}$=" + "%.1E" % m],loc='upper right')
@@ -700,9 +508,9 @@ def main(argv):
             m = m_bins_mids[m_i]
             
             # Calculate the chi-squared values for this bin            
-            shear_chi2s = np.square((binned_Sigmas[z_i][m_i] - binned_bf_shear_model_Sigmas[z_i][m_i])/binned_Sigma_errs[z_i][m_i])
-            magf_chi2s = np.square((binned_Sigmas[z_i][m_i] - binned_bf_magf_model_Sigmas[z_i][m_i])/binned_Sigma_errs[z_i][m_i])
-            overall_chi2s = np.square((binned_Sigmas[z_i][m_i] - binned_bf_overall_model_Sigmas[z_i][m_i])/binned_Sigma_errs[z_i][m_i])
+            shear_chi2s = np.square((binned_cols[reader.index("Sigma")][z_i][m_i] - binned_cols[reader.index("bf_shear_model_Sigma")][z_i][m_i])/binned_cols[reader.index("Sigma_err")][z_i][m_i])
+            magf_chi2s = np.square((binned_cols[reader.index("Sigma")][z_i][m_i] - binned_cols[reader.index("bf_magf_model_Sigma")][z_i][m_i])/binned_cols[reader.index("Sigma_err")][z_i][m_i])
+            overall_chi2s = np.square((binned_cols[reader.index("Sigma")][z_i][m_i] - binned_cols[reader.index("bf_overall_model_Sigma")][z_i][m_i])/binned_cols[reader.index("Sigma_err")][z_i][m_i])
             
             shear_Sigma_chi2s[z_i,m_i] = np.sum(shear_chi2s[chi_2_i_min:])
             magf_Sigma_chi2s[z_i,m_i] = np.sum(magf_chi2s[chi_2_i_min:])
@@ -710,29 +518,29 @@ def main(argv):
     
             ax = fig.add_subplot( num_m_bins, num_z_bins, z_i + num_z_bins*m_i + 1)
             ax.set_yscale("log", nonposy='clip')
-            ax.errorbar( binned_Rs[z_i][m_i], binned_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+            ax.errorbar( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
                          color='r', linestyle='None', label="Measured values",
-                         marker='.', yerr=binned_Sigma_errs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i] )
-            ax.errorbar( binned_Rs[z_i][m_i], binned_neg_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+                         marker='.', yerr=binned_cols[reader.index("Sigma_err")][z_i][m_i]/binned_cols[reader.index("shear_sigma_crit")][z_i][m_i] )
+            ax.errorbar( binned_cols[reader.index("R")][z_i][m_i], -binned_cols[reader.index("Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
                          color='r', linestyle='None', label="Negative Measured values",
                          marker='o', markerfacecolor='none', markeredgecolor='r', markersize=3,
-                         yerr=binned_Sigma_errs[z_i][m_i]/binned_shear_sigma_crits[z_i][m_i] )
-            ax.plot( binned_Rs[z_i][m_i], binned_bf_shear_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+                         yerr=binned_cols[reader.index("Sigma_err")][z_i][m_i]/binned_cols[reader.index("shear_sigma_crit")][z_i][m_i] )
+            ax.plot( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("bf_shear_model_Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
                      'b', linestyle='--',  linewidth=2,
                      label="Best fit to shear only")
-            ax.plot( binned_Rs[z_i][m_i], binned_neg_bf_shear_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+            ax.plot( binned_cols[reader.index("R")][z_i][m_i], -binned_cols[reader.index("bf_shear_model_Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
                      'b', linestyle='--', linewidth=1,
                      label="Best fit to shear only")
-            ax.plot( binned_Rs[z_i][m_i], binned_bf_magf_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+            ax.plot( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("bf_magf_model_Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
                      'r', linestyle='-', linewidth=1,
                      label="Best fit to mag. only")
-            ax.plot( binned_Rs[z_i][m_i], binned_neg_bf_magf_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+            ax.plot( binned_cols[reader.index("R")][z_i][m_i], -binned_cols[reader.index("bf_magf_model_Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
                      'r', linestyle='-', linewidth=0.5,
                      label="Best fit to mag. only")
-            ax.plot( binned_Rs[z_i][m_i], binned_bf_overall_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+            ax.plot( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("bf_overall_model_Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
                      'k', linestyle='-.', linewidth=2,
                      label="Best fit to both")
-            ax.plot( binned_Rs[z_i][m_i], binned_neg_bf_overall_model_Sigmas[z_i][m_i]/binned_magf_sigma_crits[z_i][m_i],
+            ax.plot( binned_cols[reader.index("R")][z_i][m_i], -binned_cols[reader.index("bf_overall_model_Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
                      'k', linestyle='-.', linewidth=1,
                      label="Best fit to both")
             #ax.legend( [emptiness,emptiness] , [r"$z_{mid}$="+ str(z) ,r"$M_{mid}$=" + "%.1E" % m],loc='upper right')

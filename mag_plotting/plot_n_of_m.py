@@ -62,7 +62,6 @@ def main(argv):
            
     for col_i in xrange(reader.num_cols()):
         binned_cols.append([])
-        
     
     # Set up bins
     if(z_bins_log):
