@@ -418,7 +418,7 @@ def main(argv):
     ax.spines["left"].set_color("none")
     ax.spines["right"].set_color("none")
     ax.tick_params(labelcolor="w", top="off", bottom="off", left="off", right="off")
-    ax.set_xlabel("Redshift",labelpad=20)
+    ax.set_xlabel("Lens Redshift Bin Centre",labelpad=20)
     ax.set_yticklabels([])
     ax.set_xticklabels([])
     
