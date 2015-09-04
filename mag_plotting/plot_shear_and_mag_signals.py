@@ -364,7 +364,8 @@ def main(argv):
     # Convert all lists to arrays
     for col_i in xrange(reader.num_cols()):
         for z_i in xrange(num_z_bins):
-            binned_cols[col_i][z_i] = np.array(binned_cols[col_i][z_i])
+            for m_i in xrange(num_m_bins):
+                binned_cols[col_i][z_i][m_i] = np.array(binned_cols[col_i][z_i][m_i])
             
     # Set up chi-squared storage arrays
     shear_dS_chi2s = np.empty((num_z_bins,num_m_bins))

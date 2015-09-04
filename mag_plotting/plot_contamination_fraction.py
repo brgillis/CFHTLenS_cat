@@ -175,7 +175,7 @@ def main(argv):
     fig.subplots_adjust(wspace=0, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
     
     ax = fig.add_subplot(1,1,1)
-    ax.set_xlabel("Lens Redshift Bin Mid")
+    ax.set_xlabel("Lens Redshift Bin Centre")
     ax.set_ylabel("Contamination Fraction")
     
     z_buffer_mean = np.mean(z_buffers)
