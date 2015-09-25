@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-""" get_masks.py
+""" @file get_masks.py
 
     Created on 14 Oct 2014 as part of project CFHTLenS_mask_testing
 
@@ -25,36 +25,34 @@
 
 import sys
 import subprocess as sbp
+from os.path import join
 
-# Magic values
-
-base_good_fields_filename = "/disk2/brg/git/CFHTLenS_cat/Data/good_fields_list.txt"
-base_bad_fields_filename = "/disk2/brg/git/CFHTLenS_cat/Data/bad_fields_list.txt"
-
-base_command_filename = "/disk2/brg/git/CFHTLenS_cat/CFHTLenS_mask_testing/src/wget_cmd.txt"
-
-field_replace_tag = "REPLACEME_FIELD"
-i_or_y_replace_tag = "REPLACEME_I_OR_Y"
-output_replace_tag = "REPLACEME_OUTPUT_NAME"
-
-mask_output_path = "/disk2/brg/git/CFHTLenS_cat/Data/masks/"
+import CFHTLenS_Mag_fetching_data.magic_values as mv
+from CFHTLenS_Mag_fetching_data.query import get_mask_wget_command
 
 def main(argv):
-    """ TODO Docstring for main.
-    
+    """ Main function for CFHTLenS_Mag_get_masks - downloads mask files from the CFHTLenS
+        server.
+        
+        Takes at command-line:
+        
+        -data_dir <string> (data directory, defaults to './Data')
+        -use_all_fields <bool> (whether or not to get all masks (True) or just one
+                                (False). Defaults to False.)
     """
     
-    # Check if we've passed an argument. If so, this will be the subset of fields to get
+    # Check if we've passed an argument. If so, this will be the data directory to use
     if(len(argv)>=2):
-        subset = argv[1] + "_"
-        good_fields_filename = base_good_fields_filename.replace("good_fields_list.txt",
-                                                                 subset+"good_fields_list.txt")
-        bad_fields_filename = base_bad_fields_filename.replace("bad_fields_list.txt",
-                                                                 subset+"bad_fields_list.txt")
+        data_dir = argv[1]
     else:
-        good_fields_filename = base_good_fields_filename
-        bad_fields_filename = base_bad_fields_filename
+        data_dir = "./Data"
         
+    print("Using " + data_dir + " as data directory. This can be changed by passing")
+    print("the desired directory as the first command-line argument.\n")
+        
+    # Get the full filenames for everything we'll need
+    good_fields_filename = join(data_dir,mv.base_good_fields_filename)
+    bad_fields_filename = join(data_dir,mv.base_bad_fields_filename)        
     
     # Initialize dictionary
     fields = {};
@@ -80,23 +78,19 @@ def main(argv):
                     fields[field] = i_or_y
     
     # Set up the base command
-    command_base = ""
-    with open(base_command_filename) as fcmd:
-        for line in fcmd:
-            command_base = command_base + line.strip() + " "
+    command_base = get_mask_wget_command()
     
     # Now loop through every field
     for field_and_filter in fields.items():
         field = field_and_filter[0]
-        filter = field_and_filter[1]
+        my_filter = field_and_filter[1]
         
         # Set up the output file name
-        output_name = mask_output_path + field + "_" + filter + ".fits"
+        output_name = join(data_dir,mv.mask_path,field + "_" + my_filter + ".fits")
         
         # Set up the command
-        cmd = command_base.replace(output_replace_tag,output_name).replace(field_replace_tag,field).replace(i_or_y_replace_tag,filter)
-        # Print the command (for testing)
-        print(cmd)
+        cmd = command_base.replace(mv.output_replace_tag,output_name).replace( \
+                        mv.query_field_replace_tag,field).replace(mv.query_i_or_y_replace_tag,my_filter)
         # Execute the command
         sbp.call(cmd,shell=True)
         
@@ -104,8 +98,6 @@ def main(argv):
         
         # Set up compression command
         cmd = "rm -f " + packed_name + "; fpack " + output_name + "; rm " + output_name
-        # Print the command (for testing)
-        print(cmd)
         # Execute the command
         sbp.call(cmd,shell=True)
 

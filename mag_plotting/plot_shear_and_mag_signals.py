@@ -20,7 +20,7 @@ def main(argv):
     
     # Magic values
     
-    high_z = True
+    high_z = False
     
     figsize = (8,4)
     labelsize = 8
@@ -416,14 +416,6 @@ def main(argv):
             ax.plot( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("bf_shear_model_dS")][z_i][m_i]/binned_cols[reader.index("shear_sigma_crit")][z_i][m_i],
                      'b', linestyle='--', linewidth=2,
                      label="Best fit to shear only")
-#             if(high_z):
-#                 ax.plot( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("bf_magf_model_dS")][z_i][m_i]/binned_cols[reader.index("shear_sigma_crit")][z_i][m_i],
-#                          'r', linestyle=':', linewidth=2,
-#                          label="Best fit to mag. only")
-#                 ax.plot( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("bf_overall_model_dS")][z_i][m_i]/binned_cols[reader.index("shear_sigma_crit")][z_i][m_i],
-#                          'k', linestyle='-.', linewidth=2,
-#                          label="Best fit to both")
-            #ax.legend( [emptiness,emptiness] , [r"$z_{mid}$="+ str(z) ,r"$M_{mid}$=" + "%.1E" % m],loc='upper right')
             ax.set_ylim(0.0003,0.03)
             
             # Label the redshift and mass
@@ -435,13 +427,6 @@ def main(argv):
                     horizontalalignment='right', transform = ax.transAxes)
             ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.8, r"$M_{mid}$=" + "%.1e" % m, size=labelsize,
                     horizontalalignment='right', transform = ax.transAxes)
-#             if(high_z):
-#                 ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
-#                      "%2.1f, %2.1f, %2.1f" % (shear_dS_chi2s[z_i,m_i],
-#                                               magf_dS_chi2s[z_i,m_i],
-#                                               overall_dS_chi2s[z_i,m_i]),
-#                     size=labelsize, horizontalalignment='right', transform = ax.transAxes)
-#             else:
             ax.text(xmin+(xmax-xmin)*0.95, ymin+(ymax-ymin)*0.7, r"$\chi^2$=" +
                  "%2.1f" % shear_dS_chi2s[z_i,m_i], size=labelsize,
                 horizontalalignment='right', transform = ax.transAxes)
@@ -517,34 +502,24 @@ def main(argv):
             overall_Sigma_chi2s[z_i,m_i] = np.sum(overall_chi2s[chi_2_i_min:])
     
             ax = fig.add_subplot( num_m_bins, num_z_bins, z_i + num_z_bins*m_i + 1)
-            ax.set_yscale("log", nonposy='clip')
+            ax.set_yscale("symlog",linthreshy=0.001)
             ax.errorbar( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
                          color='r', linestyle='None', label="Measured values",
                          marker='.', yerr=binned_cols[reader.index("Sigma_err")][z_i][m_i]/binned_cols[reader.index("shear_sigma_crit")][z_i][m_i] )
-            ax.errorbar( binned_cols[reader.index("R")][z_i][m_i], -binned_cols[reader.index("Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
-                         color='r', linestyle='None', label="Negative Measured values",
-                         marker='o', markerfacecolor='none', markeredgecolor='r', markersize=3,
-                         yerr=binned_cols[reader.index("Sigma_err")][z_i][m_i]/binned_cols[reader.index("shear_sigma_crit")][z_i][m_i] )
             ax.plot( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("bf_shear_model_Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
                      'b', linestyle='--',  linewidth=2,
-                     label="Best fit to shear only")
-            ax.plot( binned_cols[reader.index("R")][z_i][m_i], -binned_cols[reader.index("bf_shear_model_Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
-                     'b', linestyle='--', linewidth=1,
                      label="Best fit to shear only")
             ax.plot( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("bf_magf_model_Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
                      'r', linestyle='-', linewidth=1,
                      label="Best fit to mag. only")
-            ax.plot( binned_cols[reader.index("R")][z_i][m_i], -binned_cols[reader.index("bf_magf_model_Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
-                     'r', linestyle='-', linewidth=0.5,
-                     label="Best fit to mag. only")
             ax.plot( binned_cols[reader.index("R")][z_i][m_i], binned_cols[reader.index("bf_overall_model_Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
                      'k', linestyle='-.', linewidth=2,
                      label="Best fit to both")
-            ax.plot( binned_cols[reader.index("R")][z_i][m_i], -binned_cols[reader.index("bf_overall_model_Sigma")][z_i][m_i]/binned_cols[reader.index("magf_sigma_crit")][z_i][m_i],
-                     'k', linestyle='-.', linewidth=1,
-                     label="Best fit to both")
-            #ax.legend( [emptiness,emptiness] , [r"$z_{mid}$="+ str(z) ,r"$M_{mid}$=" + "%.1E" % m],loc='upper right')
-            ax.set_ylim(0.0003,0.03)
+            
+            # Plot the zero line
+            ax.plot([0.,2000.],[0.,0.],label=None,color="k",linestyle="dashed")
+            
+            ax.set_ylim(-0.011,0.09)
             
             # Label the redshift and mass
             xmin = 0.
@@ -568,20 +543,24 @@ def main(argv):
             if(m_i!=num_m_bins-1): # Not on the bottom row
                 ax.set_xticklabels([])
                 
+            yticks = [-0.01,-0.001,0.,0.001, 0.01]
+            xticks = [0, 500,1000,1500,2000]
+            xticks_br = [500,1000,1500,2000]
+                
             if((z_i==0) and (m_i==num_m_bins-1)): # bottom-left
-                ax.set_yticks([0.001, 0.01])
-                ax.set_yticklabels([0.001, 0.01],fontsize=10)
-                ax.set_xticks([0, 500,1000,1500,2000])
-                ax.set_xticklabels([0, 500,1000,1500,2000],fontsize=xl_fontsize)
+                ax.set_yticks(yticks)
+                ax.set_yticklabels(yticks,fontsize=10)
+                ax.set_xticks(xticks)
+                ax.set_xticklabels(xticks,fontsize=xl_fontsize)
                 continue
                 
             if(z_i==0): # left column
-                ax.set_yticks([0.001, 0.01])
-                ax.set_yticklabels([0.001, 0.01],fontsize=10)
+                ax.set_yticks(yticks)
+                ax.set_yticklabels(yticks,fontsize=10)
                 
             if(m_i==num_m_bins-1): # bottom row
-                ax.set_xticks([500,1000,1500,2000])
-                ax.set_xticklabels([500,1000,1500,2000],fontsize=xl_fontsize)
+                ax.set_xticks(xticks_br)
+                ax.set_xticklabels(xticks_br,fontsize=xl_fontsize)
     
     
     # Save the figure

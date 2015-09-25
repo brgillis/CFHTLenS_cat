@@ -451,19 +451,19 @@ def main(argv):
                 ax.errorbar( binned_zs[m_i][overall_good]+z_shift, binned_overall_sat_m_bests[m_i][overall_good],
                              color='k', linestyle='None', label="Overall fit",
                              marker='*',yerr=binned_overall_sat_m_errs[m_i][overall_good] )
-                if(len(binned_zs[m_i][shear_bad]>0)):
+                if(len(binned_zs[m_i][shear_bad])>0):
                     ax.errorbar( binned_zs[m_i][shear_bad]-z_shift, binned_shear_sat_m_bests[m_i][shear_bad],
-                             color=(0.,0.,0.5), linestyle='None', label=None,
-                             marker='.', alpha=0.25, yerr=binned_shear_sat_m_errs[m_i][shear_bad] )
-                if(len(binned_zs[m_i][magf_bad]>0)):
+                             color=(0.5,0.5,1.), linestyle='None', label=None,
+                             marker='.', yerr=binned_shear_sat_m_errs[m_i][shear_bad] )
+                if(len(binned_zs[m_i][magf_bad])>0):
                     ax.errorbar( binned_zs[m_i][magf_bad], binned_magf_sat_m_bests[m_i][magf_bad],
-                             color=(0.5,0.,0.), linestyle='None', label=None,
-                             marker='o', alpha=0.25, markerfacecolor='none', markeredgecolor=(0.5,0.,0.), markersize=3,
+                             color=(1.,0.5,0.5), linestyle='None', label=None,
+                             marker='o', markerfacecolor='none', markeredgecolor=(1.,0.5,0.5), markersize=3,
                              yerr=binned_magf_sat_m_errs[m_i][magf_bad] )
-                if(len(binned_zs[m_i][overall_bad]>0)):
+                if(len(binned_zs[m_i][overall_bad])>0):
                     ax.errorbar( binned_zs[m_i][overall_bad]+z_shift, binned_overall_sat_m_bests[m_i][overall_bad],
                              color=(0.5,0.5,0.5), markeredgecolor=(0.5,0.5,0.5), linestyle='None', label=None,
-                             marker='*', alpha=0.25, yerr=binned_overall_sat_m_errs[m_i][overall_bad] )
+                             marker='*', yerr=binned_overall_sat_m_errs[m_i][overall_bad] )
                 ax.set_ylim(9.1,13.9)
                 ax.set_ylabel(r"$\log_{10}(M_{\rm 1h}/M_{\rm sun})$",labelpad=5)
             elif(p_i==1):
@@ -479,19 +479,19 @@ def main(argv):
                 ax.errorbar( binned_zs[m_i][overall_good]+z_shift, binned_overall_group_m_bests[m_i][overall_good],
                              color='k', linestyle='None', label="Overall fit",
                              marker='*',yerr=binned_overall_group_m_errs[m_i][overall_good] )
-                if(len(binned_zs[m_i][shear_bad]>0)):
+                if(len(binned_zs[m_i][shear_bad])>0):
                     ax.errorbar( binned_zs[m_i][shear_bad]-z_shift, binned_shear_group_m_bests[m_i][shear_bad],
-                             color=(0.,0.,0.5), linestyle='None', label=None,
-                             marker='.', alpha=0.25, yerr=binned_shear_group_m_errs[m_i][shear_bad] )
-                if(len(binned_zs[m_i][magf_bad]>0)):
+                             color=(0.5,0.5,1.), linestyle='None', label=None,
+                             marker='.', yerr=binned_shear_group_m_errs[m_i][shear_bad] )
+                if(len(binned_zs[m_i][magf_bad])>0):
                     ax.errorbar( binned_zs[m_i][magf_bad], binned_magf_group_m_bests[m_i][magf_bad],
-                             color=(0.5,0.,0.), linestyle='None', label=None,
-                             marker='o', alpha=0.25, markerfacecolor='none', markeredgecolor=(0.5,0.,0.), markersize=3,
+                             color=(1.,0.5,0.5), linestyle='None', label=None,
+                             marker='o', markerfacecolor='none', markeredgecolor=(1.,0.5,0.5), markersize=3,
                              yerr=binned_magf_group_m_errs[m_i][magf_bad] )
-                if(len(binned_zs[m_i][overall_bad]>0)):
+                if(len(binned_zs[m_i][overall_bad])>0):
                     ax.errorbar( binned_zs[m_i][overall_bad]+z_shift, binned_overall_group_m_bests[m_i][overall_bad],
                              color=(0.5,0.5,0.5), markeredgecolor=(0.5,0.5,0.5), linestyle='None', label=None,
-                             marker='*', alpha=0.25, yerr=binned_overall_group_m_errs[m_i][overall_bad] )
+                             marker='*', yerr=binned_overall_group_m_errs[m_i][overall_bad] )
                 ax.set_ylim(12.1,16.9)
                 ax.set_ylabel(r"$\log_{10}(M_{\rm gr}/M_{\rm sun})$",labelpad=5)
             elif(p_i==2):
@@ -507,20 +507,20 @@ def main(argv):
                 ax.errorbar( binned_zs[m_i][overall_good]+z_shift, binned_overall_sat_frac_bests[m_i][overall_good],
                              color='k', linestyle='None', label="Overall fit",
                              marker='*',yerr=binned_overall_sat_frac_errs[m_i][overall_good] )
-                if(len(binned_zs[m_i][shear_bad]>0)):
+                if(len(binned_zs[m_i][shear_bad])>0):
                     ax.errorbar( binned_zs[m_i][shear_bad]-z_shift, binned_shear_sat_frac_bests[m_i][shear_bad],
-                             color=(0.,0.,0.5), linestyle='None', label=None,
-                             marker='.', alpha=0.25, yerr=binned_shear_sat_frac_errs[m_i][shear_bad] )
-                if(len(binned_zs[m_i][magf_bad]>0)):
+                             color=(0.5,0.5,1.), linestyle='None', label=None,
+                             marker='.', yerr=binned_shear_sat_frac_errs[m_i][shear_bad] )
+                if(len(binned_zs[m_i][magf_bad])>0):
                     ax.errorbar( binned_zs[m_i][magf_bad], binned_magf_sat_frac_bests[m_i][magf_bad],
-                             color=(0.5,0.,0.), linestyle='None', label=None,
-                             marker='o', alpha=0.25, markerfacecolor='none', markeredgecolor=(0.5,0.,0.), markersize=3,
+                             color=(1.,0.5,0.5), linestyle='None', label=None,
+                             marker='o', markerfacecolor='none', markeredgecolor=(1.,0.5,0.5), markersize=3,
                              yerr=binned_magf_sat_frac_errs[m_i][magf_bad] )
-                if(len(binned_zs[m_i][overall_bad]>0)):
+                if(len(binned_zs[m_i][overall_bad])>0):
                     ax.errorbar( binned_zs[m_i][overall_bad]+z_shift, binned_overall_sat_frac_bests[m_i][overall_bad],
                              color=(0.5,0.5,0.5), markeredgecolor=(0.5,0.5,0.5), linestyle='None', label=None,
-                             marker='*', alpha=0.25, yerr=binned_overall_sat_frac_errs[m_i][overall_bad] )
-                ax.set_ylim(0.01,0.69)
+                             marker='*', yerr=binned_overall_sat_frac_errs[m_i][overall_bad] )
+                ax.set_ylim(0.01,0.84)
                 ax.set_ylabel(r"$f_{\rm sat}$",labelpad=5)
             elif(p_i==3):
                 # Plot sat_frac
@@ -532,12 +532,12 @@ def main(argv):
                 ax.errorbar( binned_zs[m_i][overall_good]+z_shift, binned_overall_Sigma_offset_bests[m_i][overall_good]/binned_Sigma_crits[m_i][overall_good],
                              color='k', linestyle='None', label="Overall fit",
                              marker='*',yerr=binned_overall_Sigma_offset_errs[m_i][overall_good]/binned_Sigma_crits[m_i][overall_good] )
-                if(len(binned_zs[m_i][magf_bad]>0)):
+                if(len(binned_zs[m_i][magf_bad])>0):
                     ax.errorbar( binned_zs[m_i][magf_bad], binned_magf_Sigma_offset_bests[m_i][magf_bad],
-                             color=(0.5,0.,0.), linestyle='None', label=None,
-                             marker='o', markerfacecolor='none', markeredgecolor=(0.5,0.,0.), markersize=3,
+                             color=(1.,0.5,0.5), linestyle='None', label=None,
+                             marker='o', markerfacecolor='none', markeredgecolor=(1.,0.5,0.5), markersize=3,
                              yerr=binned_magf_Sigma_offset_errs[m_i][magf_bad] )
-                if(len(binned_zs[m_i][overall_bad]>0)):
+                if(len(binned_zs[m_i][overall_bad])>0):
                     ax.errorbar( binned_zs[m_i][overall_bad]+z_shift, binned_overall_Sigma_offset_bests[m_i][overall_bad],
                              color=(0.5,0.5,0.5), markeredgecolor=(0.5,0.5,0.5), linestyle='None', label=None,
                              marker='*', yerr=binned_overall_Sigma_offset_errs[m_i][overall_bad] )
