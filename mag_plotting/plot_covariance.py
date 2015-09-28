@@ -27,168 +27,227 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+import subprocess as sbp
 import sys
 
-from matplotlib.ticker import FixedLocator
-from matplotlib import rc
+import matplotlib
 
-rc('text', usetex=True)
+matplotlib.rcParams['ps.useafm'] = True
+matplotlib.rcParams['pdf.use14corefonts'] = True
+matplotlib.rcParams['text.usetex'] = True
 
 # Magic values
-bins_to_plot = ((0.2,10.), (0.9, 9.), (1.0,10.))
+bins_to_plot = ((0.2,10), (0.9, 9), (1,10))
+
+paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/Magnification_Method/"
+    
+data_name_root = "/home/brg/git/CFHTLenS_cat/Data/gg_lensing_signal_20_bins_fitting_results"
+    
+# Plottable ranges for each parameter
+sat_m_range = (9.,13.5)
+group_m_range = (11.,16.)
+sat_frac_range = (0.,1.)
+kappa_offset_range = (-0.005,0.005)    
+
+# Labels for each parameter
+sat_m_label = r"$\log_{\rm 10}\left( M_{\rm 1h}/M_{\rm sun} \right)$"
+group_m_label = r"$\log_{\rm 10}\left( M_{\rm gr}/M_{\rm sun} \right)$"
+sat_frac_label = r"$f_{\rm sat}$"
+kappa_offset_label = r"$\kappa_{\rm offset}$"
 
 def main(argv):
-    shear_data = np.genfromtxt('gg_lensing_signal_20_bins_fitting_results_z-0p2_m-10_shear_test_points.dat',
-                         names='sat_m,group_m,sat_frac,Sigma_offset',
-                         usecols=(0,1,2,3))
-    magf_data = np.genfromtxt('gg_lensing_signal_20_bins_fitting_results_z-0p2_m-10_magf_test_points.dat',
-                         names='sat_m,group_m,sat_frac,Sigma_offset',
-                         usecols=(0,1,2,3))
-    overall_data = np.genfromtxt('gg_lensing_signal_20_bins_fitting_results_z-0p2_m-10_overall_test_points.dat',
-                         names='sat_m,group_m,sat_frac,Sigma_offset',
-                         usecols=(0,1,2,3))
     
-    sat_m = shear_data['sat_m'], magf_data['sat_m'], overall_data['sat_m']
-    group_m = shear_data['group_m'], magf_data['group_m'], overall_data['group_m']
-    sat_frac = shear_data['sat_frac'], magf_data['sat_frac'], overall_data['sat_frac']
-    Sigma_offset = shear_data['Sigma_offset'], magf_data['Sigma_offset'], overall_data['Sigma_offset']
-    
-    # Plottable ranges for each parameter
-    sat_m_range = (11.,13.5)
-    group_m_range = (11.,16.)
-    sat_frac_range = (0.,1.)
-    Sigma_offset_range = (-0.01,0.01)
-    
-    # Number of bins in 2d plots (per axis)
-    num_bins_2d = 20
-    
-    # Number of bins in 1d plots
-    num_bins_1d = 50
-    
-    fig = plt.figure(4, figsize=(8,8))
-    fig.subplots_adjust(hspace=0.001, wspace=0.001, left=0.08, bottom=0.095, top=0.975, right=0.93)
-    
-    # gridspec enables you to assign different formats to panels in one plot.
-    gs = gridspec.GridSpec(4, 4, width_ratios=[1,1], height_ratios=[1,1])
-    
-    # Set up each of the 2D plots
-    for  x_data,   x_range,        y_data,       y_range,     plot_shear, pos, bottom_row, left_col in (
-        (sat_m,    sat_m_range,    group_m,      group_m_range,      True,  12, True,  True),
-        (sat_m,    sat_m_range,    sat_frac,     sat_frac_range,     True,  13, True,  False),
-        (sat_m,    sat_m_range,    Sigma_offset, Sigma_offset_range, False, 14, True,  False),
-        (group_m,  group_m_range,  sat_frac,     sat_frac_range,     True,  8,  False, True),
-        (group_m,  group_m_range,  Sigma_offset, Sigma_offset_range, False, 9,  False, True),
-        (sat_frac, sat_frac_range, Sigma_offset, Sigma_offset_range, False, 4,  False, True)):
+    for bin_to_plot in bins_to_plot:
+        z_tag = str(bin_to_plot[0]).replace(".","p")
+        m_tag = str(bin_to_plot[1]).replace(".","p")
         
-        # Work on the plot in this position
-        plt.subplot(gs[pos])
+        data_name_tag = "_z-" + z_tag + "_m-" + m_tag + "_"
+    
+        shear_data = np.genfromtxt(data_name_root + data_name_tag + 'shear_test_points.dat',
+                             names='sat_m,group_m,sat_frac,kappa_offset',
+                             usecols=(0,1,2,3))
+        magf_data = np.genfromtxt(data_name_root + data_name_tag + 'magf_test_points.dat',
+                             names='sat_m,group_m,sat_frac,kappa_offset',
+                             usecols=(0,1,2,3))
+        overall_data = np.genfromtxt(data_name_root + data_name_tag + 'overall_test_points.dat',
+                             names='sat_m,group_m,sat_frac,kappa_offset',
+                             usecols=(0,1,2,3))
         
-        # Convert to 2d histogram for each of the shear, magnification, and overall data
-        for index, label, colour in ((0, "Shear",         "b"),
-                                     (1, "Magnification", "r"),
-                                     (2, "Combined",      "k")):
-            hist2D, xedges, yedges = np.histogram2d(x_data, y_data,
-                                                    bins=[num_bins_2d,num_bins_2d],
-                                                    range=[x_range,y_range],
-                                                    normed=False)
+        sat_m = shear_data['sat_m'], magf_data['sat_m'], overall_data['sat_m']
+        group_m = shear_data['group_m'], magf_data['group_m'], overall_data['group_m']
+        sat_frac = shear_data['sat_frac'], magf_data['sat_frac'], overall_data['sat_frac']
+        kappa_offset = shear_data['kappa_offset'], magf_data['kappa_offset'], overall_data['kappa_offset']
         
-            # Plot Monte-Carlo samples as 2D histogram.
-            hist2D = np.transpose(hist2D)  # Beware: np switches axes, so switch back.
+        # Number of bins in 2d plots (per axis)
+        num_bins_2d = 20
         
-            extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+        # Number of bins in 1d plots
+        num_bins_1d = 50
         
-            # We have to find the proper levels for 68% and 95% of the data
-            totcount = hist2D.sum()
-            levelstep = 0.0001*np.max(hist2D)
-            
-            #95% first
-            goalcount = 0.95*totcount
-            curcount = totcount
-            
-            testlevel = levelstep
-            while(curcount>goalcount):
-                curcount = hist2D[hist2D > testlevel].sum()
-                testlevel += levelstep
-            
-            level95 = testlevel - levelstep/2
-            
-            #68% now
-            goalcount = 0.68*totcount
-            curcount = totcount
-            
-            while(curcount>goalcount):
-                curcount = hist2D[hist2D > testlevel].sum()
-                testlevel += levelstep
-            
-            level68 = testlevel - levelstep/2
-            
-            levels = (level68, level95)
-            cset = plt.contour(hist2D, levels, origin='lower',colors=[colour,colour],
-                               linewidths=(2, 1),extent=extent,label=label)
-            fmt = {}
-            strs = [ '68\%', '95\%', ]
-            for l,s in zip( cset.levels, strs ):
-                fmt[l] = s
-            plt.clabel(cset, inline=1, fontsize=10, fmt=fmt)
-            for c in cset.collections:
-                c.set_linestyle('solid')
+        fig = plt.figure(4, figsize=(8,8))
+        fig.subplots_adjust(hspace=0.001, wspace=0.001, left=0.08, bottom=0.095, top=0.975, right=0.93)
         
-        plt.xlim(x_range)
-        plt.ylim(y_range)
-        plt.ylabel(r'c',fontsize = 16)
-        plt.xlabel(r'$\log_{\rm 10}{M_{\mathrm{sat,HDE}}}$ $(M_{\mathrm{\odot}})$',fontsize=16)
-        ax.xaxis.set_major_locator(FixedLocator([11.3,11.4,11.5,11.6,11.7,11.8,11.9]))
-        plt.yticks(fontsize=12)
-        plt.xticks(fontsize=12)
-        mass = np.linspace(11,12,100)
-        conc = 4.67*(0.73*(10**mass)/(10**14))**(-0.11)
-        _proxy = [plt.plot(0,0,'-',lw=3, color='red',linestyle='solid',label='HDE')]
-        _proxy = [plt.plot(0,0,'-',lw=3, color='blue',linestyle='dashed',label='LDE')]
-    plt.plot(mass,conc,'-',lw=3, color='black',linestyle='dotted',label='Standard M-c relation')
-    plt.legend( loc='upper right',bbox_to_anchor=(-0.07, -0.3, 1, 1), bbox_transform=plt.gcf().transFigure)
+        # Set up each of the 2D plots
+        for  x_data,   x_range,        x_label,        y_data,       y_range, \
+                y_label,     plot_shear, pos, bottom_row, left_col in (
+            (sat_m,    sat_m_range,    sat_m_label,    group_m,      group_m_range,
+                group_m_label,      True,  13, True,  True),
+            (sat_m,    sat_m_range,    sat_m_label,    sat_frac,     sat_frac_range,
+                sat_frac_label,     True,  9, False,  True),
+            (sat_m,    sat_m_range,    sat_m_label,    kappa_offset, kappa_offset_range,
+                kappa_offset_label, False, 5, False,  True),
+            (kappa_offset,  kappa_offset_range,  kappa_offset_label,  group_m,     group_m_range,
+                group_m_label,     False,  14,  True, False),
+            (kappa_offset,  kappa_offset_range,  kappa_offset_label,  sat_frac, sat_frac_range,
+                sat_frac_label, False, 10,  False, False),
+            (sat_frac, sat_frac_range, sat_frac_label, group_m, group_m_range,
+                group_m_label, True, 15,  True, False)):
+            
+            # Work on the plot in this position
+            ax = plt.subplot(4,4,pos)
+            
+            # Convert to 2d histogram for each of the shear, magnification, and overall data
+            for index, label, color, linestyle in ((0, "Shear",         "b", "--"),
+                                                   (1, "Magnification", "r", "-"),
+                                                   (2, "Combined",      "k", "-.")):
+                # Skip shear if necessary
+                if((not plot_shear) and (index==0)):
+                    continue
+                
+                hist2D, xedges, yedges = np.histogram2d(x_data[index], y_data[index],
+                                                        bins=[num_bins_2d,num_bins_2d],
+                                                        range=[x_range,y_range],
+                                                        normed=False)
+            
+                # Plot Monte-Carlo samples as 2D histogram.
+                hist2D = np.transpose(hist2D)  # Beware: np switches axes, so switch back.
+            
+                extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+            
+                # We have to find the proper levels for 68% and 95% of the data
+                totcount = hist2D.sum()
+                levelstep = 0.0001*np.max(hist2D)
+                
+                #95% first
+                goalcount = 0.95*totcount
+                curcount = totcount
+                
+                testlevel = levelstep
+                while(curcount>goalcount):
+                    curcount = hist2D[hist2D > testlevel].sum()
+                    testlevel += levelstep
+                
+                level95 = testlevel - levelstep/2
+                
+                #68% now
+                goalcount = 0.68*totcount
+                curcount = totcount
+                
+                while(curcount>goalcount):
+                    curcount = hist2D[hist2D > testlevel].sum()
+                    testlevel += levelstep
+                
+                level68 = testlevel - levelstep/2
+                
+                levels = (level68, level95)
+                cset = plt.contour(hist2D, levels, origin='lower',colors=[color,color],
+                                   linewidths=(2, 1),extent=extent,label=label)
+                for c in cset.collections:
+                    c.set_linestyle(linestyle)
+                
+                # Add to legend only for the plot in bottom-left (so we don't get duplicates)
+                if(bottom_row and left_col):
+                    _proxy = [plt.plot(0,0,'-',lw=3, color=color,linestyle=linestyle,label=label)]
+        
+                    # Plot the legend for these plots in the upper right corner
+                    plt.legend( loc='upper right',bbox_to_anchor=(-0.07, -0.3, 1, 1),
+                                bbox_transform=plt.gcf().transFigure)
+            
+            plt.xlim(x_range)
+            plt.ylim(y_range)
+            
+            # If on the bottom row, set the x label
+            if(bottom_row):
+                plt.xlabel(x_label,fontsize=12)
+            else:
+                # Else no x ticks
+                ax.set_xticklabels([])
+                
+            # If on the left edge, set the y label
+            if(left_col):
+                plt.ylabel(y_label,fontsize=12)
+            else:
+                # Else no y tick labels
+                ax.set_yticklabels([])
+                
+            # Set the font size for the ticks
+            plt.yticks(fontsize=8)
+            plt.xticks(fontsize=8)
+        
+        # Now do the 1D histograms
+        for  data,         data_range,         data_label,    plot_shear, pos, bottom_row, left_col in (
+            (sat_m,        sat_m_range,        sat_m_label,   True,       1,  False,        True),
+            (group_m,      group_m_range,      group_m_label, True,       16,  True,       False),
+            (sat_frac,     sat_frac_range,     sat_frac_label,   True,       11,   False,       False),
+            (kappa_offset, kappa_offset_range, kappa_offset_label,   False,      6,   False,       False)):
+            
+            # Set the position we're plotting now
+            ax = plt.subplot(4,4,pos)
     
-    # Bin X,Y separately. As 1D bin, can use more bins now.
-    S  = 26
-    LSM = np.histogram(Satmass, bins=S, range=SMRANGE, normed=True)[0]
-    LC = np.histogram(C, bins=S, range=CRANGE, normed=True)[0]
-    # Restore positions lost by binning.
-    SM = SMRANGE[0] + (SMRANGE[1]-SMRANGE[0])*np.array(range(0,len(LSM)))/float(len(LSM)-1)
-    C = CRANGE[0] + (CRANGE[1]-CRANGE[0])*np.array(range(0,len(LC)))/float(len(LC)-1)
-    LSM2 = np.histogram(Satmass2, bins=S, range=SMRANGE, normed=True)[0]
-    LC2 = np.histogram(C2, bins=S, range=CRANGE, normed=True)[0]
-    # Restore positions lost by binning.
-    SM2 = SMRANGE[0] + (SMRANGE[1]-SMRANGE[0])*np.array(range(0,len(LSM2)))/float(len(LSM2)-1)
-    C2 = CRANGE[0] + (CRANGE[1]-CRANGE[0])*np.array(range(0,len(LC2)))/float(len(LC2)-1)
+            # Determine the peak for all fitting types
+            peak = 0.
     
-    # bottom right panel: projected density of x.
-    plt.subplot(gs[0])
-    plt.plot(SM, LSM, '-', lw=3, color='red',linestyle='solid')
-    plt.plot(SM2, LSM2, '-', lw=3, color='blue',linestyle='dashed')
+            # Convert to 1d histogram for each of the shear, magnification, and overall data
+            for index, label, color, linestyle in ((0, "Shear",         "b", "--"),
+                                                   (1, "Magnification", "r", "-"),
+                                                   (2, "Combined",      "k", "-.")):
+                # Skip shear if necessary
+                if((not plot_shear) and (index==0)):
+                    continue
     
-    plt.yticks([])
-    plt.xlim(SMRANGE)
-    plt.ylim(0.0, 1.1*np.max(LSM2))
-    ax = plt.gca()
-    ax.xaxis.set_major_locator(FixedLocator([11.4,11.5,11.6,11.7,11.8,11.9]))
-    plt.xticks(fontsize=12)
-    plt.ylabel(r'$\log_{\rm 10}{M_{\mathrm{sat,HDE}}}$ $(M_{\mathrm{\odot}})$',fontsize=16)
+                hist_height = np.histogram(data[index], bins=num_bins_1d, range=data_range, normed=True)[0]
+                # Restore positions lost by binning.
+                hist_data = data_range[0] + (data_range[1]-data_range[0]) * \
+                    np.array(range(0,len(hist_height)))/float(len(hist_height)-1)
     
-    # top left panel: projected density of y.
-    plt.subplot(gs[3])
-    plt.plot(C, LC, '-', lw=3, color='red',linestyle='solid')
-    plt.plot(C2, LC2, '-', lw=3, color='blue',linestyle='dashed')
+                # bottom right panel: projected density of x.
+                plt.plot(hist_data, hist_height, color=color,linestyle=linestyle)
+                
+                cur_peak = np.max(hist_height)
+                if(cur_peak>peak):
+                    peak = cur_peak
+            
+            plt.yticks([])
+            plt.xlim(data_range)
+            plt.ylim(0.0, 1.1*peak)
+            
+            # Add an x label if on the bottom row
+            if(bottom_row):
+                plt.xlabel(data_label,fontsize=12)
+            else:
+                # Else no x ticks
+                ax.set_xticklabels([])
+            
+            # Add a y label if on the left column
+            if(left_col):
+                plt.ylabel(data_label,fontsize=12)
+            else:
+                # Else no y tick labels
+                ax.set_yticklabels([])
+                
+            plt.xticks(fontsize=8)
+        
     
-    ax = plt.gca()
-    ax.xaxis.set_major_locator(FixedLocator([4,8,12,16,20]))
-    plt.yticks([])
-    plt.xticks(fontsize=12)
-    plt.xlabel(r'c', fontsize=16)
-    plt.ylim(0.0, 1.1*np.max(LC2))
-    plt.xlim(CRANGE)
-    
-    plt.savefig('plot_contoursmc.png', format='png')
-    plt.show()
+        # Save the figure
+        outfile_name = data_name_root + data_name_tag + "_covar.eps"
+        plt.savefig(outfile_name, format="eps", bbox_inches="tight", pad_inches=0.05)
+        
+        # Copy it to the paper location
+        cmd = "cp " + outfile_name + " " + paper_location
+        sbp.call(cmd,shell=True)
+            
+        # Show the figure
+        plt.show()
 
 if __name__ == "__main__":
     main(sys.argv)

@@ -57,6 +57,10 @@ def main(argv):
     shear_sat_frac_err_offset = 0
     shear_sat_frac_err_factor = 1
     
+    shear_sqrt_det_covar_col_name = "shear_sqrt_det_covar"
+    shear_sqrt_det_covar_offset = 0
+    shear_sqrt_det_covar_factor = 1
+    
     magf_sat_m_err_col_name = "magf_sat_m_err"
     magf_sat_m_err_offset = 0
     magf_sat_m_err_factor = 1
@@ -73,6 +77,10 @@ def main(argv):
     magf_Sigma_offset_err_offset = 0
     magf_Sigma_offset_err_factor = pc*pc/m_sun
     
+    magf_sqrt_det_covar_col_name = "magf_sqrt_det_covar"
+    magf_sqrt_det_covar_offset = 0
+    magf_sqrt_det_covar_factor = 1
+    
     overall_sat_m_err_col_name = "overall_sat_m_err"
     overall_sat_m_err_offset = 0
     overall_sat_m_err_factor = 1
@@ -88,6 +96,10 @@ def main(argv):
     overall_Sigma_offset_err_col_name = "overall_Sigma_offset_err"
     overall_Sigma_offset_err_offset = 0
     overall_Sigma_offset_err_factor = pc*pc/m_sun
+    
+    overall_sqrt_det_covar_col_name = "overall_sqrt_det_covar"
+    overall_sqrt_det_covar_offset = 0
+    overall_sqrt_det_covar_factor = 1
     
     
     
@@ -118,6 +130,10 @@ def main(argv):
     shear_sat_frac_errs = np.array(shear_sat_frac_errs)
     shear_sat_frac_errs = (shear_sat_frac_errs + shear_sat_frac_err_offset)*shear_sat_frac_err_factor
     
+    shear_sqrt_det_covars = fitting_results_table[shear_sqrt_det_covar_col_name]
+    shear_sqrt_det_covars = np.array(shear_sqrt_det_covars)
+    shear_sqrt_det_covars = (shear_sqrt_det_covars + shear_sqrt_det_covar_offset)*shear_sqrt_det_covar_factor
+    
     magf_sat_m_errs = fitting_results_table[magf_sat_m_err_col_name]
     magf_sat_m_errs = np.array(magf_sat_m_errs)
     magf_sat_m_errs = (magf_sat_m_errs + magf_sat_m_err_offset)*magf_sat_m_err_factor
@@ -133,6 +149,10 @@ def main(argv):
     magf_Sigma_offset_errs = fitting_results_table[magf_Sigma_offset_err_col_name]
     magf_Sigma_offset_errs = np.array(magf_Sigma_offset_errs)
     magf_Sigma_offset_errs = (magf_Sigma_offset_errs + magf_Sigma_offset_err_offset)*magf_Sigma_offset_err_factor
+    
+    magf_sqrt_det_covars = fitting_results_table[magf_sqrt_det_covar_col_name]
+    magf_sqrt_det_covars = np.array(magf_sqrt_det_covars)
+    magf_sqrt_det_covars = (magf_sqrt_det_covars + magf_sqrt_det_covar_offset)*magf_sqrt_det_covar_factor
     
     overall_sat_m_errs = fitting_results_table[overall_sat_m_err_col_name]
     overall_sat_m_errs = np.array(overall_sat_m_errs)
@@ -150,6 +170,10 @@ def main(argv):
     overall_Sigma_offset_errs = np.array(overall_Sigma_offset_errs)
     overall_Sigma_offset_errs = (overall_Sigma_offset_errs + overall_Sigma_offset_err_offset)*overall_Sigma_offset_err_factor
     
+    overall_sqrt_det_covars = fitting_results_table[overall_sqrt_det_covar_col_name]
+    overall_sqrt_det_covars = np.array(overall_sqrt_det_covars)
+    overall_sqrt_det_covars = (overall_sqrt_det_covars + overall_sqrt_det_covar_offset)*overall_sqrt_det_covar_factor
+    
     # Set up bins
     if(m_bins_log):
         m_bins, m_bins_mids = bf.setup_log_bins(m_bins_min, m_bins_max, num_m_bins)
@@ -161,36 +185,48 @@ def main(argv):
     binned_shear_sat_m_errs = []
     binned_shear_group_m_errs = []
     binned_shear_sat_frac_errs = []
+    binned_shear_sqrt_det_covars = []
     binned_magf_sat_m_errs = []
     binned_magf_group_m_errs = []
     binned_magf_sat_frac_errs = []
     binned_magf_Sigma_offset_errs = []
+    binned_magf_sqrt_det_covars = []
     binned_overall_sat_m_errs = []
     binned_overall_group_m_errs = []
     binned_overall_sat_frac_errs = []
     binned_overall_Sigma_offset_errs = []
+    binned_overall_sqrt_det_covars = []
     
     for m_i in xrange(num_m_bins):
         binned_zs.append([])
         binned_shear_sat_m_errs.append([])
         binned_shear_group_m_errs.append([])
         binned_shear_sat_frac_errs.append([])
+        binned_shear_sqrt_det_covars.append([])
         binned_magf_sat_m_errs.append([])
         binned_magf_group_m_errs.append([])
         binned_magf_sat_frac_errs.append([])
         binned_magf_Sigma_offset_errs.append([])
+        binned_magf_sqrt_det_covars.append([])
         binned_overall_sat_m_errs.append([])
         binned_overall_group_m_errs.append([])
         binned_overall_sat_frac_errs.append([])
         binned_overall_Sigma_offset_errs.append([])
+        binned_overall_sqrt_det_covars.append([])
 
     
     for z, m, shear_sat_m_err, shear_group_m_err, shear_sat_frac_err, \
+        shear_sqrt_det_covar, \
         magf_sat_m_err, magf_group_m_err, magf_sat_frac_err, magf_Sigma_offset_err, \
-        overall_sat_m_err, overall_group_m_err, overall_sat_frac_err, overall_Sigma_offset_err \
-         in zip(zs, ms, shear_sat_m_errs, shear_group_m_errs, shear_sat_frac_errs, \
-                magf_sat_m_errs, magf_group_m_errs, magf_sat_frac_errs, magf_Sigma_offset_errs, \
-                overall_sat_m_errs, overall_group_m_errs, overall_sat_frac_errs, overall_Sigma_offset_errs):
+        magf_sqrt_det_covar, \
+        overall_sat_m_err, overall_group_m_err, overall_sat_frac_err, overall_Sigma_offset_err, \
+        overall_sqrt_det_covar \
+         in zip(zs, ms, shear_sat_m_errs, shear_group_m_errs, shear_sat_frac_errs,
+                    shear_sqrt_det_covars, 
+                magf_sat_m_errs, magf_group_m_errs, magf_sat_frac_errs, magf_Sigma_offset_errs,
+                    magf_sqrt_det_covars,
+                overall_sat_m_errs, overall_group_m_errs, overall_sat_frac_errs, overall_Sigma_offset_errs,
+                    overall_sqrt_det_covars):
         
         m_i = bf.get_bin_index(m, m_bins)
         if(m_i<0): continue
@@ -199,14 +235,19 @@ def main(argv):
         binned_shear_sat_m_errs[m_i].append(shear_sat_m_err)
         binned_shear_group_m_errs[m_i].append(shear_group_m_err)
         binned_shear_sat_frac_errs[m_i].append(shear_sat_frac_err)
+        binned_shear_sqrt_det_covars[m_i].append(shear_sqrt_det_covar)
+        
         binned_magf_sat_m_errs[m_i].append(magf_sat_m_err)
         binned_magf_group_m_errs[m_i].append(magf_group_m_err)
         binned_magf_sat_frac_errs[m_i].append(magf_sat_frac_err)
         binned_magf_Sigma_offset_errs[m_i].append(magf_Sigma_offset_err)
+        binned_magf_sqrt_det_covars[m_i].append(magf_sqrt_det_covar)
+        
         binned_overall_sat_m_errs[m_i].append(overall_sat_m_err)
         binned_overall_group_m_errs[m_i].append(overall_group_m_err)
         binned_overall_sat_frac_errs[m_i].append(overall_sat_frac_err)
         binned_overall_Sigma_offset_errs[m_i].append(overall_Sigma_offset_err)
+        binned_overall_sqrt_det_covars[m_i].append(overall_sqrt_det_covar)
         
     # Convert all lists to arrays      
     for m_i in xrange(num_m_bins):
@@ -214,16 +255,20 @@ def main(argv):
         binned_shear_sat_m_errs= np.array(binned_shear_sat_m_errs)
         binned_shear_group_m_errs= np.array(binned_shear_group_m_errs)
         binned_shear_sat_frac_errs= np.array(binned_shear_sat_frac_errs)
+        binned_shear_sqrt_det_covars= np.array(binned_shear_sqrt_det_covars)
+        
         binned_magf_sat_m_errs= np.array(binned_magf_sat_m_errs)
         binned_magf_group_m_errs= np.array(binned_magf_group_m_errs)
         binned_magf_sat_frac_errs= np.array(binned_magf_sat_frac_errs)
         binned_magf_Sigma_offset_errs= np.array(binned_magf_Sigma_offset_errs)
+        binned_magf_sqrt_det_covars= np.array(binned_magf_sqrt_det_covars)
+        
         binned_overall_sat_m_errs= np.array(binned_overall_sat_m_errs)
         binned_overall_group_m_errs= np.array(binned_overall_group_m_errs)
         binned_overall_sat_frac_errs= np.array(binned_overall_sat_frac_errs)
         binned_overall_Sigma_offset_errs= np.array(binned_overall_Sigma_offset_errs)
+        binned_overall_sqrt_det_covars= np.array(binned_overall_sqrt_det_covars)
         
-    # Do the shear plot now
     fig = pyplot.figure(figsize=figsize)
     fig.subplots_adjust(wspace=0.5, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
     
@@ -307,26 +352,27 @@ def main(argv):
                              marker='*')
                 ax.set_ylabel(r"$\sigma(f_{\rm sat})/\sigma_{\rm shear}(f_{\rm sat})$",labelpad=5)
             elif(p_i==3):
-                # Plot product
-                shear_prod = binned_shear_sat_m_errs[m_i]*binned_shear_group_m_errs[m_i]*binned_shear_sat_frac_errs[m_i]
-                magf_prod = binned_magf_sat_m_errs[m_i]*binned_magf_group_m_errs[m_i]*binned_magf_sat_frac_errs[m_i]
+                # Plot volume
+                shear_vol = binned_shear_sqrt_det_covars[m_i]
+                magf_vol = binned_magf_sqrt_det_covars[m_i]
                 
                 ax.plot([0.2,1.3],[1,1],label=None,color="b",linestyle="solid")
                 
-                ax.plot( binned_zs[m_i],  magf_prod/shear_prod,
+                ax.plot( binned_zs[m_i],  magf_vol/shear_vol,
                              color='r', linestyle='None', label="Magnification fit",
                              marker='o', markerfacecolor='none', markeredgecolor='r')
                 
-                ideal_prod = ( magf_prod**-2 + shear_prod**-2 )**-0.5
-                ax.plot( binned_zs[m_i],  ideal_prod/shear_prod,
+                ideal_vol = ( magf_vol**-2 + shear_vol**-2 )**-0.5
+                ax.plot( binned_zs[m_i],  ideal_vol/shear_vol,
                              color='m', linestyle='None', label="Ideal errors",
                              marker='x')
                 
                 ax.plot( binned_zs[m_i],
-                         binned_overall_sat_m_errs[m_i]*binned_overall_group_m_errs[m_i]*binned_overall_sat_frac_errs[m_i]/shear_prod,
+                         binned_overall_sqrt_det_covars[m_i]/shear_vol,
                              color='k', linestyle='None', label="Overall fit",
                              marker='*')
-                ax.set_ylabel(r"$\sigma^3/\sigma_{\rm shear}^3$",labelpad=5)
+                ax.set_ylabel(r"$\sqrt{\left|{\bf \sigma}\right|}/\sqrt{\left|{\bf \sigma}_{\rm shear}\right|}$",
+                              labelpad=5)
             
             if(p_i==3):
                 # Special y-axis
