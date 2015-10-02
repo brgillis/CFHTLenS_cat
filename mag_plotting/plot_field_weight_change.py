@@ -50,9 +50,9 @@ def main(argv):
     fig.subplots_adjust(wspace=0.5, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
     
     ax = fig.add_subplot(1,1,1)
-    ax.set_xlabel(r"$z_{\rm mid}$",fontsize=18,labelpad=20)
+    ax.set_xlabel("Lens Redshift Bin Centre",fontsize=16,labelpad=15)
     
-    ax.set_ylabel(r"Change in $\kappa_{\rm offset}$ from field weighting",labelpad=40)
+    ax.set_ylabel(r"Change in $\kappa_{\rm offset}$ from field weighting",fontsize=16,labelpad=40)
     
     ax.spines["top"].set_color("none")
     ax.spines["bottom"].set_color("none")

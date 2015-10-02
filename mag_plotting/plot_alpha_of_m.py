@@ -112,9 +112,9 @@ def main(argv):
     fig.subplots_adjust(wspace=0.5, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
     
     ax = fig.add_subplot(1,1,1)
-    ax.set_xlabel(r"$r'$ magnitude",labelpad=20)
+    ax.set_xlabel(r"$r'$ magnitude",labelpad=10,fontsize=16)
     ax.set_xlim(20,24.7)
-    ax.set_ylabel(r"$\alpha$",labelpad=20)
+    ax.set_ylabel(r"$\alpha$",labelpad=10,fontsize=16)
     ax.set_ylim(0,6)
     
     for z_i in xrange(0, num_z_bins, z_bins_skip):

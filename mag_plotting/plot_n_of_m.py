@@ -48,10 +48,10 @@ def main(argv):
     scale = 1/(sqdeg_per_sqrad)
     
     ax = fig.add_subplot(1,1,1)
-    ax.set_xlabel(r"$r'$" + " magnitude",labelpad=20)
+    ax.set_xlabel(r"$r'$" + " magnitude",labelpad=10,fontsize=16)
     ax.set_xlim(20,24.7)
     
-    ax.set_ylabel(r"Count per deg$^2$ per unit magnitude",labelpad=20)
+    ax.set_ylabel(r"Count per deg$^2$ per unit magnitude",labelpad=10,fontsize=16)
     ax.set_yscale("log", nonposy='clip')
     ax.set_ylim(1e4*scale,1.5e8*scale)
     

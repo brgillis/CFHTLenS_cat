@@ -44,16 +44,16 @@ paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/Magnification_Met
 data_name_root = "/home/brg/git/CFHTLenS_cat/Data/gg_lensing_signal_20_bins_fitting_results"
     
 # Plottable ranges for each parameter
-sat_m_range = (9.,13.5)
-group_m_range = (11.,16.)
-sat_frac_range = (0.,1.)
-kappa_offset_range = (-0.005,0.005)    
+sat_m_range = (10.5,13.499)
+group_m_range = (11.,15.99)
+sat_frac_range = (0.,0.99)
+kappa_offset_range = (-4,1.99)    
 
 # Labels for each parameter
 sat_m_label = r"$\log_{\rm 10}\left( M_{\rm 1h}/M_{\rm sun} \right)$"
 group_m_label = r"$\log_{\rm 10}\left( M_{\rm gr}/M_{\rm sun} \right)$"
 sat_frac_label = r"$f_{\rm sat}$"
-kappa_offset_label = r"$\kappa_{\rm offset}$"
+kappa_offset_label = r"$\kappa_{\rm offset}/10^{-3}$"
 
 def main(argv):
     
@@ -76,7 +76,8 @@ def main(argv):
         sat_m = shear_data['sat_m'], magf_data['sat_m'], overall_data['sat_m']
         group_m = shear_data['group_m'], magf_data['group_m'], overall_data['group_m']
         sat_frac = shear_data['sat_frac'], magf_data['sat_frac'], overall_data['sat_frac']
-        kappa_offset = shear_data['kappa_offset'], magf_data['kappa_offset'], overall_data['kappa_offset']
+        kappa_offset = shear_data['kappa_offset']*1.0e3, magf_data['kappa_offset']*1.0e3, \
+            overall_data['kappa_offset']*1.0e3
         
         # Number of bins in 2d plots (per axis)
         num_bins_2d = 20
@@ -84,7 +85,7 @@ def main(argv):
         # Number of bins in 1d plots
         num_bins_1d = 50
         
-        fig = plt.figure(4, figsize=(8,8))
+        fig = plt.figure(4, (8,8))
         fig.subplots_adjust(hspace=0.001, wspace=0.001, left=0.08, bottom=0.095, top=0.975, right=0.93)
         
         # Set up each of the 2D plots
@@ -107,9 +108,9 @@ def main(argv):
             ax = plt.subplot(4,4,pos)
             
             # Convert to 2d histogram for each of the shear, magnification, and overall data
-            for index, label, color, linestyle in ((0, "Shear",         "b", "--"),
-                                                   (1, "Magnification", "r", "-"),
-                                                   (2, "Combined",      "k", "-.")):
+            for index, label, color, linestyle, lineweight in ((0, "Shear",         "b", "--", 1),
+                                                   (1, "Magnification", "r", "-", 1),
+                                                   (2, "Combined",      "k", "-", 1)):
                 # Skip shear if necessary
                 if((not plot_shear) and (index==0)):
                     continue
@@ -151,7 +152,7 @@ def main(argv):
                 
                 levels = (level68, level95)
                 cset = plt.contour(hist2D, levels, origin='lower',colors=[color,color],
-                                   linewidths=(2, 1),extent=extent,label=label)
+                                   linewidths=(2*lineweight, lineweight),extent=extent,label=label)
                 for c in cset.collections:
                     c.set_linestyle(linestyle)
                 
@@ -160,7 +161,7 @@ def main(argv):
                     _proxy = [plt.plot(0,0,'-',lw=3, color=color,linestyle=linestyle,label=label)]
         
                     # Plot the legend for these plots in the upper right corner
-                    plt.legend( loc='upper right',bbox_to_anchor=(-0.07, -0.3, 1, 1),
+                    plt.legend( loc='upper right',bbox_to_anchor=(-0.2, -0.3, 1, 1),
                                 bbox_transform=plt.gcf().transFigure)
             
             plt.xlim(x_range)
@@ -168,21 +169,21 @@ def main(argv):
             
             # If on the bottom row, set the x label
             if(bottom_row):
-                plt.xlabel(x_label,fontsize=12)
+                plt.xlabel(x_label,fontsize=14)
             else:
                 # Else no x ticks
                 ax.set_xticklabels([])
                 
             # If on the left edge, set the y label
             if(left_col):
-                plt.ylabel(y_label,fontsize=12)
+                plt.ylabel(y_label,fontsize=14)
             else:
                 # Else no y tick labels
                 ax.set_yticklabels([])
                 
             # Set the font size for the ticks
-            plt.yticks(fontsize=8)
-            plt.xticks(fontsize=8)
+            plt.yticks(fontsize=10)
+            plt.xticks(fontsize=10)
         
         # Now do the 1D histograms
         for  data,         data_range,         data_label,    plot_shear, pos, bottom_row, left_col in (
@@ -198,9 +199,9 @@ def main(argv):
             peak = 0.
     
             # Convert to 1d histogram for each of the shear, magnification, and overall data
-            for index, label, color, linestyle in ((0, "Shear",         "b", "--"),
-                                                   (1, "Magnification", "r", "-"),
-                                                   (2, "Combined",      "k", "-.")):
+            for index, label, color, linestyle, lineweight in ((0, "Shear",         "b", "--", 1),
+                                                   (1, "Magnification", "r", "-", 1),
+                                                   (2, "Combined",      "k", "-", 1)):
                 # Skip shear if necessary
                 if((not plot_shear) and (index==0)):
                     continue
@@ -211,7 +212,8 @@ def main(argv):
                     np.array(range(0,len(hist_height)))/float(len(hist_height)-1)
     
                 # bottom right panel: projected density of x.
-                plt.plot(hist_data, hist_height, color=color,linestyle=linestyle)
+                plt.plot(hist_data, hist_height, color=color, linestyle=linestyle,
+                         linewidth=lineweight)
                 
                 cur_peak = np.max(hist_height)
                 if(cur_peak>peak):
@@ -223,20 +225,42 @@ def main(argv):
             
             # Add an x label if on the bottom row
             if(bottom_row):
-                plt.xlabel(data_label,fontsize=12)
+                plt.xlabel(data_label,fontsize=14)
             else:
                 # Else no x ticks
                 ax.set_xticklabels([])
             
             # Add a y label if on the left column
             if(left_col):
-                plt.ylabel(data_label,fontsize=12)
+                plt.ylabel(data_label,fontsize=14)
             else:
                 # Else no y tick labels
                 ax.set_yticklabels([])
                 
-            plt.xticks(fontsize=8)
+            plt.xticks(fontsize=10)
+            
+        # Set up the label for the whole plot
+        ax = fig.add_subplot(1,1,1)
+        ax.spines["top"].set_color("none")
+        ax.spines["bottom"].set_color("none")
+        ax.spines["left"].set_color("none")
+        ax.spines["right"].set_color("none")
+        ax.tick_params(labelcolor="w", top="off", bottom="off", left="off", right="off")
+        ax.set_yticklabels([])
+        ax.set_xticklabels([])
+        ax.set_axis_bgcolor("none")
         
+        z_min = bin_to_plot[0]
+        z_max = bin_to_plot[0] + 0.1
+        
+        m_min = bin_to_plot[1]
+        m_max = bin_to_plot[1] + 1
+        
+        plot_label = r"$" + str(z_min) + r" \leq z_{\rm lens} < " + str(z_max) + "$, " + \
+            r"$\;\;10^{" + str(m_min) + r"} M_{\rm sun} \leq M_{\rm lens} < 10^{" + \
+            str(m_max) + r"} M_{\rm sun}$"
+            
+        ax.set_xlabel(plot_label,labelpad=30,fontsize=16)
     
         # Save the figure
         outfile_name = data_name_root + data_name_tag + "_covar.eps"

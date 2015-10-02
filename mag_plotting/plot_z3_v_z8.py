@@ -39,8 +39,8 @@ def main(argv):
     
     ax = fig.add_subplot(1,1,1)
     
-    ax.set_xlabel(r"Galaxies per deg$^2$ in $0.3 < z < 0.4$",labelpad=5,fontsize=16)
-    ax.set_ylabel(r"Galaxies per deg$^2$ in $0.8 < z < 0.9$",labelpad=5,fontsize=16)
+    ax.set_xlabel(r"Galaxies per deg$^2$ in $0.3 \leq z < 0.4$",labelpad=5,fontsize=16)
+    ax.set_ylabel(r"Galaxies per deg$^2$ in $0.8 \leq z < 0.9$",labelpad=5,fontsize=16)
     
     ax.scatter(cols[reader.index("z35_dens")],cols[reader.index("z85_dens")])
             

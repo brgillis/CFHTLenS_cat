@@ -313,7 +313,7 @@ def main(argv):
     fig.subplots_adjust(wspace=0, hspace=0, bottom=0.1, right=0.95, top=0.95, left=0.12)
     
     ax = fig.add_subplot(1,1,1)
-    ax.set_xlabel("Projected Separation (kpc)",labelpad=20)
+    ax.set_xlabel("Projected Separation (kpc)",labelpad=10)
     ax.set_ylabel(r"Maximum $\kappa$ contamination",labelpad=35)
     ax.set_yticklabels([])
     ax.set_xticklabels([])

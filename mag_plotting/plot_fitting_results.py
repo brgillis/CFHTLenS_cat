@@ -418,7 +418,7 @@ def main(argv):
     ax.spines["left"].set_color("none")
     ax.spines["right"].set_color("none")
     ax.tick_params(labelcolor="w", top="off", bottom="off", left="off", right="off")
-    ax.set_xlabel("Lens Redshift Bin Centre",labelpad=20)
+    ax.set_xlabel("Lens Redshift Bin Centre",labelpad=15,fontsize=16)
     ax.set_yticklabels([])
     ax.set_xticklabels([])
     
@@ -520,10 +520,11 @@ def main(argv):
                     ax.errorbar( binned_zs[m_i][overall_bad]+z_shift, binned_overall_sat_frac_bests[m_i][overall_bad],
                              color=(0.5,0.5,0.5), markeredgecolor=(0.5,0.5,0.5), linestyle='None', label=None,
                              marker='*', yerr=binned_overall_sat_frac_errs[m_i][overall_bad] )
-                ax.set_ylim(0.01,0.84)
+                ax.set_ylim(0.003,1.5)
+                ax.set_yscale("log", nonposy='clip')
                 ax.set_ylabel(r"$f_{\rm sat}$",labelpad=5)
             elif(p_i==3):
-                # Plot sat_frac
+                # Plot kappa_offset
                 ax = fig.add_subplot( num_m_bins, num_p_bins, p_i + num_p_bins*m_i + 1)
                 ax.errorbar( binned_zs[m_i][magf_good], binned_magf_Sigma_offset_bests[m_i][magf_good]/binned_Sigma_crits[m_i][magf_good],
                              color='r', linestyle='None', label="Magnification fit",
@@ -533,14 +534,14 @@ def main(argv):
                              color='k', linestyle='None', label="Overall fit",
                              marker='*',yerr=binned_overall_Sigma_offset_errs[m_i][overall_good]/binned_Sigma_crits[m_i][overall_good] )
                 if(len(binned_zs[m_i][magf_bad])>0):
-                    ax.errorbar( binned_zs[m_i][magf_bad], binned_magf_Sigma_offset_bests[m_i][magf_bad],
+                    ax.errorbar( binned_zs[m_i][magf_bad], binned_magf_Sigma_offset_bests[m_i][magf_bad]/binned_Sigma_crits[m_i][magf_bad],
                              color=(1.,0.5,0.5), linestyle='None', label=None,
                              marker='o', markerfacecolor='none', markeredgecolor=(1.,0.5,0.5), markersize=3,
-                             yerr=binned_magf_Sigma_offset_errs[m_i][magf_bad] )
+                             yerr=binned_magf_Sigma_offset_errs[m_i][magf_bad]/binned_Sigma_crits[m_i][magf_bad] )
                 if(len(binned_zs[m_i][overall_bad])>0):
-                    ax.errorbar( binned_zs[m_i][overall_bad]+z_shift, binned_overall_Sigma_offset_bests[m_i][overall_bad],
+                    ax.errorbar( binned_zs[m_i][overall_bad]+z_shift, binned_overall_Sigma_offset_bests[m_i][overall_bad]/binned_Sigma_crits[m_i][overall_bad],
                              color=(0.5,0.5,0.5), markeredgecolor=(0.5,0.5,0.5), linestyle='None', label=None,
-                             marker='*', yerr=binned_overall_Sigma_offset_errs[m_i][overall_bad] )
+                             marker='*', yerr=binned_overall_Sigma_offset_errs[m_i][overall_bad]/binned_Sigma_crits[m_i][overall_bad] )
                 ax.set_ylim(-0.00549,0.00549)
                 ax.set_ylabel(r"$\kappa_{\rm offset}$",labelpad=5)
                 
