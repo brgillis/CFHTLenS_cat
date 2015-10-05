@@ -24,13 +24,17 @@
 \**********************************************************************/
 
 #include <cmath>
+#include <Eigen/LU>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <utility>
 
+#include <boost/algorithm/string/replace.hpp>
 #include <boost/bimap.hpp>
 
 #include "IceBRG_main/container/labeled_array.hpp"
+#include "IceBRG_main/file_system.hpp"
 #include "IceBRG_main/math/solvers/solver_classes.hpp"
 #include "IceBRG_main/units/unit_conversions.hpp"
 #include "IceBRG_main/units/unitconv_map.hpp"
@@ -40,7 +44,6 @@
 
 #include "common.h"
 
-#include "get_errors_on_fit.hpp"
 #include "lensing_fitting_bin.hpp"
 
 #define SKIP_CACHE_OUTPUT
@@ -61,6 +64,12 @@ constexpr int_type MCMC_max_steps = 10000;
 constexpr int_type MCMC_annealing_period = MCMC_max_steps/10;
 constexpr flt_type MCMC_annealing_factor = 4;
 constexpr int_type MCMC_skip_factor = 10;
+
+#ifdef NDEBUG
+constexpr int_type store_points_factor = 10000;
+#else
+constexpr int_type store_points_factor = 1;
+#endif
 
 constexpr int_type num_params = 4;
 
@@ -109,6 +118,30 @@ int_type main( const int_type argc, const char *argv[] )
 	if(argc>=5)
 	{
 		fitting_R_min = boost::lexical_cast<flt_type>(argv[4])*unitconv::kpctom;
+	}
+
+	// Check if there's any request to store test points for any bins
+	std::vector<std::pair<flt_type,flt_type>> bins_to_store_points_for;
+	if(argc>5)
+	{
+		// Make sure there's an even number of extra arguments
+		int_type num_extra_args = argc-5;
+		if(num_extra_args % 2 != 0)
+		{
+			std::cerr << "ERROR: Bins for which test point data should be stored must be passed in "
+					<< "pairs of z, m.";
+			return 1;
+		}
+		int_type num_pairs = num_extra_args/2;
+
+		// For each pair, store the point in the bins_to_store_points_for vector
+		for(int i = 0; i < num_pairs; ++i)
+		{
+			flt_type z_point = std::atof(argv[5+2*i]);
+			flt_type m_point = std::atof(argv[5+2*i+1]); // In log10(Msun)
+			m_point = std::pow(10.,m_point)*unitconv::Msuntokg;
+			bins_to_store_points_for.push_back( std::make_pair(z_point,m_point) );
+		}
 	}
 
 	// Output caches
@@ -160,7 +193,7 @@ int_type main( const int_type argc, const char *argv[] )
 	int_type num_m_bins = m_bounds.size();
 
 	// Output the number of z and m bins we've found
-	std::cout << "Found " << num_z_bins << " redshift bins and " << num_m_bins << " mass_type bins, for "
+	std::cout << "Found " << num_z_bins << " redshift bins and " << num_m_bins << " mass bins, for "
 		<< "a total of " << num_z_bins*num_m_bins << " bins.\n";
 
 	std::vector<std::vector<lensing_fitting_bin>> fitting_bins(
@@ -204,6 +237,7 @@ int_type main( const int_type argc, const char *argv[] )
 	result_header.push_back("shear_group_m_err");
 	result_header.push_back("shear_sat_frac_best");
 	result_header.push_back("shear_sat_frac_err");
+	result_header.push_back("shear_sqrt_det_covar");
 	result_header.push_back("magf_Chi_squared");
 	result_header.push_back("magf_sat_m_best");
 	result_header.push_back("magf_sat_m_err");
@@ -213,6 +247,7 @@ int_type main( const int_type argc, const char *argv[] )
 	result_header.push_back("magf_sat_frac_err");
 	result_header.push_back("magf_Sigma_offset_best");
 	result_header.push_back("magf_Sigma_offset_err");
+	result_header.push_back("magf_sqrt_det_covar");
 	result_header.push_back("overall_Chi_squared");
 	result_header.push_back("overall_sat_m_best");
 	result_header.push_back("overall_sat_m_err");
@@ -222,6 +257,7 @@ int_type main( const int_type argc, const char *argv[] )
 	result_header.push_back("overall_sat_frac_err");
 	result_header.push_back("overall_Sigma_offset_best");
 	result_header.push_back("overall_Sigma_offset_err");
+	result_header.push_back("overall_sqrt_det_covar");
 	result_header.push_back("Sigma_crit");
 
 	results.set_labels(std::move(result_header));
@@ -254,6 +290,22 @@ int_type main( const int_type argc, const char *argv[] )
 	{
 		for( const auto & fitting_bin : fitting_bin_row )
 		{
+
+			// Check if we want to store test points for this bin
+			bool store_points = false;
+			for( const auto & bin_location : bins_to_store_points_for )
+			{
+				// Check if this point is inside this bin
+				if((fitting_bin.z_min() <= bin_location.first) and
+				   (fitting_bin.z_max() > bin_location.first) and
+				   (fitting_bin.m_min() <= bin_location.second) and
+				   (fitting_bin.m_max() > bin_location.second))
+				{
+					store_points = true;
+					break;
+				}
+			}
+
 			// Set up fitting functions
 
 			// Shear fitting function
@@ -336,19 +388,23 @@ int_type main( const int_type argc, const char *argv[] )
 			solver_type magf_solver;
 			solver_type overall_solver;
 
+			// If we're storing points, use 100x as many points so it can be plotted nicely
+			int steps_for_this_bin = MCMC_max_steps;
+			if(store_points) steps_for_this_bin *= store_points_factor;
+
 			array_type best_shear_in_params = shear_solver.solve(shear_fitting_array_function,init_in,
 																  min_in,max_in,in_step,
-																  MCMC_max_steps,MCMC_annealing_period,
+																  steps_for_this_bin,steps_for_this_bin/4,
 																  MCMC_annealing_factor,MCMC_skip_factor);
 
 			array_type best_magf_in_params = magf_solver.solve(magf_fitting_array_function,init_in,
 																  min_in,max_in,in_step,
-																  MCMC_max_steps,MCMC_annealing_period,
+																  steps_for_this_bin,steps_for_this_bin/4,
 																  MCMC_annealing_factor,MCMC_skip_factor);
 
 			array_type best_overall_in_params = overall_solver.solve(fitting_array_function,init_in,
 																	  min_in,max_in,in_step,
-																	  MCMC_max_steps,MCMC_annealing_period,
+																	  steps_for_this_bin,steps_for_this_bin/4,
 																	  MCMC_annealing_factor,MCMC_skip_factor);
 
 			flt_type best_shear_chi_squared = shear_fitting_array_function(best_shear_in_params);
@@ -360,6 +416,14 @@ int_type main( const int_type argc, const char *argv[] )
 			array_type magf_errors = magf_solver.get_stddevs();
 			array_type overall_errors = overall_solver.get_stddevs();
 
+			// Get covariances
+			flt_type shear_det_covar =
+					std::sqrt(shear_solver.get_covars().block<num_params-1,num_params-1>(0,0).determinant());
+			flt_type magf_det_covar =
+					std::sqrt(magf_solver.get_covars().block<num_params-1,num_params-1>(0,0).determinant());
+			flt_type overall_det_covar =
+					std::sqrt(overall_solver.get_covars().block<num_params-1,num_params-1>(0,0).determinant());
+
 			// Set the best-fitting sigma offset for the best_shear_in_params vector to that from
 			// the best_overall_in_params vector
 			best_shear_in_params[3] = best_overall_in_params[3];
@@ -369,16 +433,19 @@ int_type main( const int_type argc, const char *argv[] )
 				best_shear_in_params[0], shear_errors[0],
 				best_shear_in_params[1], shear_errors[1],
 				best_shear_in_params[2], shear_errors[2],
+				shear_det_covar,
 				best_magf_chi_squared,
 				best_magf_in_params[0], magf_errors[0],
 				best_magf_in_params[1], magf_errors[1],
 				best_magf_in_params[2], magf_errors[2],
 				best_magf_in_params[3], magf_errors[3],
+				magf_det_covar,
 				best_overall_chi_squared,
 				best_overall_in_params[0], overall_errors[0],
 				best_overall_in_params[1], overall_errors[1],
 				best_overall_in_params[2], overall_errors[2],
 				best_overall_in_params[3], overall_errors[3],
+				overall_det_covar,
 				fitting_bin.Sigma_crit() };
 			results.insert_row(std::move(new_row));
 
@@ -404,11 +471,69 @@ int_type main( const int_type argc, const char *argv[] )
 				best_fit_params.at(z_i).at(m_i).push_back(coerce<std::vector<flt_type>>(
 						best_overall_in_params));
 			}
+
+			// Store the generated points if desired
+			if(store_points)
+			{
+				// Get the points from the solver
+				const auto & shear_test_points = shear_solver.get_test_run_points().transpose();
+				const auto & magf_test_points = magf_solver.get_test_run_points().transpose();
+				const auto & overall_test_points = overall_solver.get_test_run_points().transpose();
+
+				// Set up the header for the test points output files
+				std::vector<std::string> test_point_header( { "sat_m",
+				                                              "group_m",
+														      "sat_frac",
+														      "kappa_offset"} );
+
+				// Make tables for each of the test points arrays
+				labeled_array<flt_type> shear_test_points_table(shear_test_points,test_point_header);
+				labeled_array<flt_type> magf_test_points_table(magf_test_points,test_point_header);
+				labeled_array<flt_type> overall_test_points_table(overall_test_points,test_point_header);
+
+				// Determine the filenames to use for saving these test points
+				std::stringstream ss("");
+
+				ss << std::setprecision(3) << "z-" << fitting_bin.z_min();
+				std::string bin_z_label = ss.str();
+				boost::replace_all(bin_z_label,".","p"); // Replace periods with p to simplify filenames
+
+				ss.str("");
+				ss << std::setprecision(3) << "m-" << std::log10(fitting_bin.m_min()*unitconv::kgtoMsun);
+				std::string bin_m_label = ss.str();
+				boost::replace_all(bin_m_label,".","p"); // Replace periods with p to simplify filenames
+
+				std::string output_filename_root = get_base_filename(fitting_results_filename);
+
+				std::string output_test_points_filename_base = output_filename_root + "_" + bin_z_label +
+						"_" + bin_m_label;
+
+				// Convert the units
+				shear_test_points_table.at_label("sat_m").raw() -= std::log10(unitconv::Msuntokg);
+				shear_test_points_table.at_label("group_m").raw() -= std::log10(unitconv::Msuntokg);
+				shear_test_points_table.at_label("kappa_offset").raw() /= fitting_bin.Sigma_crit();
+
+				magf_test_points_table.at_label("sat_m").raw() -= std::log10(unitconv::Msuntokg);
+				magf_test_points_table.at_label("group_m").raw() -= std::log10(unitconv::Msuntokg);
+				magf_test_points_table.at_label("kappa_offset").raw() /= fitting_bin.Sigma_crit();
+
+				overall_test_points_table.at_label("sat_m").raw() -= std::log10(unitconv::Msuntokg);
+				overall_test_points_table.at_label("group_m").raw() -= std::log10(unitconv::Msuntokg);
+				overall_test_points_table.at_label("kappa_offset").raw() /= fitting_bin.Sigma_crit();
+
+
+				// Save the tables
+				shear_test_points_table.save(output_test_points_filename_base + "_shear_test_points.dat");
+				magf_test_points_table.save(output_test_points_filename_base + "_magf_test_points.dat");
+				overall_test_points_table.save(output_test_points_filename_base + "_overall_test_points.dat");
+			}
 		}
 	}
 
 	results.save(std::cout,true);
 	results.save(fitting_results_filename,true);
+
+	std::cout << "Results saved to " << fitting_results_filename << "." << std::endl;
 
 	// Output the models if desired
 	if(output_new_models)
@@ -490,6 +615,8 @@ int_type main( const int_type argc, const char *argv[] )
 
 		lensing_data.apply_unitconvs(u_map);
 		lensing_data.save(output_filename);
+
+		std::cout << "Data with best-fit models saved to " << output_filename << "." << std::endl;
 	}
 
 	return 0;
