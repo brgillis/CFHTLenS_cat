@@ -37,7 +37,7 @@ matplotlib.rcParams['pdf.use14corefonts'] = True
 matplotlib.rcParams['text.usetex'] = True
 
 # Magic values
-bins_to_plot = ((0.2,10), (0.9, 9), (1,10))
+bins_to_plot = ((0.2,10), (1,10))
 
 paper_location = "/disk2/brg/Dropbox/gillis-comp-shared/Papers/Magnification_Method/"
     
