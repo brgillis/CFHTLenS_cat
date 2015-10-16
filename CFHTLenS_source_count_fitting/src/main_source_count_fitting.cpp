@@ -33,7 +33,7 @@
 
 #include "IceBRG_main/file_access/ascii_table_map.hpp"
 
-#include "IceBRG_main/join_path.hpp"
+#include "IceBRG_main/file_system.hpp"
 
 #include "IceBRG_main/math/misc_math.hpp"
 #include "IceBRG_main/math/solvers/solvers.hpp"
@@ -46,7 +46,8 @@
 #include "magic_values.hpp"
 
 #include "count_fitting_functor.hpp"
-#include "Schechter_like_functor.h"
+#include "exp_quadratic_functor.hpp"
+#include "Schechter_like_functor.hpp"
 
 // Magic values
 const std::string output_filename = "count_fitting_results.dat";
@@ -63,84 +64,120 @@ int main( const int argc, const char *argv[] )
 	std::string data_directory = get_data_directory(argc,argv);
 
 	// Set up needed names with the data directory
-	const std::string count_table_base = join_path(data_directory,mag_hist_table_name_base);
+	const std::string count_table_base = join_path(data_directory,g_mag_hist_table_name_base);
 	const std::string output_file = join_path(data_directory,count_fitting_results_filename);
 
 	// General set-up
-	typedef Schechter_like_functor estimator_type;
 
-	Schechter_like_functor estimator;
+//	typedef Schechter_like_functor estimator_type;
+//
+//	estimator_type estimator;
+//
+//	typedef estimator_type::params_type params_type;
+//
+//	const params_type mins( 0./square(unitconv::degtorad*rad), // N_scale
+//				      	    15., // m_star
+//							-10., // alpha
+//							0., // mag_lower_lim_sharpness
+//							0./square(unitconv::degtorad*rad), // mag23_jump
+//							24., // mag_upper_lim
+//							0.); // mag_upper_lim_sharpness
+//
+//	const params_type maxes( 1.e5/square(unitconv::degtorad*rad), // N_scale
+//      	    				 30., // m_star
+//							 2., // alpha
+//							 2., // mag_lower_lim_sharpness
+//							 0./square(unitconv::degtorad*rad), // mag23_jump
+//							 30., // mag_upper_lim
+//							 10.); // mag_upper_lim_sharpness
+//
+//	const params_type steps( 1.e3/square(unitconv::degtorad*rad), // N_scale
+//      	    				 0.1, // m_star
+//							 0.05, // alpha
+//							 0.1, // mag_lower_lim_sharpness
+//							 0./square(unitconv::degtorad*rad), // mag23_jump
+//							 0.1, // mag_upper_lim
+//							 0.1); // mag_upper_lim_sharpness
+//
+//	params_type inits( 3.e3/square(unitconv::degtorad*rad), // N_scale
+//      	    				 18.5, // m_star
+//							 -1., // alpha
+//							 1., // mag_lower_lim_sharpness
+//							 0./square(unitconv::degtorad*rad), // mag23_jump
+//							 25., // mag_upper_lim
+//							 1.); // mag_upper_lim_sharpness
+//	typedef Schechter_like_functor estimator_type;
+
+	typedef exp_quadratic_functor estimator_type;
+
+	estimator_type estimator;
 
 	typedef estimator_type::params_type params_type;
 
-	const params_type mins( 0./square(unitconv::degtorad*rad), // N_scale
-				      	    15., // m_star
-							-10., // alpha
-							0., // mag_lower_lim_sharpness
-							0./square(unitconv::degtorad*rad), // mag23_jump
-							24., // mag_upper_lim
-							0.); // mag_upper_lim_sharpness
+	const params_type mins( 0., // N_scale
+				      	    0., // beta_0
+							-0.5); // d_beta
 
-	const params_type maxes( 1.e5/square(unitconv::degtorad*rad), // N_scale
-      	    				 30., // m_star
-							 2., // alpha
-							 2., // mag_lower_lim_sharpness
-							 0./square(unitconv::degtorad*rad), // mag23_jump
-							 30., // mag_upper_lim
-							 10.); // mag_upper_lim_sharpness
+	const params_type maxes( 1.0e11, // N_scale
+      	    				 5., // beta_0
+							 0.5); // d_beta
 
-	const params_type steps( 1.e3/square(unitconv::degtorad*rad), // N_scale
-      	    				 0.1, // m_star
-							 0.05, // alpha
-							 0.1, // mag_lower_lim_sharpness
-							 0./square(unitconv::degtorad*rad), // mag23_jump
-							 0.1, // mag_upper_lim
-							 0.1); // mag_upper_lim_sharpness
+	const params_type steps( 5.0e8, // N_scale
+      	    				 0.1, // beta_0
+							 0.005); // d_beta
 
-	params_type inits( 3.e3/square(unitconv::degtorad*rad), // N_scale
-      	    				 18.5, // m_star
-							 -1., // alpha
-							 1., // mag_lower_lim_sharpness
-							 0./square(unitconv::degtorad*rad), // mag23_jump
-							 25., // mag_upper_lim
-							 1.); // mag_upper_lim_sharpness
+	params_type inits( 8.8e9, // N_scale
+      	    				  0.8, // beta_0
+							 -0.03); // d_beta
 
 	// Result map
 	table_map_t<double> result_map;
 
-	for(unsigned int z1000=zlo; z1000<=zhi; z1000+=zstep)
+	for(unsigned int z1000=zlo; z1000<=zlo; z1000+=zstep)
 	{
 		std::string filename = count_table_base + boost::lexical_cast<std::string>(z1000)
 				+ count_table_tail;
-		count_fitting_functor<decltype(estimator)> fitter(&estimator,filename,field_size,z_bin_size);
+//		count_fitting_functor<decltype(estimator)> fitter(&estimator,filename,field_size,z_bin_size);
+		count_fitting_functor<decltype(estimator)> fitter(&estimator,filename,field_size,1.);
 
 		try
 		{
 			params_type result_in_params = solve_MCMC(fitter,
 					inits, mins, maxes, steps, 100000, 2500);
 
+//			std::cout << "Best params for z=" << z1000/1000. << ":\t"
+//					<< value_of(result_in_params.get<0>()*square(unitconv::degtorad)) << " "
+//					<< result_in_params.get<1>() << " "
+//					<< result_in_params.get<2>() << " "
+//					<< result_in_params.get<3>() << " "
+//					<< value_of(result_in_params.get<4>()*square(unitconv::degtorad)) << " "
+//					<< result_in_params.get<5>() << " "
+//					<< result_in_params.get<6>() << "\t";
+
 			std::cout << "Best params for z=" << z1000/1000. << ":\t"
-					<< value_of(result_in_params.get<0>()*square(unitconv::degtorad)) << " "
+					<< value_of(result_in_params.get<0>()) << " "
 					<< result_in_params.get<1>() << " "
-					<< result_in_params.get<2>() << " "
-					<< result_in_params.get<3>() << " "
-					<< value_of(result_in_params.get<4>()*square(unitconv::degtorad)) << " "
-					<< result_in_params.get<5>() << " "
-					<< result_in_params.get<6>() << "\t";
+					<< result_in_params.get<2>() << "\t";
 
 			std::cout << "Chi^2: " << fitter(result_in_params) << std::endl;
 
 			inits = result_in_params; // For next bin
 
 			// Add this to the result map
+
+//			result_map["z_mid"].push_back(0.001*(z1000+zstep/2));
+//			result_map["N_scale"].push_back(value_of(result_in_params.get<0>()));
+//			result_map["m_star_lower"].push_back(result_in_params.get<1>());
+//			result_map["alpha"].push_back(result_in_params.get<2>());
+//			result_map["lower_cutoff_sharpness"].push_back(result_in_params.get<3>());
+//			result_map["mag23_jump"].push_back(value_of(result_in_params.get<4>()));
+//			result_map["m_star_upper"].push_back(result_in_params.get<5>());
+//			result_map["upper_cutoff_sharpness"].push_back(result_in_params.get<6>());
+
 			result_map["z_mid"].push_back(0.001*(z1000+zstep/2));
 			result_map["N_scale"].push_back(value_of(result_in_params.get<0>()));
-			result_map["m_star_lower"].push_back(result_in_params.get<1>());
-			result_map["alpha"].push_back(result_in_params.get<2>());
-			result_map["lower_cutoff_sharpness"].push_back(result_in_params.get<3>());
-			result_map["mag23_jump"].push_back(value_of(result_in_params.get<4>()));
-			result_map["m_star_upper"].push_back(result_in_params.get<5>());
-			result_map["upper_cutoff_sharpness"].push_back(result_in_params.get<6>());
+			result_map["beta_0"].push_back(result_in_params.get<1>());
+			result_map["d_beta"].push_back(result_in_params.get<2>());
 		}
 		catch(const std::exception &e)
 		{
@@ -149,12 +186,8 @@ int main( const int argc, const char *argv[] )
 
 			result_map["z_mid"].push_back(0.001*(z1000+zstep/2));
 			result_map["N_scale"].push_back(0.);
-			result_map["m_star_lower"].push_back(inits.get<1>());
-			result_map["alpha"].push_back(inits.get<2>());
-			result_map["lower_cutoff_sharpness"].push_back(inits.get<3>());
-			result_map["mag23_jump"].push_back(0.);
-			result_map["m_star_upper"].push_back(inits.get<5>());
-			result_map["upper_cutoff_sharpness"].push_back(inits.get<6>());
+			result_map["beta_0"].push_back(inits.get<1>());
+			result_map["d_beta"].push_back(inits.get<2>());
 		}
 	}
 
