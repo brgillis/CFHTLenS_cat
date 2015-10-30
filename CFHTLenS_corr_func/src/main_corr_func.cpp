@@ -454,7 +454,7 @@ int main( const int argc, const char *argv[] )
 
 	output_table.apply_unitconvs(u_map);
 
-	output_table.save(output_name,true);
+	output_table.write(output_name,true);
 
 	std::cout << "Done!\n";
 

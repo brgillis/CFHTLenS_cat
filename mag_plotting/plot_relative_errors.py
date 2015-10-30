@@ -410,7 +410,7 @@ def main(argv):
     
     # Save the figure
     outfile_name = os.path.splitext(fitting_results_table_name)[0] + "_relative_errors.eps"
-    pyplot.savefig(outfile_name, format="eps", bbox_inches="tight", pad_inches=0.05)
+    pyplot.writefig(outfile_name, format="eps", bbox_inches="tight", pad_inches=0.05)
     
     # Copy it to the paper location
     cmd = "cp " + outfile_name + " " + paper_location

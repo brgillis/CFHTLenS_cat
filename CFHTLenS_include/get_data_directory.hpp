@@ -31,7 +31,7 @@
 
 #include "IceBRG_main/command_line.hpp"
 #include "IceBRG_main/error_handling.h"
-#include "IceBRG_main/join_path.hpp"
+#include "IceBRG_main/file_system.hpp"
 #include "IceBRG_main/file_access/open_file.hpp"
 
 

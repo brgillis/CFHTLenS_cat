@@ -35,7 +35,7 @@
 #include "IceBRG_main/error_handling.h"
 #include "IceBRG_main/file_access/binary_archive.hpp"
 #include "IceBRG_main/file_access/open_file.hpp"
-#include "IceBRG_main/join_path.hpp"
+#include "IceBRG_main/file_system.hpp"
 
 #include "get_data_directory.hpp"
 #include "magic_values.hpp"
@@ -122,7 +122,7 @@ int main( const int argc, const char *argv[] )
 		labeled_array<double> table;
 		try
 		{
-			table.load(input_file_name); // TODO Check we're properly loading
+			table.read(input_file_name);
 		}
 		catch(const std::runtime_error &e)
 		{
@@ -180,7 +180,7 @@ int main( const int argc, const char *argv[] )
 
 		//correct_redshift_bias(output_map.at("Z_B"));
 
-		output_map.save(lens_output_name,true);
+		output_map.write(lens_output_name,true);
 
 		// Source file
 
@@ -231,7 +231,7 @@ int main( const int argc, const char *argv[] )
 
 		//correct_redshift_bias(output_map.at("Z_B"));
 
-		output_map.save(source_output_name,true);
+		output_map.write(source_output_name,true);
 
 #ifdef _OPENMP
 #pragma omp critical(CFHTLenS_catalogue_filtering_print_tables)

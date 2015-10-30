@@ -523,15 +523,15 @@ int_type main( const int_type argc, const char *argv[] )
 
 
 				// Save the tables
-				shear_test_points_table.save(output_test_points_filename_base + "_shear_test_points.dat");
-				magf_test_points_table.save(output_test_points_filename_base + "_magf_test_points.dat");
-				overall_test_points_table.save(output_test_points_filename_base + "_overall_test_points.dat");
+				shear_test_points_table.write(output_test_points_filename_base + "_shear_test_points.dat");
+				magf_test_points_table.write(output_test_points_filename_base + "_magf_test_points.dat");
+				overall_test_points_table.write(output_test_points_filename_base + "_overall_test_points.dat");
 			}
 		}
 	}
 
-	results.save(std::cout,true);
-	results.save(fitting_results_filename,true);
+	results.write(std::cout,true);
+	results.write(fitting_results_filename,true);
 
 	std::cout << "Results saved to " << fitting_results_filename << "." << std::endl;
 
@@ -614,7 +614,7 @@ int_type main( const int_type argc, const char *argv[] )
 						u_map[model_Sigma_label];
 
 		lensing_data.apply_unitconvs(u_map);
-		lensing_data.save(output_filename);
+		lensing_data.write(output_filename);
 
 		std::cout << "Data with best-fit models saved to " << output_filename << "." << std::endl;
 	}

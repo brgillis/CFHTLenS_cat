@@ -264,7 +264,7 @@ def main(argv):
     
         # Save the figure
         outfile_name = data_name_root + data_name_tag + "_covar.eps"
-        plt.savefig(outfile_name, format="eps", bbox_inches="tight", pad_inches=0.05)
+        plt.writefig(outfile_name, format="eps", bbox_inches="tight", pad_inches=0.05)
         
         # Copy it to the paper location
         cmd = "cp " + outfile_name + " " + paper_location

@@ -39,7 +39,7 @@
 #include "IceBRG_main/file_access/ascii_table_map.hpp"
 #include "IceBRG_main/file_access/open_file.hpp"
 
-#include "IceBRG_main/join_path.hpp"
+#include "IceBRG_main/file_system.hpp"
 
 #include "IceBRG_main/math/misc_math.hpp"
 #include "IceBRG_main/math/calculus/integrate.hpp"

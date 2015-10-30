@@ -33,7 +33,7 @@
 #include "IceBRG_main/file_access/ascii_table_map.hpp"
 #include "IceBRG_main/file_access/binary_archive.hpp"
 #include "IceBRG_main/file_access/open_file.hpp"
-#include "IceBRG_main/join_path.hpp"
+#include "IceBRG_main/file_system.hpp"
 #include "IceBRG_main/math/misc_math.hpp"
 #include "IceBRG_main/units/unit_conversions.hpp"
 #include "IceBRG_main/vector/limit_vector.hpp"
@@ -163,7 +163,7 @@ int main( const int argc, const char *argv[] )
 
 		labeled_array<double> lens_table;
 
-		lens_table.load(lens_file_name);
+		lens_table.read(lens_file_name);
 
 		// Loop over lenses and bin them by redshift
 		Eigen::ArrayXd lens_count = Eigen::ArrayXd::Zero(z_bins);
@@ -207,7 +207,7 @@ int main( const int argc, const char *argv[] )
 
 	output_table.set_labels(output_header);
 
-	output_table.save(output_file);
+	output_table.write(output_file);
 
 	std::cout << "Done!\nOutput saved to " << output_file << "." << std::endl;
 
