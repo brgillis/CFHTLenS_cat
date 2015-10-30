@@ -1,0 +1,1 @@
+wget -O REPLACEME_OUTPUT_NAME 'http://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/data/pub/vospace/CFHTLens/images/REPLACEME_FIELD_REPLACEME_I_OR_Yzrgu_finalmask_mosaic.fits'

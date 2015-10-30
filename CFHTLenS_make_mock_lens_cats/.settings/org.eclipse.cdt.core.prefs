@@ -1,0 +1,6 @@
+eclipse.preferences.version=1
+environment/project/cdt.managedbuild.config.gnu.exe.release.224954066/OMP_NUM_THREADS/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.exe.release.224954066/OMP_NUM_THREADS/operation=append
+environment/project/cdt.managedbuild.config.gnu.exe.release.224954066/OMP_NUM_THREADS/value=5
+environment/project/cdt.managedbuild.config.gnu.exe.release.224954066/append=true
+environment/project/cdt.managedbuild.config.gnu.exe.release.224954066/appendContributed=true
